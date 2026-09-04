@@ -1,5 +1,21 @@
 # KOKALabel 报价系统 变更日志
 
+## v9.2.0（2026-09-04）
+
+### 产品授权功能（打包层，exe 生效）
+
+- 新增 exe 产品授权：**在线激活 + 离线使用**，产品密钥**一码一机**（设备绑定），**到期完全锁死可续期再激活**，无试用期。
+- 实现文件在 `electron-build/`：`license.js`（设备指纹/HMAC 签名/到期检查/时间回拨检测）、`activation.html`（激活窗口）、`preload.js`、`main.js`（启动授权分流）。
+- 后端接口模板：`electron-build/server-license/`（Cloudflare Pages Functions + Express 两版）。
+- 密钥生成工具：`electron-build/tools/gen-license-keys.js`。
+- 部署说明见 `docs/plans/2026-09-04-license-integration.md`（需填接口地址后才生效）。
+
+### 安全规划
+
+- 新增 `docs/plans/2026-09-04-security-plan.md`：现状评估、风险清单、授权/加固/数据安全分阶段方案。
+
+### 版本号统一 v9.2.0
+
 ## v9.0.1（2026-09-04）
 
 ### 1楼报价表再次更新（29 组 → 28 组）
