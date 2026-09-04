@@ -16,7 +16,7 @@ const enc = new TextEncoder();
 export async function hashPassword(pwd, saltHex) {
   const keyMaterial = await crypto.subtle.importKey('raw', enc.encode(pwd), 'PBKDF2', false, ['deriveBits']);
   const bits = await crypto.subtle.deriveBits(
-    { name: 'PBKDF2', salt: hexToBytes(saltHex), iterations: 120000, hash: 'SHA-256' },
+    { name: 'PBKDF2', salt: hexToBytes(saltHex), iterations: 100000, hash: 'SHA-256' },
     keyMaterial, 256
   );
   return bytesToHex(new Uint8Array(bits));
@@ -38,7 +38,12 @@ export async function saveUser(env, username, user) {
 }
 export async function listUsers(env) {
   const list = await env.AUTH.list({ prefix: U_PREFIX });
-  return list.keys.map(k => JSON.parse(k.metadata && k.metadata.v ? k.metadata.v : '{}'));
+  const out = [];
+  for (const k of list.keys) {
+    const raw = await env.AUTH.get(k.name);
+    if (raw) { try { out.push(JSON.parse(raw)); } catch (e) { /* 跳过坏数据 */ } }
+  }
+  return out;
 }
 
 // ---------- 会话 ----------

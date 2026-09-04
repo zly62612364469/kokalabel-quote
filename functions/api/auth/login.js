@@ -3,6 +3,14 @@ import { json, getUser, saveUser, listUsers, hashPassword, randomSalt, createSes
 
 export async function onRequestPost(context) {
   const env = context.env;
+  try {
+    return await handle(context);
+  } catch (e) {
+    return json({ ok: false, code: 'exception', message: '服务异常: ' + (e && e.message || e) }, 500);
+  }
+}
+async function handle(context) {
+  const env = context.env;
   let body;
   try { body = await context.request.json(); } catch (e) { return json({ ok: false, message: '请求格式错误' }, 400); }
   const username = String(body.username || '').trim().toLowerCase();
