@@ -3543,6 +3543,15 @@ function paperToSheetRows(paper) {
 }
 
 function exportPaperExcel() {
+  // v9.4.4：包一层错误提示，便于定位网页端导出失败原因
+  try {
+    exportPaperExcelInner();
+  } catch (e) {
+    console.error("[导出] 失败:", e);
+    showToast("导出失败：" + (e && e.message ? e.message : e));
+  }
+}
+function exportPaperExcelInner() {
   // P1.4: 确保 SheetJS 已加载
   if (typeof XLSX === "undefined") { loadSheetJS().then(() => exportPaperExcel()).catch(() => showToast("Excel 库加载失败，请检查网络")); return; }
   const wb = XLSX.utils.book_new();
