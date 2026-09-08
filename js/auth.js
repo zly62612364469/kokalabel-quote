@@ -63,6 +63,8 @@
     if (KOKA.user.role !== 'visitor') renderAccountPanel();
     if (KOKA.canEditQuote()) renderUploadDefaultBtn();
     await syncCloudQuote();   // 业务员/访客/管理员：拉取超管发布的默认数据
+    // v9.4.1：非超管每 30 秒静默检测云端是否有新发布的默认报价，有则自动应用
+    if (!KOKA.canEditQuote()) setInterval(() => { syncCloudQuote(); }, 30000);
   }
 
   // ---------- 页面权限：访客仅计算器 ----------
@@ -106,7 +108,9 @@
       const map = { paperConfig: 'paperConfig', craftConfig: 'craftConfig', ropeConfig: 'ropeConfig', shippingConfig: 'shippingConfig' };
       for (const k of Object.keys(map)) if (d[k] != null) localStorage.setItem('tagPricing_' + map[k], JSON.stringify(d[k]));
       sessionStorage.setItem('koka_quote_ts', String(d.updatedAt));
-      location.reload();   // 覆盖本地后重载，data.js 以云端默认初始化（仅一次）
+      // 给用户 1 秒提示后再刷新应用，避免正在操作时突兀闪断
+      KOKA.toast('检测到超管发布的【新报价数据】，正在刷新应用…');
+      setTimeout(() => location.reload(), 1000);
     } catch (e) { /* 静默 */ }
   }
 
