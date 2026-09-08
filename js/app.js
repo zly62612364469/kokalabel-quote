@@ -3551,6 +3551,10 @@ function exportPaperExcel() {
     showToast("导出失败：" + (e && e.message ? e.message : e));
   }
 }
+// Excel sheet 名清洗：去除 : \ / ? * [ ] 等非法字符，并截到 31 字符（Excel 限制）
+function sanitizeSheetName(name) {
+  return String(name || "Sheet").replace(/[:\\/?*[\]:]/g, "_").slice(0, 31) || "Sheet";
+}
 function exportPaperExcelInner() {
   // P1.4: 确保 SheetJS 已加载
   if (typeof XLSX === "undefined") { loadSheetJS().then(() => exportPaperExcel()).catch(() => showToast("Excel 库加载失败，请检查网络")); return; }
@@ -3558,7 +3562,7 @@ function exportPaperExcelInner() {
   const currentPapers = getPapersByPriceList(CURRENT_PRICE_LIST_ID);
   for (const paper of currentPapers) {
     const ws = XLSX.utils.aoa_to_sheet(paperToSheetRows(paper));
-    XLSX.utils.book_append_sheet(wb, ws, paper.shortName || paper.name);
+    XLSX.utils.book_append_sheet(wb, ws, sanitizeSheetName(paper.shortName || paper.name));
   }
   const plName = getCurrentPriceList().name;
   XLSX.writeFile(wb, `KOKALabel${plName}_${formatDateFile()}.xlsx`);
@@ -3635,7 +3639,7 @@ function downloadPaperTemplate() {
     }
 
     const ws = XLSX.utils.aoa_to_sheet(rows);
-    XLSX.utils.book_append_sheet(wb, ws, paper.shortName || ("Sheet" + (idx + 1)));
+    XLSX.utils.book_append_sheet(wb, ws, sanitizeSheetName(paper.shortName || ("Sheet" + (idx + 1))));
   });
 
   XLSX.writeFile(wb, "KOKALabel1号报价表模板_" + formatDateFile() + ".xlsx");
@@ -4037,7 +4041,7 @@ function exportRopeExcel() {
   if (typeof XLSX === "undefined") { loadSheetJS().then(() => exportRopeExcel()).catch(() => showToast("Excel 库加载失败，请检查网络")); return; }
   const wb = XLSX.utils.book_new();
   const ws = XLSX.utils.aoa_to_sheet(ropeToSheetRows());
-  XLSX.utils.book_append_sheet(wb, ws, "吊绳报价");
+  XLSX.utils.book_append_sheet(wb, ws, sanitizeSheetName("吊绳报价"));
   XLSX.writeFile(wb, "KOKALabel吊绳报价_" + formatDateFile() + ".xlsx");
   showToast("吊绳报价 Excel 已导出");
 }
@@ -4053,7 +4057,7 @@ function downloadRopeTemplate() {
     ["普通吊绳", 5, 10, 20, 30, 50]
   ];
   const ws = XLSX.utils.aoa_to_sheet(rows);
-  XLSX.utils.book_append_sheet(wb, ws, "吊绳报价模板");
+  XLSX.utils.book_append_sheet(wb, ws, sanitizeSheetName("吊绳报价模板"));
   XLSX.writeFile(wb, "KOKALabel吊绳报价模板_" + formatDateFile() + ".xlsx");
   showToast("吊绳模板已下载");
 }
@@ -4201,7 +4205,7 @@ function exportShippingExcel() {
   if (typeof XLSX === "undefined") { loadSheetJS().then(() => exportShippingExcel()).catch(() => showToast("Excel 库加载失败，请检查网络")); return; }
   const wb = XLSX.utils.book_new();
   const ws = XLSX.utils.aoa_to_sheet(shippingToSheetRows());
-  XLSX.utils.book_append_sheet(wb, ws, "邮费报价");
+  XLSX.utils.book_append_sheet(wb, ws, sanitizeSheetName("邮费报价"));
   XLSX.writeFile(wb, "KOKALabel邮费报价_" + formatDateFile() + ".xlsx");
   showToast("邮费报价 Excel 已导出");
 }
@@ -4218,7 +4222,7 @@ function downloadShippingTemplate() {
   ];
   const ws = XLSX.utils.aoa_to_sheet(rows);
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "邮费报价模板");
+  XLSX.utils.book_append_sheet(wb, ws, sanitizeSheetName("邮费报价模板"));
   XLSX.writeFile(wb, "KOKALabel邮费报价模板_" + formatDateFile() + ".xlsx");
   showToast("邮费模板已下载");
 }
@@ -4602,23 +4606,3 @@ function bindEvents() {
   try { onCalculate(); }
   catch (e) { console.error("[init] onCalculate 失败:", e); }
 })();
-
-// -------------------- v9.4 折叠：附加工艺 / 吊绳类型（默认折叠，点击标题展开） --------------------
-function initFoldGroups() {
-  document.querySelectorAll(".form-group > label").forEach(lab => {
-    const g = lab.parentElement;
-    if (!g || g.classList.contains("fold-ready")) return;
-    const hasTarget = g.querySelector(":scope > .craft-list") || g.querySelector(":scope > .rope-list");
-    if (!hasTarget) return;
-    g.classList.add("fold-ready");
-    lab.classList.add("fold-label");
-    lab.addEventListener("click", () => g.classList.toggle("open"));
-  });
-}
-try {
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", initFoldGroups);
-  else initFoldGroups();
-  if (window.MutationObserver) {
-    new MutationObserver(() => initFoldGroups()).observe(document.body, { childList: true, subtree: true });
-  }
-} catch (e) { console.error("[v9.4] 折叠初始化失败:", e); }

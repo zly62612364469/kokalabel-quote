@@ -458,7 +458,7 @@
       font-variant-numeric: tabular-nums;
     }
 
-    @media (max-width: 480px) {
+    @media (max-width: 360px) {
       .rope-list {
         grid-template-columns: repeat(2, 1fr);
       }
@@ -624,7 +624,7 @@
     /* 工艺复选框 */
     .craft-list {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
       gap: 10px;
     }
 
@@ -2927,21 +2927,6 @@
         margin-left: 0;
       }
     }
-
-/* ===================== v9.4 折叠区块（附加工艺/吊绳类型，默认折叠） ===================== */
-.form-group.fold-ready > .craft-list,
-.form-group.fold-ready > .rope-list { display: none; }
-.form-group.fold-ready.open > .craft-list,
-.form-group.fold-ready.open > .rope-list { display: block; }
-.form-group.fold-ready > .fold-label {
-  cursor: pointer; user-select: none;
-  display: flex; justify-content: space-between; align-items: center;
-}
-.form-group.fold-ready > .fold-label::after {
-  content: "▸"; margin-left: 6px; font-size: 13px; color: #94a3b8;
-  transition: transform .18s ease;
-}
-.form-group.fold-ready.open > .fold-label::after { transform: rotate(90deg); }
 
 /* v9.4 角色徽章 / 账号工具条 / 管理按钮 */
 .koka-role { display: inline-block; font-size: 11px; padding: 1px 8px; border-radius: 10px; font-weight: 600; vertical-align: middle; margin-left: 4px; }
