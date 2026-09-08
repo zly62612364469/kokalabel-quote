@@ -1,4 +1,4 @@
-/* KOKALabel报价系统 v9.3.1 - 样式表 */
+/* KOKALabel报价系统 v9.4.0 - 样式表 */
 
 /* ===================== 全局变量与重置 ===================== */
     :root {
@@ -2927,3 +2927,33 @@
         margin-left: 0;
       }
     }
+
+/* ===================== v9.4 折叠区块（附加工艺/吊绳类型，默认折叠） ===================== */
+.form-group.fold-ready > .craft-list,
+.form-group.fold-ready > .rope-list { display: none; }
+.form-group.fold-ready.open > .craft-list,
+.form-group.fold-ready.open > .rope-list { display: block; }
+.form-group.fold-ready > .fold-label {
+  cursor: pointer; user-select: none;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.form-group.fold-ready > .fold-label::after {
+  content: "▸"; margin-left: 6px; font-size: 13px; color: #94a3b8;
+  transition: transform .18s ease;
+}
+.form-group.fold-ready.open > .fold-label::after { transform: rotate(90deg); }
+
+/* v9.4 角色徽章 / 账号工具条 / 管理按钮 */
+.koka-role { display: inline-block; font-size: 11px; padding: 1px 8px; border-radius: 10px; font-weight: 600; vertical-align: middle; margin-left: 4px; }
+.koka-role.superadmin { background: #fef3c7; color: #b45309; }
+.koka-role.admin { background: #dbeafe; color: #1d4ed8; }
+.koka-role.sales { background: #dcfce7; color: #15803d; }
+.koka-role.visitor { background: #f1f5f9; color: #475569; }
+#kokaTopBar { position: fixed; top: 10px; right: 14px; z-index: 9999; display: flex; gap: 8px; align-items: center;
+  background: rgba(255,255,255,.92); border: 1px solid #e2e8f0; border-radius: 20px; padding: 5px 6px 5px 14px;
+  font-size: 13px; color: #1e293b; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+#kokaTopBar .btn-exit { background: #f1f5f9; color: #475569; border: none; border-radius: 14px; padding: 4px 12px; cursor: pointer; font-size: 12px; }
+#kokaTopBar .btn-exit:hover { background: #fee2e2; color: #dc2626; }
+.koka-upload-btn { background: #059669; color: #fff; border: none; border-radius: 8px; padding: 6px 12px; cursor: pointer; font-size: 13px; }
+.koka-upload-btn:hover { background: #047857; }
+.koka-readonly-tip { color: #b45309; font-size: 12px; margin-left: 8px; }

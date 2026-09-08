@@ -80,5 +80,37 @@ export function accountExpired(user) {
 // 返回给前端的脱敏账号（不含密码）
 export function publicUser(user, extra = {}) {
   const { pwdHash, salt, ...rest } = user;
+  rest.role = normRole(rest.role);
   return { ...rest, ...extra };
 }
+
+// ---------- 角色体系 v9.4 ----------
+// 角色：visitor(访客) < sales(业务员) < admin(管理员) < superadmin(超级管理员)
+// 兼容旧数据：role='user' 视为 sales
+const ROLE_RANK = { visitor: 0, sales: 1, user: 1, admin: 2, superadmin: 3 };
+export function roleRank(r) { return ROLE_RANK[r] || 0; }
+export function normRole(r) { return r === 'user' ? 'sales' : r; }
+
+// actor 能否管理 target（删除/停用/改角色/改密码/改昵称等账号管理）
+// superadmin 全权；admin 可管 sales/visitor/admin（含互删互停）；低角色无权
+export function canManage(actorRole, targetRole) {
+  const a = roleRank(actorRole), t = roleRank(targetRole);
+  if (a >= 3) return true;
+  if (a === 2) return t >= 1 && t <= 2;
+  return false;
+}
+// target 是否属于管理员级（删除/停用需保留至少 1 个管理员）
+export function isAdminLevel(r) { const t = roleRank(r); return t >= 2; }
+
+// 从请求取会话与当前用户；返回 { user } 或 { error }
+export async function requireSession(env, req) {
+  const sid = authToken(req);
+  if (!sid) return { error: json({ ok: false, message: '未登录' }, 401) };
+  const sess = await getSession(env, sid);
+  if (!sess) return { error: json({ ok: false, message: '会话失效' }, 401) };
+  const user = await getUser(env, sess.username);
+  if (!user || !user.enabled) return { error: json({ ok: false, message: '账号不存在或已停用' }, 401) };
+  if (accountExpired(user)) return { error: json({ ok: false, message: '账号使用期限已到', code: 'expired' }, 403) };
+  return { user };
+}
+

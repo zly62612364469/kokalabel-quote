@@ -1,5 +1,5 @@
 // ============================================================
-// KOKALabel报价系统 v9.3.1 - 主程序（计算 + 渲染 + 交互 + 初始化）
+// KOKALabel报价系统 v9.4.0 - 主程序（计算 + 渲染 + 交互 + 初始化）
 // ============================================================
 "use strict";
 
@@ -3214,7 +3214,7 @@ function setLocalBackupStatus(html, isError) {
 
 function exportLocalBackup() {
   const data = {
-    version: "9.3.1",
+    version: "9.4.0",
     kind: "local-backup",
     exportAt: new Date().toISOString(),
     priceLists: PRICE_LISTS,
@@ -3359,7 +3359,7 @@ function importLocalBackup(file) {
 // -------------------- 导入 / 导出完整配置 --------------------
 function exportFullData() {
   const data = {
-    version: "9.3.1",
+    version: "9.4.0",
     exportAt: new Date().toISOString(),
     priceLists: PRICE_LISTS,
     currentPriceListId: CURRENT_PRICE_LIST_ID,
@@ -4317,6 +4317,10 @@ function importShippingExcel(file) {
 
 // -------------------- 页面切换增强 --------------------
 function switchPage(pageName) {
+  // v9.4：访客(visitor)仅可使用智能报价计算器
+  if (window.KOKA && KOKA.roleNum && KOKA.roleNum() <= 0 && pageName !== "calculator") {
+    pageName = "calculator";
+  }
   els.navBtns.forEach(btn => {
     btn.classList.toggle("active", btn.dataset.page === pageName);
   });
@@ -4362,6 +4366,11 @@ function bindEvents() {
     table.addEventListener("click", e => {
       const cell = e.target.closest(".price-editable");
       if (!cell) return;
+      // v9.4：网页端仅超级管理员可修改报价数据（业务员/访客只读）
+      if (window.KOKA && KOKA.canEditQuote && !KOKA.canEditQuote()) {
+        if (KOKA.toast) KOKA.toast("报价默认数据为只读，仅超级管理员可修改");
+        return;
+      }
       startCellEdit(cell);
     });
   });
@@ -4584,3 +4593,23 @@ function bindEvents() {
   try { onCalculate(); }
   catch (e) { console.error("[init] onCalculate 失败:", e); }
 })();
+
+// -------------------- v9.4 折叠：附加工艺 / 吊绳类型（默认折叠，点击标题展开） --------------------
+function initFoldGroups() {
+  document.querySelectorAll(".form-group > label").forEach(lab => {
+    const g = lab.parentElement;
+    if (!g || g.classList.contains("fold-ready")) return;
+    const hasTarget = g.querySelector(":scope > .craft-list") || g.querySelector(":scope > .rope-list");
+    if (!hasTarget) return;
+    g.classList.add("fold-ready");
+    lab.classList.add("fold-label");
+    lab.addEventListener("click", () => g.classList.toggle("open"));
+  });
+}
+try {
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", initFoldGroups);
+  else initFoldGroups();
+  if (window.MutationObserver) {
+    new MutationObserver(() => initFoldGroups()).observe(document.body, { childList: true, subtree: true });
+  }
+} catch (e) { console.error("[v9.4] 折叠初始化失败:", e); }
