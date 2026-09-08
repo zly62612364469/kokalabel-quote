@@ -62,9 +62,9 @@
     renderTopBar();
     if (KOKA.user.role !== 'visitor') renderAccountPanel();
     if (KOKA.canEditQuote()) renderUploadDefaultBtn();
-    await syncCloudQuote();   // 业务员/访客/管理员：拉取超管发布的默认数据
-    // v9.4.1：非超管每 30 秒静默检测云端是否有新发布的默认报价，有则自动应用
-    if (!KOKA.canEditQuote()) setInterval(() => { syncCloudQuote(); }, 30000);
+    await syncCloudQuote();   // 所有角色（含超管/管理员）：登录后先同步一次
+    // v9.4.2：所有登录角色每 30 秒静默检测云端是否有新发布的默认报价，有则自动应用
+    setInterval(() => { syncCloudQuote(); }, 30000);
   }
 
   // ---------- 页面权限：访客仅计算器 ----------
@@ -98,7 +98,8 @@
 
   // ---------- 云默认数据同步（非超管） ----------
   async function syncCloudQuote() {
-    if (KOKA.canEditQuote()) return;   // 超管本地为真源，不覆盖
+    // v9.4.2：超管/管理员/业务员/访客都自动同步云端默认（多管理员协同时互见新版）
+    // 说明：超管本地若有"未发布"的修改，遇到他人新发布会被覆盖——请先自行发布/保存
     try {
       const r = await KOKA.api('/api/quote');
       const d = await r.json();
