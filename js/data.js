@@ -1,5 +1,5 @@
 // ============================================================
-// KOKALabel报价系统 v9.3.0 - 数据配置层
+// KOKALabel报价系统 v9.3.1 - 数据配置层
 // ============================================================
 "use strict";
 
@@ -5601,8 +5601,8 @@ const DEFAULT_PAPER_CONFIG = [
   },
   {
     "id": "paper2_22",
-    "name": "1楼小组-22：900克 A级蒙版纸 双面过哑胶（厚度1.05mm）",
-    "shortName": "900蒙版纸",
+    "name": "1楼小组-22：900克 A级铜版纸 双面过哑胶（厚度1.05mm）",
+    "shortName": "900铜版纸",
     "discount": 1,
     "directCoeff": {
       "tiers": [
@@ -9314,10 +9314,21 @@ const DIRECT_COEFF_LEVELS = DEFAULT_DIRECT_COEFF_LEVELS.map(l => ({ ...l }));
   console.info("[v8.0] 已重构为 2 个报价表（1楼/3楼）并覆盖纸张与邮费数据");
 })();
 
+// 版本号比较（按点分段数字比较，如 "9.3.1" >= "9.0"）
+function verCompare(a, b) {
+  const pa = String(a || "0").split(".").map(Number);
+  const pb = String(b || "0").split(".").map(Number);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const x = pa[i] || 0, y = pb[i] || 0;
+    if (x > y) return 1; if (x < y) return -1;
+  }
+  return 0;
+}
+
 // v8.4 迁移：用纠正版 Excel（KOKALabel1楼.xlsx / KOKALabel3楼.xlsx）覆盖纸张与工艺为最新默认数据
 (function migrateV8_4CorrectData() {
   const dataVersion = loadFromStorage("dataVersion", "");
-  if (dataVersion === "8.4") return;
+  if (verCompare(dataVersion, "8.4") >= 0) return;
 
   PAPER_CONFIG = DEFAULT_PAPER_CONFIG.map(p => JSON.parse(JSON.stringify(p)));
   saveToStorage("paperConfig", PAPER_CONFIG);
@@ -9335,7 +9346,7 @@ const DIRECT_COEFF_LEVELS = DEFAULT_DIRECT_COEFF_LEVELS.map(l => ({ ...l }));
 // v9.0.1：最新附件为 28 个报价组（KOKALabel1楼_20260904_1531(1).xlsx）
 (function migrateV9ReplaceFloor1() {
   const dataVersion = loadFromStorage("dataVersion", "");
-  if (dataVersion === "9.0.1") return;
+  if (verCompare(dataVersion, "9.0") >= 0) return;
 
   // 3楼 纸 id（paper1~paper10）
   const floor3Ids = new Set(DEFAULT_PAPER_CONFIG.filter(p => p.priceListId === "priceList2").map(p => p.id));
@@ -9367,6 +9378,29 @@ const DIRECT_COEFF_LEVELS = DEFAULT_DIRECT_COEFF_LEVELS.map(l => ({ ...l }));
 
   saveToStorage("dataVersion", "9.0.1");
   console.info("[v9.0.1] 已用最新 Excel 替换 1楼报价表（28 组），3楼保留");
+})();
+
+// v9.3.1 迁移：900克蒙版纸 → 900克铜版纸（仅改名，不动其它数据与用户改价）
+(function migrateRename900Paper() {
+  const dataVersion = loadFromStorage("dataVersion", "");
+  if (verCompare(dataVersion, "9.3.1") >= 0) return;
+  const stored = loadFromStorage("paperConfig", null);
+  if (Array.isArray(stored) && stored.length) {
+    let changed = false;
+    stored.forEach(p => {
+      if (!p) return;
+      const hit = p.id === "paper2_22"
+        || (p.name && p.name.indexOf("蒙版") >= 0)
+        || (p.shortName && p.shortName.indexOf("蒙版") >= 0);
+      if (!hit) return;
+      if (p.name) p.name = p.name.split("A级蒙版纸").join("A级铜版纸").split("蒙版纸").join("铜版纸");
+      if (p.shortName) p.shortName = p.shortName.split("蒙版纸").join("铜版纸");
+      changed = true;
+    });
+    if (changed) saveToStorage("paperConfig", stored);
+  }
+  saveToStorage("dataVersion", "9.3.1");
+  console.info("[v9.3.1] 900克蒙版纸已更名为900克铜版纸");
 })();
 
 let APP_PROFILE = loadFromStorage("appProfile", {
