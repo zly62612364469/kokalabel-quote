@@ -2949,9 +2949,8 @@
 .koka-role.admin { background: #dbeafe; color: #1d4ed8; }
 .koka-role.sales { background: #dcfce7; color: #15803d; }
 .koka-role.visitor { background: #f1f5f9; color: #475569; }
-#kokaTopBar { position: fixed; top: 10px; right: 14px; z-index: 9999; display: flex; gap: 8px; align-items: center;
-  background: rgba(255,255,255,.92); border: 1px solid #e2e8f0; border-radius: 20px; padding: 5px 6px 5px 14px;
-  font-size: 13px; color: #1e293b; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+#kokaTopBar { display: inline-flex; gap: 8px; align-items: center;
+  margin-left: auto; padding: 4px 6px 4px 12px; font-size: 13px; color: #1e293b; }
 #kokaTopBar .btn-exit { background: #f1f5f9; color: #475569; border: none; border-radius: 14px; padding: 4px 12px; cursor: pointer; font-size: 12px; }
 #kokaTopBar .btn-exit:hover { background: #fee2e2; color: #dc2626; }
 .koka-upload-btn { background: #059669; color: #fff; border: none; border-radius: 8px; padding: 6px 12px; cursor: pointer; font-size: 13px; }

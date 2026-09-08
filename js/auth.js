@@ -78,7 +78,7 @@
     }
   }
 
-  // ---------- 顶部账号条（含退出；访客也可见） ----------
+  // ---------- 顶部账号条（内嵌到导航栏，不悬浮，避免遮挡"个人主页"按钮） ----------
   function renderTopBar() {
     const old = document.getElementById('kokaTopBar');
     if (old) old.remove();
@@ -89,7 +89,9 @@
       '<span class="koka-role ' + KOKA.esc(u.role) + '">' + (ROLE_LABEL[u.role] || u.role) + '</span></span>' +
       '<button class="btn-exit">退出</button>';
     bar.querySelector('.btn-exit').addEventListener('click', () => KOKA.logout());
-    document.body.appendChild(bar);
+    // 注入到顶部导航的右端，与"个人主页"按钮并排，不再固定悬浮
+    const navInner = document.querySelector('nav.nav-inner') || document.querySelector('header') || document.body;
+    navInner.appendChild(bar);
   }
 
   // ---------- 云默认数据同步（非超管） ----------
