@@ -63,8 +63,8 @@
     if (KOKA.user.role !== 'visitor') renderAccountPanel();
     if (KOKA.canEditQuote()) renderUploadDefaultBtn();
     await syncCloudQuote();   // 所有角色（含超管/管理员）：登录后先同步一次
-    // v9.4.2：所有登录角色每 30 秒静默检测云端是否有新发布的默认报价，有则自动应用
-    setInterval(() => { syncCloudQuote(); }, 30000);
+    // v9.4.3：所有登录角色每 10 秒静默检测云端是否有新发布的默认报价，有则自动应用
+    setInterval(() => { syncCloudQuote(); }, 10000);
   }
 
   // ---------- 页面权限：访客仅计算器 ----------
