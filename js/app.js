@@ -1,5 +1,5 @@
 // ============================================================
-// KOKALabel报价系统 v9.5.0 - 主程序（计算 + 渲染 + 交互 + 初始化）
+// KOKALabel报价系统 v9.5.2 - 主程序（计算 + 渲染 + 交互 + 初始化）
 // ============================================================
 "use strict";
 
@@ -987,8 +987,9 @@ function renderSheets() {
         <span class="fold-arrow">▾</span>
       </div>
       <div class="sheet-fold-body">
-      <div class="form-group">
-        <label>纸张材质 <span class="hint">点击展开，选择后自动收起</span></label>
+      <div class="form-group fg-row">
+        <label class="row-label">纸张材质 <span class="hint">点击展开，选择后自动收起</span></label>
+        <div class="row-content">
         <div class="paper-dropdown" data-sheet="${index}">
           <div class="paper-trigger" role="button" tabindex="0" aria-label="选择纸张材质">
             <div>
@@ -1014,9 +1015,11 @@ function renderSheets() {
         <div class="sheet-batchdirect-hint">
           <span>批量直接报价：面积 ≤ ${currentPaper.batchDirect.maxArea} mm²（出血后）时按固定批量价报价，工艺费用直接叠加</span>
         </div>` : ""}
+        </div>
       </div>
-      <div class="form-group" style="margin-bottom: 0;">
-        <label>吊牌展开尺寸 <span class="hint">自动加 3mm 出血</span></label>
+      <div class="form-group fg-row">
+        <label class="row-label">吊牌展开尺寸 <span class="hint">自动加 3mm 出血</span></label>
+        <div class="row-content">
         <div class="sheet-size-row">
           <div class="form-group">
             <label class="unit">宽 (mm)</label>
@@ -1034,15 +1037,11 @@ function renderSheets() {
             </select>
           </div>
         </div>
+        </div>
       </div>
-      <div class="form-group fold-panel craft-fold" style="margin-bottom: 0; margin-top: 12px;">
-        <div class="fold-head">
-          <span class="fold-title"><i class="req-mark">*</i>附加工艺 <span class="fold-hint">点击展开</span><span class="fold-count" data-craft-count="${index}">${sheet.craftIds.length ? "已选 " + sheet.craftIds.length : ""}</span></span>
-          <span class="fold-arrow">▾</span>
-        </div>
-        <div class="fold-body">
-        <div class="craft-list">${craftHtml}</div>
-        </div>
+      <div class="form-group fg-row">
+        <label class="row-label"><i class="req-mark">*</i>附加工艺</label>
+        <div class="row-content"><div class="craft-list">${craftHtml}</div></div>
       </div>
       </div>
     `;
@@ -3228,7 +3227,7 @@ function setLocalBackupStatus(html, isError) {
 
 function exportLocalBackup() {
   const data = {
-    version: "9.5.0",
+    version: "9.5.2",
     kind: "local-backup",
     exportAt: new Date().toISOString(),
     priceLists: PRICE_LISTS,
@@ -3373,7 +3372,7 @@ function importLocalBackup(file) {
 // -------------------- 导入 / 导出完整配置 --------------------
 function exportFullData() {
   const data = {
-    version: "9.5.0",
+    version: "9.5.2",
     exportAt: new Date().toISOString(),
     priceLists: PRICE_LISTS,
     currentPriceListId: CURRENT_PRICE_LIST_ID,

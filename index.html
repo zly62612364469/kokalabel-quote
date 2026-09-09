@@ -7,13 +7,13 @@
   <!-- P0 安全：CSP 策略（v7.9：SheetJS 已本地化，script-src 仅允许 'self'，离线双击打开亦可用） -->
   <!-- v9.4.4：default-src/connect-src 放行 blob:，修复网页端 XLSX.writeFile 导出 Excel 被拦 -->
   <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob:; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' blob:;">
-  <title>KOKALabel报价系统 v9.5.0</title>
-  <link rel="icon" type="image/x-icon" href="favicon.ico?v=9.5.0">
-  <link rel="icon" type="image/png" href="favicon.png?v=9.5.0">
-  <link rel="apple-touch-icon" href="apple-touch-icon.png?v=9.5.0">
-  <link rel="stylesheet" href="css/style.css?v=9.5.0">
+  <title>KOKALabel报价系统 v9.5.2</title>
+  <link rel="icon" type="image/x-icon" href="favicon.ico?v=9.5.2">
+  <link rel="icon" type="image/png" href="favicon.png?v=9.5.2">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png?v=9.5.2">
+  <link rel="stylesheet" href="css/style.css?v=9.5.2">
   <!-- v9.3 账号访问控制：http 部署时强制登录（file:// 本地离线不启用） -->
-  <script src="js/auth.js?v=9.5.0"></script>
+  <script src="js/auth.js?v=9.5.2"></script>
 </head>
 <body>
   <!-- 顶部导航（v9.5：蓝色导航条 + 右侧模式按钮/报价表选择器/默认报价开关） -->
@@ -46,23 +46,32 @@
     <section class="page active" id="page-calculator">
       <div class="card">
         <div class="card-title-row">
-          <h2 class="card-title">参数输入</h2>
+          <h2 class="card-title">在线报价</h2>
+          <!-- v9.5.2 占位：参考图顶部联系方式（原版无此字段，内容待配置） -->
+          <div class="contact-placeholder">客服：<span>____-________</span>　美工人员：<span>____-________</span></div>
         </div>
 
-        <div class="tier-row">
-          <div class="form-group">
-            <label for="tier">批量档位</label>
-            <select id="tier"><option value="">请选择批量档位</option><option value="500">500 张</option><option value="1000">1000 张</option><option value="2000">2000 张</option><option value="2500">2500 张</option><option value="3000">3000 张</option><option value="4000">4000 张</option><option value="5000">5000 张</option><option value="7500">7500 张</option><option value="10000">10000 张</option><option value="20000">20000 张</option><option value="30000">30000 张</option><option value="50000">50000 张</option></select>
+        <!-- v9.5.2 行式布局：数量（批量档位快捷按钮组 + 自定义下拉） -->
+        <div class="form-row">
+          <label class="row-label" for="tier"><i class="req-mark">*</i>数量(张)</label>
+          <div class="row-content">
+            <div id="tierQuickSwitch" class="tier-quick-switch">
+              <div class="tier-quick-btns" id="tierQuickBtns"></div>
+            </div>
+            <select id="tier" class="tier-custom-select" title="自定义批量档位"><option value="">自定义档位</option><option value="500">500 张</option><option value="1000">1000 张</option><option value="2000">2000 张</option><option value="2500">2500 张</option><option value="3000">3000 张</option><option value="4000">4000 张</option><option value="5000">5000 张</option><option value="7500">7500 张</option><option value="10000">10000 张</option><option value="20000">20000 张</option><option value="30000">30000 张</option><option value="50000">50000 张</option></select>
           </div>
-          <div class="form-group">
-            <label for="sheetCount">纸张数量（张）</label>
+        </div>
+        <div class="form-row">
+          <label class="row-label" for="sheetCount"><i class="req-mark">*</i>纸张数量（款）</label>
+          <div class="row-content">
             <input type="number" id="sheetCount" min="1" step="1" value="2">
+            <span class="hint">同一订单内不同款式的吊牌数量（每款可设置不同纸张与尺寸）</span>
           </div>
         </div>
 
         <div class="form-group">
           <div class="sheet-setting-row">
-            <label>纸张设置 <span class="hint">每张纸可设置不同展开尺寸</span></label>
+            <label class="row-label"><i class="req-mark">*</i>纸张设置 <span class="hint">每张纸可设置不同展开尺寸</span></label>
             <button type="button" class="btn sm" id="addSheetBtn">＋ 继续添加纸张条目</button>
           </div>
           <div id="sheetList" class="sheet-list"><div class="sheet-card">
@@ -290,12 +299,9 @@
         </div></div>
         </div>
 
-        <div class="form-group fold-panel" id="ropePanel">
-          <div class="fold-head" data-fold-target="rope">
-            <span class="fold-title"><i class="req-mark">*</i>吊绳类型 <span class="fold-hint">点击展开</span><span class="fold-count" id="ropeFoldCount"></span></span>
-            <span class="fold-arrow">▾</span>
-          </div>
-          <div class="fold-body">
+        <!-- v9.5.2 行式布局：吊绳类型（横排选项，去折叠） -->
+        <div class="form-group">
+          <label class="row-label"><i class="req-mark">*</i>吊绳类型</label>
           <div id="rope" class="rope-list">
         <label class="rope-item">
           <input type="radio" name="rope" value="rope0">
@@ -432,12 +438,15 @@
           <span>防拆扣</span>
         </label>
       </div>
-          </div>
         </div>
 
+        <!-- v9.5.2 占位：参考图收货信息含 快递/送货物流/省市区三级/姓名/电话/详细地址（原版仅"收货地区"单字段，其余待配置） -->
         <div class="form-group">
-          <label for="region">收货地区</label>
-          <select id="region"><option value="">请选择地区</option><option value="region1">广东省内</option><option value="region2">江浙沪</option><option value="region3">其他省份</option></select>
+          <label class="row-label" for="region"><i class="req-mark">*</i>收货地区</label>
+          <div class="row-content">
+            <select id="region"><option value="">请选择地区</option><option value="region1">广东省内</option><option value="region2">江浙沪</option><option value="region3">其他省份</option></select>
+            <!-- 占位：快递方式 / 送货物流 / 省市区三级联动 / 联系人 / 电话 / 详细地址 / 常用地址（待配置） -->
+          </div>
         </div>
       </div>
 
@@ -496,12 +505,7 @@
             <span class="coeff-desc" id="resAreaCoeffDesc"></span>
           </div>
 
-          <!-- 批量档位快速切换 -->
-          <div id="tierQuickSwitch" class="tier-quick-switch" style="display:none;">
-            <span class="tier-quick-label">快速切换档位：</span>
-            <div class="tier-quick-btns" id="tierQuickBtns"></div>
-          </div>
-
+          <!-- v9.5.2：档位快捷按钮组已移至参数输入卡「数量(张)」行 -->
           <!-- 默认客户等级报价卡片 -->
           <div class="price-section-label" id="defaultPriceLabel">默认报价（原邮费）</div>
           <div id="priceCards" class="price-cards"></div>
@@ -561,6 +565,12 @@
             </div>
           </section>
         </div>
+      </div>
+
+      <!-- v9.5.2 占位：参考图「下单注意事项」公告区（原版无此字段，文案待配置） -->
+      <div class="card notice-placeholder">
+        <h2 class="card-title">下单注意事项</h2>
+        <p class="notice-placeholder-text">（占位区域——公告内容待配置后在此展示，例如：印刷色值要求、运费说明、工艺说明、文件上传方式等）</p>
       </div>
     </section>
 
@@ -1003,7 +1013,7 @@
           <div class="setting-row">
             <div class="setting-info">
               <div class="setting-label">当前版本</div>
-              <div class="setting-desc">KOKALabel报价系统 v9.5.0</div>
+              <div class="setting-desc">KOKALabel报价系统 v9.5.2</div>
             </div>
             <div class="setting-control">
               <span class="placeholder-badge">正式版</span>
@@ -1111,7 +1121,7 @@
   <div class="toast" id="toast"></div>
 
   <!-- v7.9: SheetJS 本地化（离线双击打开亦可导出/导入 Excel），先于业务脚本加载，XLSX 全局可用 -->
-  <script src="js/vendor/xlsx.full.min.js?v=9.5.0"></script>
-  <script src="js/data.js?v=9.5.0"></script>
-  <script src="js/app.js?v=9.5.0"></script>
+  <script src="js/vendor/xlsx.full.min.js?v=9.5.2"></script>
+  <script src="js/data.js?v=9.5.2"></script>
+  <script src="js/app.js?v=9.5.2"></script>
 </body></html>

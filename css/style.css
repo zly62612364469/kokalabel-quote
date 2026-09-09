@@ -1,4 +1,4 @@
-/* KOKALabel报价系统 v9.5.0 - 样式表 */
+/* KOKALabel报价系统 v9.5.2 - 样式表 */
 
 /* ===================== 全局变量与重置 ===================== */
     :root {
@@ -3078,4 +3078,54 @@ body { font-family: system-ui, -apple-system, "Microsoft YaHei", "PingFang SC", 
 .price-card.highlight {
   border-color: #ff4d4f;
   box-shadow: 0 0 0 2px rgba(255, 77, 79, 0.14);
+}
+
+/* ===================== v9.5.2 行式表单（参考合版在线报价版式） ===================== */
+.form-row, .fg-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.row-label {
+  flex: 0 0 130px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937;
+  padding-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-wrap: wrap;
+  margin-bottom: 0;
+}
+.row-label .hint { font-weight: 400; }
+.row-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.row-content .hint { font-size: 12px; color: #94a3b8; }
+.tier-custom-select {
+  padding: 8px;
+  border: 1px solid #d9d9d9;
+  border-radius: 8px;
+  font-size: 13px;
+  background: #fff;
+  color: #1f2937;
+}
+.contact-placeholder { margin-left: auto; font-size: 13px; color: #94a3b8; }
+.notice-placeholder { border: 1px dashed #fecaca; background: #fff7f7; }
+.notice-placeholder .card-title { color: #cf1322; }
+.notice-placeholder-text { color: #c0c4cc; font-size: 13px; }
+.sheet-card .fg-row { margin-bottom: 12px; }
+.sheet-card .fg-row:last-child { margin-bottom: 0; }
+.fg-row .row-content .paper-dropdown { width: 100%; max-width: 520px; }
+.fg-row .row-content .sheet-size-row { flex-wrap: wrap; }
+@media (max-width: 700px) {
+  .form-row, .fg-row { flex-direction: column; gap: 6px; }
+  .row-label { flex: none; padding-top: 0; }
 }
