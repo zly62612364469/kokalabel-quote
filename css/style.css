@@ -1,4 +1,4 @@
-/* KOKALabel报价系统 v9.6.0 - 样式表 */
+/* KOKALabel报价系统 v9.7.1 - 样式表 */
 
 /* ===================== 全局变量与重置 ===================== */
     :root {
@@ -2941,3 +2941,157 @@
 .koka-upload-btn { background: #059669; color: #fff; border: none; border-radius: 8px; padding: 6px 12px; cursor: pointer; font-size: 13px; }
 .koka-upload-btn:hover { background: #047857; }
 .koka-readonly-tip { color: #b45309; font-size: 12px; margin-left: 8px; }
+
+/* ===================== v9.7.1 扁平化宽泛式重构（覆盖段） ===================== */
+/* 架构：左侧导航竖栏 + 主区宽幅两栏（参数左 / 结果右 sticky）；导航不在顶部 */
+
+/* --- 整体骨架 --- */
+.app-shell { display: flex; min-height: 100vh; align-items: stretch; }
+
+/* --- 左侧导航竖栏 --- */
+.sidenav {
+  position: fixed; top: 0; left: 0; bottom: 0; z-index: 100;
+  width: 200px; flex: 0 0 200px;
+  background: linear-gradient(180deg, var(--brand-dark), var(--brand));
+  display: flex; flex-direction: column;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.12);
+  overflow-y: auto;
+}
+.sidenav-brand {
+  color: #fff; font-size: 18px; font-weight: 800; letter-spacing: 1px;
+  padding: 18px 16px 14px; border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+  display: flex; flex-direction: column; line-height: 1.3;
+}
+.sidenav-brand-sub { font-size: 11px; font-weight: 500; color: rgba(255, 255, 255, 0.72); letter-spacing: 2px; }
+.sidenav-menu { display: flex; flex-direction: column; padding: 8px 0; flex: 1; }
+.sidenav-menu .nav-btn {
+  flex: 0 0 auto; width: 100%; text-align: left;
+  padding: 12px 16px; font-size: 14px; color: rgba(255, 255, 255, 0.82);
+  border-left: 3px solid transparent; border-radius: 0;
+}
+.sidenav-menu .nav-btn:hover { color: #fff; background: rgba(255, 255, 255, 0.08); }
+.sidenav-menu .nav-btn.active {
+  color: #fff; font-weight: 700; background: rgba(255, 255, 255, 0.12);
+  border-left-color: #fff;
+}
+/* 账号条（auth.js 注入）适配深色侧栏 */
+.sidenav #kokaTopBar {
+  display: flex; justify-content: space-between; align-items: center;
+  margin: 10px 12px; padding: 6px 10px; color: rgba(255, 255, 255, 0.92);
+  font-size: 12px; background: rgba(255, 255, 255, 0.1); border-radius: 8px;
+}
+.sidenav #kokaTopBar .btn-exit { background: rgba(255, 255, 255, 0.16); color: #fff; }
+.sidenav #kokaTopBar .btn-exit:hover { background: rgba(220, 38, 38, 0.85); color: #fff; }
+
+/* --- 主区：宽幅化（替代原 960px 居中 + 顶部导航补偿） --- */
+.pages { margin-left: 200px; max-width: none; padding-top: 0; }
+.pages > .page { padding: 14px 16px 28px; }
+#page-table, #page-profile { max-width: 1120px; margin: 0 auto; }
+
+/* --- 计算器两栏布局 --- */
+.calc-grid { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(340px, 1fr); gap: 14px; align-items: start; }
+.calc-result-col { position: sticky; top: 12px; }
+.calc-result-col .card { box-shadow: none; border: 1px solid var(--border); }
+
+/* --- 平铺直列式表单 --- */
+.flat-toolbar {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 10px;
+  background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+  padding: 8px 12px;
+}
+.flat-toolbar .quick-price-switcher { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; }
+.flat-toolbar .quick-price-list-selector { min-width: 170px; }
+.flat-section { margin-top: 12px; }
+.flat-section-title {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 13px; font-weight: 700; color: var(--brand-dark);
+  padding-left: 8px; border-left: 3px solid var(--brand);
+  margin-bottom: 8px; line-height: 1.4;
+}
+.flat-section-title .hint { font-weight: 400; font-size: 11px; color: var(--text-secondary); }
+.flat-row3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.flat-inline-row { display: flex; gap: 10px; }
+.flat-section .hint { font-size: 11px; color: var(--text-secondary); font-weight: 400; }
+
+/* 行式紧凑：仅窄控件（下拉/输入框）label 左置；芯片网格等宽内容保持块式（label 上置） */
+.calc-form-col .form-group { margin-bottom: 10px; }
+.calc-form-col .form-group:last-child { margin-bottom: 0; }
+.flat-row3 .form-group,
+.flat-inline-row .form-group,
+.calc-form-col .sheet-size-row .form-group {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 0;
+}
+.flat-row3 .form-group > label,
+.flat-inline-row .form-group > label,
+.calc-form-col .sheet-size-row .form-group > label {
+  flex: 0 0 auto; min-width: 56px; margin: 0;
+  font-size: 12.5px; color: var(--text-secondary); white-space: nowrap;
+}
+.flat-row3 .form-group input[type="number"],
+.flat-row3 .form-group input[type="text"],
+.flat-row3 .form-group select,
+.flat-inline-row .form-group input[type="number"],
+.flat-inline-row .form-group select,
+.calc-form-col .sheet-size-row .form-group input[type="number"] {
+  flex: 1 1 auto; min-width: 0; padding: 6px 8px; font-size: 13px; margin: 0;
+}
+.calc-form-col .sheet-size-row { display: flex; gap: 10px; flex: 1; }
+.calc-form-col .sheet-list { display: grid; gap: 10px; }
+.calc-form-col .sheet-card {
+  background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+  box-shadow: none; padding: 10px 12px;
+}
+.calc-form-col .sheet-title {
+  font-size: 13px; font-weight: 700; color: var(--text);
+  padding-bottom: 6px; margin-bottom: 8px; border-bottom: 1px dashed var(--border);
+}
+.calc-form-col .craft-list { gap: 6px; }
+.calc-form-col .craft-item, .calc-form-col .rope-item {
+  padding: 4px 9px; font-size: 12px; border-radius: 6px; margin: 0;
+}
+.calc-form-col .rope-list { gap: 6px; }
+
+/* --- 预设 SKU 芯片直选（替代渐进下拉） --- */
+.sku-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 6px; width: 100%;
+}
+.sku-grid .paper-option {
+  position: static; display: block; width: auto; padding: 6px 6px;
+  border: 1px solid var(--border); border-radius: 6px; background: #fff;
+  text-align: center; cursor: pointer; font-size: 12px; line-height: 1.4;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+  margin: 0;
+}
+.sku-grid .paper-option:hover { border-color: var(--brand); color: var(--brand); }
+.sku-grid .paper-option .paper-name {
+  display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 500;
+}
+.sku-grid .paper-option.active { background: var(--brand); border-color: var(--brand); color: #fff; }
+.sku-grid .paper-option.active .paper-name { color: #fff; font-weight: 700; }
+
+/* --- 结果栏紧凑 --- */
+.calc-result-col .result-row { padding: 5px 0; }
+.calc-result-col .price-cards { gap: 8px; }
+.calc-result-col .quote-save-panel { margin-top: 10px; }
+
+/* --- 窄屏退化：≤1100px 侧栏转顶部横条、两栏改单栏 --- */
+@media (max-width: 1100px) {
+  .app-shell { flex-direction: column; }
+  .sidenav { position: static; width: 100%; flex: 0 0 auto; flex-direction: row; align-items: center; }
+  .sidenav-brand { flex-direction: row; gap: 6px; padding: 10px 14px; border-bottom: none; align-items: baseline; }
+  .sidenav-brand-sub { display: none; }
+  .sidenav-menu { flex-direction: row; padding: 0; }
+  .sidenav-menu .nav-btn { width: auto; text-align: center; padding: 12px 14px; border-left: none; border-bottom: 3px solid transparent; }
+  .sidenav-menu .nav-btn.active { border-left: none; border-bottom-color: #fff; background: transparent; }
+  .sidenav #kokaTopBar { margin: 0 12px; background: transparent; }
+  .pages { margin-left: 0; padding-top: 0; }
+  .calc-grid { grid-template-columns: 1fr; }
+  .calc-result-col { position: static; }
+}
+@media (max-width: 720px) {
+  .flat-row3 { grid-template-columns: 1fr; }
+  .flat-toolbar { gap: 8px; }
+  .flat-toolbar .quick-price-switcher { margin-left: 0; }
+}
+

@@ -1,5 +1,5 @@
 // ============================================================
-// KOKALabel报价系统 v9.6.0 - 主程序（计算 + 渲染 + 交互 + 初始化）
+// KOKALabel报价系统 v9.7.1 - 主程序（计算 + 渲染 + 交互 + 初始化）
 // ============================================================
 "use strict";
 
@@ -958,10 +958,10 @@ function renderSheets() {
     const currentPaper = currentPapers.find(p => p.id === sheet.paperId) || currentPapers[0];
     // Sheet 数量 > 10 时显示编号前缀，方便快速定位
     const showPaperIndex = currentPapers.length > 10;
+    // v9.7.1：SKU 芯片直选——全称放 title 悬浮显示，高密度平铺
     const paperOptions = currentPapers.map((p, pIdx) => `
-      <div class="paper-option${p.id === sheet.paperId ? " active" : ""}" data-sheet="${index}" data-paper="${escapeHtml(p.id)}">
+      <div class="paper-option${p.id === sheet.paperId ? " active" : ""}" data-sheet="${index}" data-paper="${escapeHtml(p.id)}" title="${escapeHtml(p.name)}">
         <span class="paper-name">${showPaperIndex ? (pIdx + 1) + ". " : ""}${escapeHtml(p.shortName || p.name)}</span>
-        <span class="paper-desc">${escapeHtml(p.name)}</span>
       </div>
     `).join("");
 
@@ -979,8 +979,6 @@ function renderSheets() {
         }).join("")
       : '<div class="craft-empty">该纸张暂无附加工艺</div>';
 
-    const triggerText = currentPaper ? (currentPaper.shortName || currentPaper.name) : "无可用纸张";
-    const triggerDesc = currentPaper ? currentPaper.name : "请导入报价表";
     // v6.14：无直接系数的纸张提示只在直接系数模式下显示（标准报价模式隐藏）
     // v7.0：有批量直接报价的纸张（如 40C棉麻布）不显示"请切换为标准报价"提示，改为显示批量直接报价提示
     const hasBatchDirect = !!(currentPaper && currentPaper.batchDirect && currentPaper.batchDirect.maxArea > 0);
@@ -989,22 +987,9 @@ function renderSheets() {
     card.innerHTML = `
       <div class="sheet-title">纸张 ${index + 1}</div>
       <div class="form-group">
-        <label>纸张材质 <span class="hint">点击展开，选择后自动收起</span></label>
-        <div class="paper-dropdown" data-sheet="${index}">
-          <div class="paper-trigger" role="button" tabindex="0" aria-label="选择纸张材质">
-            <div>
-              <span class="paper-trigger-text">${escapeHtml(triggerText)}</span>
-              <span class="paper-trigger-desc">${escapeHtml(triggerDesc)}</span>
-            </div>
-            <span class="paper-trigger-arrow"></span>
-          </div>
-          <div class="paper-options">
-            <div class="paper-search">
-              <input type="search" class="paper-search-input" data-sheet="${index}" placeholder="输入简称或全称搜索" autocomplete="off" aria-label="搜索纸张材质" />
-            </div>
-            <div class="paper-search-empty" hidden>未找到匹配的纸张材质</div>
-            ${paperOptions}
-          </div>
+        <label>纸张材质 <span class="hint">点击芯片直选</span></label>
+        <div class="sku-grid" data-sheet="${index}">
+          ${paperOptions}
         </div>
         ${noDirectCoeff ? `
         <div class="sheet-direct-warning">
@@ -1038,38 +1023,7 @@ function renderSheets() {
     els.sheetList.appendChild(card);
   });
 
-  // 绑定纸张下拉交互
-  els.sheetList.querySelectorAll(".paper-dropdown").forEach(dd => {
-    const trigger = dd.querySelector(".paper-trigger");
-    trigger.addEventListener("click", e => {
-      e.stopPropagation();
-      togglePaperDropdown(dd);
-    });
-    trigger.addEventListener("keydown", e => {
-      if (e.key === "Enter" || e.key === " ") {
-        e.preventDefault();
-        e.stopPropagation();
-        togglePaperDropdown(dd);
-      }
-    });
-  });
-  els.sheetList.querySelectorAll(".paper-search-input").forEach(input => {
-    input.addEventListener("click", e => e.stopPropagation());
-    input.addEventListener("input", e => {
-      e.stopPropagation();
-      filterPaperOptions(input);
-    });
-    input.addEventListener("keydown", e => {
-      e.stopPropagation();
-      if (e.key === "Enter") {
-        e.preventDefault();
-        const firstMatch = input.closest(".paper-dropdown")?.querySelector(".paper-option:not(.is-filtered)");
-        if (firstMatch) onPaperChange(firstMatch);
-      } else if (e.key === "Escape") {
-        closeAllPaperDropdowns();
-      }
-    });
-  });
+  // v9.7.1：SKU 芯片直选——仅绑定 .paper-option 点击，下拉/搜索交互已移除
   els.sheetList.querySelectorAll(".paper-option").forEach(opt => {
     opt.addEventListener("click", e => {
       e.stopPropagation();
@@ -3220,7 +3174,7 @@ function setLocalBackupStatus(html, isError) {
 
 function exportLocalBackup() {
   const data = {
-    version: "9.6.0",
+    version: "9.7.1",
     kind: "local-backup",
     exportAt: new Date().toISOString(),
     priceLists: PRICE_LISTS,
@@ -3365,7 +3319,7 @@ function importLocalBackup(file) {
 // -------------------- 导入 / 导出完整配置 --------------------
 function exportFullData() {
   const data = {
-    version: "9.6.0",
+    version: "9.7.1",
     exportAt: new Date().toISOString(),
     priceLists: PRICE_LISTS,
     currentPriceListId: CURRENT_PRICE_LIST_ID,
@@ -3549,7 +3503,7 @@ function paperToSheetRows(paper) {
 }
 
 function exportPaperExcel() {
-  // v9.6.0：包一层错误提示，便于定位网页端导出失败原因
+  // v9.7.1：包一层错误提示，便于定位网页端导出失败原因
   try {
     exportPaperExcelInner();
   } catch (e) {

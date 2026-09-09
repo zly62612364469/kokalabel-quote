@@ -91,8 +91,8 @@
       '<span class="koka-role ' + KOKA.esc(u.role) + '">' + (ROLE_LABEL[u.role] || u.role) + '</span></span>' +
       '<button class="btn-exit">退出</button>';
     bar.querySelector('.btn-exit').addEventListener('click', () => KOKA.logout());
-    // 注入到顶部导航的右端，与"个人主页"按钮并排，不再固定悬浮
-    const navInner = document.querySelector('nav.nav-inner') || document.querySelector('header') || document.body;
+    // 注入到左侧导航栏菜单底部（v9.7.1 导航移至侧栏；保留旧结构兼容）
+    const navInner = document.querySelector('nav.sidenav-menu') || document.querySelector('nav.nav-inner') || document.querySelector('header') || document.body;
     navInner.appendChild(bar);
   }
 
