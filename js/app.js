@@ -1,5 +1,5 @@
 // ============================================================
-// KOKALabel报价系统 v9.4.0 - 主程序（计算 + 渲染 + 交互 + 初始化）
+// KOKALabel报价系统 v9.6.0 - 主程序（计算 + 渲染 + 交互 + 初始化）
 // ============================================================
 "use strict";
 
@@ -3220,7 +3220,7 @@ function setLocalBackupStatus(html, isError) {
 
 function exportLocalBackup() {
   const data = {
-    version: "9.4.0",
+    version: "9.6.0",
     kind: "local-backup",
     exportAt: new Date().toISOString(),
     priceLists: PRICE_LISTS,
@@ -3365,7 +3365,7 @@ function importLocalBackup(file) {
 // -------------------- 导入 / 导出完整配置 --------------------
 function exportFullData() {
   const data = {
-    version: "9.4.0",
+    version: "9.6.0",
     exportAt: new Date().toISOString(),
     priceLists: PRICE_LISTS,
     currentPriceListId: CURRENT_PRICE_LIST_ID,
@@ -3549,7 +3549,7 @@ function paperToSheetRows(paper) {
 }
 
 function exportPaperExcel() {
-  // v9.4.4：包一层错误提示，便于定位网页端导出失败原因
+  // v9.6.0：包一层错误提示，便于定位网页端导出失败原因
   try {
     exportPaperExcelInner();
   } catch (e) {
