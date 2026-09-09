@@ -137,13 +137,6 @@
                 <label class="unit">长 (mm)</label>
                 <input type="number" class="sheet-length" data-sheet="0" min="1" step="1" placeholder="30" value="">
               </div>
-              <div class="form-group size-type-group">
-                <label class="unit">类型</label>
-                <select class="sheet-size-type" data-sheet="0">
-                  <option value="single" selected="">单张尺寸</option>
-                  <option value="spread">展开尺寸</option>
-                </select>
-              </div>
             </div>
           </div>
           <div class="form-group" style="margin-bottom: 0; margin-top: 12px;">
@@ -247,13 +240,6 @@
               <div class="form-group">
                 <label class="unit">长 (mm)</label>
                 <input type="number" class="sheet-length" data-sheet="1" min="1" step="1" placeholder="30" value="">
-              </div>
-              <div class="form-group size-type-group">
-                <label class="unit">类型</label>
-                <select class="sheet-size-type" data-sheet="1">
-                  <option value="single" selected="">单张尺寸</option>
-                  <option value="spread">展开尺寸</option>
-                </select>
               </div>
             </div>
           </div>
@@ -780,6 +766,15 @@
             </div>
             <div class="setting-control">
               <select id="defaultTier"><option value="">跟随纸张</option><option value="500">500 张</option><option value="1000">1000 张</option><option value="2000">2000 张</option><option value="2500">2500 张</option><option value="5000">5000 张</option><option value="10000">10000 张</option><option value="20000">20000 张</option><option value="50000">50000 张</option></select>
+            </div>
+          </div>
+          <div class="setting-row">
+            <div class="setting-info">
+              <div class="setting-label">默认尺寸类型</div>
+              <div class="setting-desc">计算器中所有纸张的尺寸解释方式（全局生效）</div>
+            </div>
+            <div class="setting-control">
+              <select id="defaultSizeType"><option value="single">单张尺寸</option><option value="spread">展开尺寸</option></select>
             </div>
           </div>
           <div class="setting-row">

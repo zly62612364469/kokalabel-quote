@@ -746,6 +746,7 @@ const els = {
   companyPhone: document.getElementById("companyPhone"),
   defaultTier: document.getElementById("defaultTier"),
   defaultRope: document.getElementById("defaultRope"),
+  defaultSizeType: document.getElementById("defaultSizeType"),
   defaultPaper: document.getElementById("defaultPaper"),
   decimalPlaces: document.getElementById("decimalPlaces"),
   saveProfileBtn: document.getElementById("saveProfileBtn"),
@@ -922,6 +923,11 @@ function updateTierOptions(isInit) {
 }
 
 // -------------------- 纸张设置卡片渲染 --------------------
+// v9.6：全局尺寸类型（个人主页-报价设置统一配置）
+function getGlobalSizeType() {
+  return APP_PROFILE.defaultSizeType === "spread" ? "spread" : "single";
+}
+
 function renderSheets() {
   const count = parseInt(els.sheetCount.value, 10) || 2;
   const currentPapers = getPapersByPriceList(CURRENT_PRICE_LIST_ID);
@@ -938,7 +944,7 @@ function renderSheets() {
       craftIds: old && old.craftIds ? old.craftIds.slice() : [],
       width: old && old.width ? old.width : "55",
       length: old && old.length ? old.length : "30",
-      sizeType: old && old.sizeType ? old.sizeType : "single",
+      sizeType: old && old.sizeType ? old.sizeType : getGlobalSizeType(),
       manualCode: old && old.manualCode != null ? old.manualCode : null
     });
   }
@@ -1021,13 +1027,6 @@ function renderSheets() {
             <label class="unit">长 (mm)</label>
             <input type="number" class="sheet-length" data-sheet="${index}" min="1" step="1" placeholder="30" value="${sheet.length}" />
           </div>
-          <div class="form-group size-type-group">
-            <label class="unit">类型</label>
-            <select class="sheet-size-type" data-sheet="${index}">
-              <option value="single"${sheet.sizeType === "single" ? " selected" : ""}>单张尺寸</option>
-              <option value="spread"${sheet.sizeType === "spread" ? " selected" : ""}>展开尺寸</option>
-            </select>
-          </div>
         </div>
       </div>
       <div class="form-group" style="margin-bottom: 0; margin-top: 12px;">
@@ -1085,9 +1084,7 @@ function renderSheets() {
     input.addEventListener("input", onSheetSizeChange);
     input.addEventListener("change", onSheetSizeChange);
   });
-  els.sheetList.querySelectorAll(".sheet-size-type").forEach(sel => {
-    sel.addEventListener("change", onSheetSizeChange);
-  });
+  // v9.6：尺寸类型改为个人主页全局设置（.sheet-size-type 条目级下拉已移除）
 
   // 若第一张纸发生变化，需要更新档位选项
   updateTierOptions(false);
@@ -1240,9 +1237,8 @@ function onSheetSizeChange(e) {
     sheetsState[index].width = input.value;
   } else if (input.classList.contains("sheet-length")) {
     sheetsState[index].length = input.value;
-  } else if (input.classList.contains("sheet-size-type")) {
-    sheetsState[index].sizeType = input.value;
   }
+  // v9.6：尺寸类型改为个人主页全局设置，条目级切换已移除
   // 尺寸变化时清除手动代码，恢复自动匹配
   sheetsState[index].manualCode = null;
   onCalculate();
@@ -2637,6 +2633,8 @@ function loadProfileToUI() {
   if (els.defaultTier) els.defaultTier.value = APP_PROFILE.defaultTier || "";
   updateDefaultRopeOptions();
   if (els.defaultRope) els.defaultRope.value = APP_PROFILE.defaultRope || "rope1";
+  // v9.6：全局尺寸类型
+  if (els.defaultSizeType) els.defaultSizeType.value = getGlobalSizeType();
   updateDefaultPaperOptions();
   if (els.defaultPaper) els.defaultPaper.value = APP_PROFILE.defaultPaperId || "";
 }
@@ -2670,16 +2668,24 @@ function updateDefaultPaperOptions() {
 }
 
 function saveProfile() {
+  const prevSizeType = getGlobalSizeType();
   APP_PROFILE = {
     companyName: els.companyName ? els.companyName.value.trim() : APP_PROFILE.companyName,
     companyPhone: els.companyPhone ? els.companyPhone.value.trim() : APP_PROFILE.companyPhone,
     defaultTier: els.defaultTier ? els.defaultTier.value : APP_PROFILE.defaultTier,
     defaultRope: els.defaultRope ? (els.defaultRope.value || "rope1") : APP_PROFILE.defaultRope,
     defaultPaperId: els.defaultPaper ? (els.defaultPaper.value || "") : APP_PROFILE.defaultPaperId,
+    // v9.6：全局尺寸类型
+    defaultSizeType: els.defaultSizeType ? (els.defaultSizeType.value || "single") : APP_PROFILE.defaultSizeType,
     decimalPlaces: els.decimalPlaces ? parseDecimalPlaces(els.decimalPlaces.value) : parseDecimalPlaces(APP_PROFILE.decimalPlaces)
   };
   saveToStorage("appProfile", APP_PROFILE);
   saveToStorage("customerLevels", CUSTOMER_LEVELS);
+  // v9.6：尺寸类型变化时，同步到所有纸张条目并重算
+  if (getGlobalSizeType() !== prevSizeType) {
+    sheetsState.forEach(s => { s.sizeType = getGlobalSizeType(); });
+    renderSheets();
+  }
   showToast("设置已保存");
   onCalculate();
 }
@@ -3150,7 +3156,7 @@ function loadHistoryParameters(recordId) {
     craftIds: Array.isArray(sheet.craftIds) ? sheet.craftIds.slice() : [],
     width: String(sheet.width || ""),
     length: String(sheet.length || ""),
-    sizeType: sheet.sizeType || "single",
+    sizeType: getGlobalSizeType(),
     manualCode: sheet.manualCode || null
   }));
   if (els.sheetCount) els.sheetCount.value = String(restoredSheets.length);
@@ -4011,7 +4017,7 @@ function rebuildPaperUI() {
     craftIds: [],
     width: s.width || "",
     length: s.length || "",
-    sizeType: s.sizeType || "custom",
+    sizeType: getGlobalSizeType(),
     manualCode: null
   }));
   updateTierOptions(false);

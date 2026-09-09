@@ -10577,11 +10577,13 @@ let APP_PROFILE = loadFromStorage("appProfile", {
   defaultTier: null,
   defaultRope: "rope1",
   defaultPaperId: null,
+  defaultSizeType: "single",
   decimalPlaces: 2
 });
 // 旧版配置容错
 if (typeof APP_PROFILE.defaultRope === "undefined") APP_PROFILE.defaultRope = "rope1";
 if (typeof APP_PROFILE.defaultPaperId === "undefined") APP_PROFILE.defaultPaperId = "";
+if (typeof APP_PROFILE.defaultSizeType === "undefined") APP_PROFILE.defaultSizeType = "single";
 
 // ============================================================
 // ===================== 报价表组辅助函数 =====================
