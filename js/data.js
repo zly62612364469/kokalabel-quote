@@ -1,5 +1,5 @@
 // ============================================================
-// KOKALabel报价系统 v9.4.0 - 数据配置层
+// KOKALabel报价系统 v9.5.0 - 数据配置层
 // ============================================================
 "use strict";
 
@@ -9314,7 +9314,7 @@ const DIRECT_COEFF_LEVELS = DEFAULT_DIRECT_COEFF_LEVELS.map(l => ({ ...l }));
   console.info("[v8.0] 已重构为 2 个报价表（1楼/3楼）并覆盖纸张与邮费数据");
 })();
 
-// 版本号比较（按点分段数字比较，如 "9.4.0" >= "9.0"）
+// 版本号比较（按点分段数字比较，如 "9.5.0" >= "9.0"）
 function verCompare(a, b) {
   const pa = String(a || "0").split(".").map(Number);
   const pb = String(b || "0").split(".").map(Number);
@@ -9380,10 +9380,10 @@ function verCompare(a, b) {
   console.info("[v9.0.1] 已用最新 Excel 替换 1楼报价表（28 组），3楼保留");
 })();
 
-// v9.4.0 迁移：900克蒙版纸 → 900克铜版纸（仅改名，不动其它数据与用户改价）
+// v9.5.0 迁移：900克蒙版纸 → 900克铜版纸（仅改名，不动其它数据与用户改价）
 (function migrateRename900Paper() {
   const dataVersion = loadFromStorage("dataVersion", "");
-  if (verCompare(dataVersion, "9.4.0") >= 0) return;
+  if (verCompare(dataVersion, "9.5.0") >= 0) return;
   const stored = loadFromStorage("paperConfig", null);
   if (Array.isArray(stored) && stored.length) {
     let changed = false;
@@ -9399,8 +9399,8 @@ function verCompare(a, b) {
     });
     if (changed) saveToStorage("paperConfig", stored);
   }
-  saveToStorage("dataVersion", "9.4.0");
-  console.info("[v9.4.0] 900克蒙版纸已更名为900克铜版纸");
+  saveToStorage("dataVersion", "9.5.0");
+  console.info("[v9.5.0] 900克蒙版纸已更名为900克铜版纸");
 })();
 
 let APP_PROFILE = loadFromStorage("appProfile", {

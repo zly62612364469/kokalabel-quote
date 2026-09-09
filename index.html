@@ -7,21 +7,36 @@
   <!-- P0 安全：CSP 策略（v7.9：SheetJS 已本地化，script-src 仅允许 'self'，离线双击打开亦可用） -->
   <!-- v9.4.4：default-src/connect-src 放行 blob:，修复网页端 XLSX.writeFile 导出 Excel 被拦 -->
   <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob:; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' blob:;">
-  <title>KOKALabel报价系统 v9.4.0</title>
-  <link rel="icon" type="image/x-icon" href="favicon.ico?v=9.4.0">
-  <link rel="icon" type="image/png" href="favicon.png?v=9.4.0">
-  <link rel="apple-touch-icon" href="apple-touch-icon.png?v=9.4.0">
-  <link rel="stylesheet" href="css/style.css?v=9.4.0">
+  <title>KOKALabel报价系统 v9.5.0</title>
+  <link rel="icon" type="image/x-icon" href="favicon.ico?v=9.5.0">
+  <link rel="icon" type="image/png" href="favicon.png?v=9.5.0">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png?v=9.5.0">
+  <link rel="stylesheet" href="css/style.css?v=9.5.0">
   <!-- v9.3 账号访问控制：http 部署时强制登录（file:// 本地离线不启用） -->
-  <script src="js/auth.js?v=9.4.0"></script>
+  <script src="js/auth.js?v=9.5.0"></script>
 </head>
 <body>
-  <!-- 顶部导航 -->
+  <!-- 顶部导航（v9.5：蓝色导航条 + 右侧模式按钮/报价表选择器/默认报价开关） -->
   <nav class="navbar">
     <div class="nav-inner">
       <button class="nav-btn active" data-page="calculator">智能报价计算器</button>
       <button class="nav-btn" data-page="table">报价表组查询</button>
       <button class="nav-btn" data-page="profile">个人主页</button>
+      <div class="nav-controls">
+        <div class="calc-mode-switcher">
+          <button class="mode-btn" data-mode="standard">标准报价</button>
+          <button class="mode-btn active" data-mode="direct">直接系数计算</button>
+        </div>
+        <div class="quick-price-switcher" title="快捷切换当前报价表">
+          <span class="switcher-label">报价表</span>
+          <select id="quickPriceListSelector" class="quick-price-list-selector"></select>
+        </div>
+        <button type="button" id="defaultQuoteToggle" class="quote-visibility-toggle" role="switch" aria-checked="true" title="仅控制标准报价中的默认客户报价">
+          <span class="quote-visibility-label">默认报价</span>
+          <span class="quote-visibility-track" aria-hidden="true"><span class="quote-visibility-thumb"></span></span>
+          <span class="quote-visibility-state" id="defaultQuoteToggleState">显示</span>
+        </button>
+      </div>
     </div>
   </nav>
 
@@ -31,24 +46,7 @@
     <section class="page active" id="page-calculator">
       <div class="card">
         <div class="card-title-row">
-          <div class="card-title-main">
-            <h2 class="card-title">参数输入</h2>
-            <button type="button" id="defaultQuoteToggle" class="quote-visibility-toggle" role="switch" aria-checked="true" title="仅控制标准报价中的默认客户报价">
-              <span class="quote-visibility-label">默认报价</span>
-              <span class="quote-visibility-track" aria-hidden="true"><span class="quote-visibility-thumb"></span></span>
-              <span class="quote-visibility-state" id="defaultQuoteToggleState">显示</span>
-            </button>
-          </div>
-          <div class="title-controls">
-            <div class="quick-price-switcher" title="快捷切换当前报价表">
-              <span class="switcher-label">报价表</span>
-              <select id="quickPriceListSelector" class="quick-price-list-selector"></select>
-            </div>
-            <div class="calc-mode-switcher">
-              <button class="mode-btn active" data-mode="direct">直接系数计算</button>
-              <button class="mode-btn" data-mode="standard">标准报价</button>
-            </div>
-          </div>
+          <h2 class="card-title">参数输入</h2>
         </div>
 
         <div class="tier-row">
@@ -63,7 +61,10 @@
         </div>
 
         <div class="form-group">
-          <label>纸张设置 <span class="hint">每张纸可设置不同展开尺寸</span></label>
+          <div class="sheet-setting-row">
+            <label>纸张设置 <span class="hint">每张纸可设置不同展开尺寸</span></label>
+            <button type="button" class="btn sm" id="addSheetBtn">＋ 继续添加纸张条目</button>
+          </div>
           <div id="sheetList" class="sheet-list"><div class="sheet-card">
           <div class="sheet-title">纸张 1</div>
           <div class="form-group">
@@ -289,8 +290,12 @@
         </div></div>
         </div>
 
-        <div class="form-group">
-          <label>吊绳类型</label>
+        <div class="form-group fold-panel" id="ropePanel">
+          <div class="fold-head" data-fold-target="rope">
+            <span class="fold-title"><i class="req-mark">*</i>吊绳类型 <span class="fold-hint">点击展开</span><span class="fold-count" id="ropeFoldCount"></span></span>
+            <span class="fold-arrow">▾</span>
+          </div>
+          <div class="fold-body">
           <div id="rope" class="rope-list">
         <label class="rope-item">
           <input type="radio" name="rope" value="rope0">
@@ -427,6 +432,7 @@
           <span>防拆扣</span>
         </label>
       </div>
+          </div>
         </div>
 
         <div class="form-group">
@@ -997,7 +1003,7 @@
           <div class="setting-row">
             <div class="setting-info">
               <div class="setting-label">当前版本</div>
-              <div class="setting-desc">KOKALabel报价系统 v9.4.0</div>
+              <div class="setting-desc">KOKALabel报价系统 v9.5.0</div>
             </div>
             <div class="setting-control">
               <span class="placeholder-badge">正式版</span>
@@ -1105,7 +1111,7 @@
   <div class="toast" id="toast"></div>
 
   <!-- v7.9: SheetJS 本地化（离线双击打开亦可导出/导入 Excel），先于业务脚本加载，XLSX 全局可用 -->
-  <script src="js/vendor/xlsx.full.min.js?v=9.4.0"></script>
-  <script src="js/data.js?v=9.4.0"></script>
-  <script src="js/app.js?v=9.4.0"></script>
+  <script src="js/vendor/xlsx.full.min.js?v=9.5.0"></script>
+  <script src="js/data.js?v=9.5.0"></script>
+  <script src="js/app.js?v=9.5.0"></script>
 </body></html>

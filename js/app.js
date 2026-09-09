@@ -1,5 +1,5 @@
 // ============================================================
-// KOKALabel报价系统 v9.4.0 - 主程序（计算 + 渲染 + 交互 + 初始化）
+// KOKALabel报价系统 v9.5.0 - 主程序（计算 + 渲染 + 交互 + 初始化）
 // ============================================================
 "use strict";
 
@@ -947,7 +947,7 @@ function renderSheets() {
   els.sheetList.innerHTML = "";
   sheetsState.forEach((sheet, index) => {
     const card = document.createElement("div");
-    card.className = "sheet-card";
+    card.className = "sheet-card fold-panel open";
 
     const currentPaper = currentPapers.find(p => p.id === sheet.paperId) || currentPapers[0];
     // Sheet 数量 > 10 时显示编号前缀，方便快速定位
@@ -981,7 +981,12 @@ function renderSheets() {
     const noDirectCoeff = calcMode === "direct" && !paperHasDirectCoeff(currentPaper) && !hasBatchDirect;
 
     card.innerHTML = `
-      <div class="sheet-title">纸张 ${index + 1}</div>
+      <div class="sheet-fold-head">
+        <span class="sheet-fold-title">纸张 ${index + 1}</span>
+        <span class="sheet-fold-desc">每张纸可设置不同展开尺寸</span>
+        <span class="fold-arrow">▾</span>
+      </div>
+      <div class="sheet-fold-body">
       <div class="form-group">
         <label>纸张材质 <span class="hint">点击展开，选择后自动收起</span></label>
         <div class="paper-dropdown" data-sheet="${index}">
@@ -1030,9 +1035,15 @@ function renderSheets() {
           </div>
         </div>
       </div>
-      <div class="form-group" style="margin-bottom: 0; margin-top: 12px;">
-        <label>附加工艺</label>
+      <div class="form-group fold-panel craft-fold" style="margin-bottom: 0; margin-top: 12px;">
+        <div class="fold-head">
+          <span class="fold-title"><i class="req-mark">*</i>附加工艺 <span class="fold-hint">点击展开</span><span class="fold-count" data-craft-count="${index}">${sheet.craftIds.length ? "已选 " + sheet.craftIds.length : ""}</span></span>
+          <span class="fold-arrow">▾</span>
+        </div>
+        <div class="fold-body">
         <div class="craft-list">${craftHtml}</div>
+        </div>
+      </div>
       </div>
     `;
 
@@ -1230,6 +1241,9 @@ function onCraftChange(e) {
   } else {
     sheetsState[index].craftIds = craftIds.filter(id => id !== craftId);
   }
+  // v9.5：更新工艺折叠头的已选计数
+  const countEl = document.querySelector(`[data-craft-count="${index}"]`);
+  if (countEl) countEl.textContent = sheetsState[index].craftIds.length ? "已选 " + sheetsState[index].craftIds.length : "";
   onCalculate();
 }
 
@@ -3214,7 +3228,7 @@ function setLocalBackupStatus(html, isError) {
 
 function exportLocalBackup() {
   const data = {
-    version: "9.4.0",
+    version: "9.5.0",
     kind: "local-backup",
     exportAt: new Date().toISOString(),
     priceLists: PRICE_LISTS,
@@ -3359,7 +3373,7 @@ function importLocalBackup(file) {
 // -------------------- 导入 / 导出完整配置 --------------------
 function exportFullData() {
   const data = {
-    version: "9.4.0",
+    version: "9.5.0",
     exportAt: new Date().toISOString(),
     priceLists: PRICE_LISTS,
     currentPriceListId: CURRENT_PRICE_LIST_ID,
@@ -4441,6 +4455,19 @@ function bindEvents() {
   if (els.importDataBtn) els.importDataBtn.addEventListener("click", () => els.importFile.click());
   if (els.importFile) els.importFile.addEventListener("change", e => importFullData(e.target.files[0]));
   if (els.resetToDefaultsBtn) els.resetToDefaultsBtn.addEventListener("click", resetToDefaults);
+  // v9.5：折叠面板交互（纸张条目 / 附加工艺 / 吊绳类型）+ 添加纸张按钮
+  document.addEventListener("click", e => {
+    const sheetHead = e.target.closest(".sheet-fold-head");
+    if (sheetHead) { sheetHead.closest(".fold-panel").classList.toggle("open"); return; }
+    const foldHead = e.target.closest(".fold-head");
+    if (foldHead) { foldHead.closest(".fold-panel").classList.toggle("open"); return; }
+  });
+  const addSheetBtn = document.getElementById("addSheetBtn");
+  if (addSheetBtn) addSheetBtn.addEventListener("click", () => {
+    els.sheetCount.value = (parseInt(els.sheetCount.value, 10) || 0) + 1;
+    els.sheetCount.dispatchEvent(new Event("input"));
+  });
+
   const resetAllBtn = document.getElementById("resetAllSettingsBtn");
   if (resetAllBtn) resetAllBtn.addEventListener("click", resetAllLocalSettings);
   if (els.exportLocalBackupBtn) els.exportLocalBackupBtn.addEventListener("click", exportLocalBackup);

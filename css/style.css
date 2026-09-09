@@ -1,4 +1,4 @@
-/* KOKALabel报价系统 v9.4.0 - 样式表 */
+/* KOKALabel报价系统 v9.5.0 - 样式表 */
 
 /* ===================== 全局变量与重置 ===================== */
     :root {
@@ -2941,3 +2941,141 @@
 .koka-upload-btn { background: #059669; color: #fff; border: none; border-radius: 8px; padding: 6px 12px; cursor: pointer; font-size: 13px; }
 .koka-upload-btn:hover { background: #047857; }
 .koka-readonly-tip { color: #b45309; font-size: 12px; margin-left: 8px; }
+
+/* ===================== v9.5 计算器重构（#1677ff B端简约风） ===================== */
+:root {
+  --brand: #1677ff;
+  --brand-dark: #0e5fd8;
+  --brand-light: #e8f3ff;
+  --bg: #f0f4f9;
+}
+body { font-family: system-ui, -apple-system, "Microsoft YaHei", "PingFang SC", sans-serif; }
+.card-title { font-size: 16px; }
+
+/* --- 顶部导航：右侧控件区 --- */
+.navbar { background: linear-gradient(90deg, #0e5fd8, #1677ff); }
+.nav-inner { max-width: 1080px; align-items: stretch; }
+.nav-btn { flex: 0 0 auto; padding: 14px 18px; }
+.nav-controls {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 6px;
+  flex-wrap: wrap;
+}
+.nav-controls .calc-mode-switcher {
+  display: flex;
+  background: rgba(255, 255, 255, 0.16);
+  border-radius: 8px;
+  padding: 3px;
+}
+.nav-controls .mode-btn {
+  background: transparent;
+  color: rgba(255, 255, 255, 0.92);
+  border: none;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.nav-controls .mode-btn:hover { color: #fff; }
+.nav-controls .mode-btn.active {
+  background: #fff;
+  color: #1677ff;
+  font-weight: 700;
+}
+.nav-controls .quick-price-switcher { display: flex; align-items: center; gap: 6px; }
+.nav-controls .switcher-label { color: rgba(255, 255, 255, 0.88); font-size: 13px; }
+.nav-controls .quick-price-list-selector {
+  max-width: 210px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  background: #fff;
+  color: #1f2937;
+  font-size: 13px;
+}
+.nav-controls .quote-visibility-toggle {
+  background: #fff;
+  border-radius: 20px;
+  padding: 4px 10px;
+  border: none;
+}
+@media (max-width: 860px) {
+  .nav-controls { margin-left: 0; width: 100%; }
+}
+
+/* --- 折叠面板（附加工艺 / 吊绳类型：默认收起，红*必填标记） --- */
+.fold-panel {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #fff;
+  overflow: hidden;
+}
+.fold-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  cursor: pointer;
+  user-select: none;
+  background: #fafbfc;
+}
+.fold-head:hover { background: #f0f6ff; }
+.fold-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.req-mark { color: #ff4d4f; font-style: normal; font-weight: 800; }
+.fold-hint { font-size: 12px; color: #94a3b8; font-weight: 400; }
+.fold-count { font-size: 12px; color: #1677ff; font-weight: 600; }
+.fold-arrow { color: #94a3b8; font-size: 13px; transition: transform 0.18s ease; }
+.fold-panel.open > .fold-head .fold-arrow { transform: rotate(180deg); }
+.fold-panel .fold-body { padding: 12px; }
+.fold-panel:not(.open) > .fold-body { display: none; }
+
+/* --- 纸张条目折叠（默认展开，点击标题收起） --- */
+.sheet-card.fold-panel { margin-bottom: 10px; }
+.sheet-fold-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  cursor: pointer;
+  user-select: none;
+  background: #fafbfc;
+}
+.sheet-fold-head:hover { background: #f0f6ff; }
+.sheet-fold-title { font-weight: 700; color: #1677ff; font-size: 14px; }
+.sheet-fold-desc { font-size: 12px; color: #94a3b8; flex: 1; }
+.sheet-card.fold-panel .sheet-fold-body { padding: 12px; }
+.sheet-card.fold-panel:not(.open) .sheet-fold-body { display: none; }
+.sheet-card.fold-panel:not(.open) .sheet-fold-head .fold-arrow { transform: none; }
+
+/* --- 纸张设置行（标题 + 添加按钮） --- */
+.sheet-setting-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.sheet-setting-row label { margin-bottom: 0; }
+
+/* --- 结果区微调 --- */
+.cost-total-row {
+  background: #fff1f0;
+  border: 1px solid #ffa39e;
+  border-radius: 10px;
+  padding: 12px 16px;
+}
+.sheet-result-table td:nth-child(3) { color: #ff4d4f; font-weight: 600; }
+.price-card.highlight {
+  border-color: #ff4d4f;
+  box-shadow: 0 0 0 2px rgba(255, 77, 79, 0.14);
+}
