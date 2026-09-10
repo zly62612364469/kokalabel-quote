@@ -1,5 +1,5 @@
 // ============================================================
-// KOKALabel报价系统 v9.5.1 - 数据配置层
+// 亲成报价系统 v9.5.1 - 数据配置层
 // ============================================================
 "use strict";
 
@@ -10596,13 +10596,14 @@ function verCompare(a, b) {
 })();
 
 let APP_PROFILE = loadFromStorage("appProfile", {
-  companyName: "KOKALabel",
+  companyName: "亲成",
   companyPhone: null,
   defaultTier: null,
   defaultRope: "rope1",
   defaultPaperId: null,
   defaultSizeType: "single",
   hidePaperIndex: true,
+  paperSelectMode: "grid",
   decimalPlaces: 2
 });
 // 旧版配置容错
@@ -10611,6 +10612,8 @@ if (typeof APP_PROFILE.defaultPaperId === "undefined") APP_PROFILE.defaultPaperI
 if (typeof APP_PROFILE.defaultSizeType === "undefined") APP_PROFILE.defaultSizeType = "single";
 // v10.0：纸张材质序号显示开关（默认隐藏）
 if (typeof APP_PROFILE.hidePaperIndex === "undefined") APP_PROFILE.hidePaperIndex = true;
+// v10.1：纸张材质选择模式（grid=芯片平铺默认 / dropdown=下拉搜索）
+if (typeof APP_PROFILE.paperSelectMode === "undefined") APP_PROFILE.paperSelectMode = "grid";
 
 // ============================================================
 // ===================== 报价表组辅助函数 =====================

@@ -1,4 +1,4 @@
-/* KOKALabel报价系统 v10.0.0 - 样式表 */
+/* 亲成报价系统 v10.1.0 - 样式表 */
 
 /* ===================== 全局变量与重置 ===================== */
     :root {
@@ -2942,7 +2942,7 @@
 .koka-upload-btn:hover { background: #047857; }
 .koka-readonly-tip { color: #b45309; font-size: 12px; margin-left: 8px; }
 
-/* ===================== v10.0.0 扁平化宽泛式重构（覆盖段） ===================== */
+/* ===================== v10.1.0 扁平化宽泛式重构（覆盖段） ===================== */
 /* 架构：左侧导航竖栏 + 主区宽幅两栏（参数左 / 结果右 sticky）；导航不在顶部 */
 
 /* --- 整体骨架 --- */
@@ -3153,4 +3153,126 @@ body.ui-vertical .calc-result-col .flat-section { box-shadow: none; }
   background: var(--brand-light); border-radius: 0 6px 6px 0;
   padding: 4px 10px 4px 8px;
 }
+
+/* ===================== v10.1 个性化面板 / 吊绳折叠 / 材质下拉 ===================== */
+
+/* --- 侧栏个性化按钮 --- */
+.sidenav-personalize {
+  margin: auto 12px 14px; padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.12); color: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.25); border-radius: 8px;
+  font-size: 13px; cursor: pointer; transition: background 0.15s;
+}
+.sidenav-personalize:hover { background: rgba(255, 255, 255, 0.22); color: #fff; }
+
+/* --- 个性化面板 --- */
+.modal-mask {
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex; align-items: center; justify-content: center;
+}
+.personalize-card {
+  background: #fff; border-radius: 12px; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.22);
+  width: min(360px, calc(100vw - 32px)); overflow: hidden;
+}
+.personalize-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px; font-weight: 700; font-size: 15px; color: var(--text);
+  border-bottom: 1px solid var(--border); background: var(--brand-light);
+}
+.personalize-close {
+  background: transparent; border: none; font-size: 15px; cursor: pointer;
+  color: var(--text-secondary); padding: 2px 6px; border-radius: 6px;
+}
+.personalize-close:hover { background: rgba(0, 0, 0, 0.06); color: var(--text); }
+.personalize-body { padding: 16px; }
+.personalize-label { font-size: 13px; color: var(--text-secondary); margin-bottom: 8px; }
+.font-scale-group { display: flex; gap: 8px; }
+.font-scale-group button {
+  flex: 1; padding: 8px 0; border: 1px solid var(--border); background: #fff;
+  border-radius: 8px; font-size: 13px; cursor: pointer; color: var(--text);
+  transition: all 0.15s;
+}
+.font-scale-group button:hover { border-color: var(--brand); color: var(--brand); }
+.font-scale-group button.active { background: var(--brand); border-color: var(--brand); color: #fff; font-weight: 700; }
+.personalize-current { margin: 12px 0 10px; font-size: 13px; color: var(--text); font-weight: 600; }
+.personalize-reset {
+  width: 100%; padding: 9px 0; border: 1px solid var(--border); background: #fff;
+  border-radius: 8px; font-size: 13px; cursor: pointer; color: var(--text);
+}
+.personalize-reset:hover { border-color: var(--brand); color: var(--brand); background: var(--brand-light); }
+.personalize-note { margin-top: 10px; font-size: 11.5px; color: var(--text-secondary); }
+
+/* 窄屏（垂直模式/手机）个性化按钮在顶部横条内 */
+body.ui-vertical .sidenav-personalize { margin: 0 12px 8px auto; padding: 6px 12px; }
+
+/* --- 吊绳折叠面板 --- */
+.rope-fold .rope-list { display: none; }
+.rope-fold.open .rope-list { display: flex; }
+.rope-fold-head { cursor: pointer; user-select: none; }
+.rope-fold-head .fold-arrow {
+  display: inline-block; margin-right: 2px; font-size: 11px; color: var(--brand);
+  transition: transform 0.15s;
+}
+.rope-fold.open .rope-fold-head .fold-arrow { transform: rotate(90deg); }
+.rope-fold-head .fold-summary {
+  margin-left: auto; font-size: 11.5px; font-weight: 500; color: var(--text-secondary);
+  max-width: 60%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* --- 纸张材质下拉模式（inline 变体：嵌在表单行内，非旧版全屏浮层） --- */
+.paper-dropdown-inline { position: relative; flex: 1 1 auto; min-width: 0; }
+.paper-dropdown-inline .paper-trigger {
+  display: flex; align-items: center; gap: 8px;
+  border: 1px solid var(--border); border-radius: 8px; background: #fff;
+  padding: 6px 10px; cursor: pointer; min-height: 34px;
+}
+.paper-dropdown-inline .paper-trigger:hover { border-color: var(--brand); }
+.paper-chip {
+  display: inline-block; background: var(--brand); color: #fff;
+  font-size: 12px; font-weight: 600; padding: 2px 10px; border-radius: 6px;
+  white-space: nowrap;
+}
+.paper-chip-desc {
+  display: inline-block; background: var(--brand-light); color: var(--brand-dark);
+  font-size: 11.5px; padding: 2px 10px; border-radius: 6px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0;
+}
+.paper-dropdown-inline .paper-trigger-arrow {
+  margin-left: auto; width: 8px; height: 8px; flex: 0 0 auto;
+  border-right: 2px solid var(--text-secondary); border-bottom: 2px solid var(--text-secondary);
+  transform: rotate(45deg); transition: transform 0.15s;
+}
+.paper-dropdown-inline.open .paper-trigger-arrow { transform: rotate(225deg); }
+.paper-dropdown-inline .paper-options {
+  display: none; position: absolute; left: 0; right: 0; top: calc(100% + 4px); z-index: 60;
+  background: #fff; border: 1px solid var(--border); border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14); max-height: 300px; overflow-y: auto; padding: 6px;
+}
+.paper-dropdown-inline.open .paper-options { display: block; }
+.paper-dropdown-inline .paper-search { position: sticky; top: 0; background: #fff; padding-bottom: 6px; }
+.paper-dropdown-inline .paper-search-input {
+  width: 100%; padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px;
+  font-size: 12.5px; outline: none;
+}
+.paper-dropdown-inline .paper-search-input:focus { border-color: var(--brand); }
+.paper-dropdown-inline .paper-search-empty { padding: 10px; text-align: center; font-size: 12px; color: var(--text-secondary); }
+.paper-dropdown-inline .paper-option {
+  display: flex; align-items: center; gap: 8px;
+  padding: 5px 8px; border-radius: 6px; cursor: pointer; margin: 0;
+  border: none; background: transparent; text-align: left; width: 100%;
+}
+.paper-dropdown-inline .paper-option:hover { background: var(--brand-light); }
+.paper-dropdown-inline .paper-option .paper-name {
+  display: inline-block; background: var(--brand-light); color: var(--brand-dark);
+  font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 6px;
+  white-space: nowrap; overflow: visible; text-overflow: clip; flex: 0 0 auto;
+}
+.paper-dropdown-inline .paper-option .paper-desc {
+  font-size: 11.5px; color: var(--text-secondary);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; flex: 1;
+}
+.paper-dropdown-inline .paper-option.active { background: var(--brand-light); }
+.paper-dropdown-inline .paper-option.active .paper-name { background: var(--brand); color: #fff; }
+.paper-dropdown-inline .paper-option.is-filtered { display: none; }
 

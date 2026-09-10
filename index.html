@@ -5,35 +5,59 @@
   <meta name="robots" content="noindex, nofollow, noarchive">
   <meta name="googlebot" content="noindex, nofollow">
   <!-- P0 安全：CSP 策略（v7.9：SheetJS 已本地化，script-src 仅允许 'self'，离线双击打开亦可用） -->
-  <!-- v10.0.0：default-src/connect-src 放行 blob:，修复网页端 XLSX.writeFile 导出 Excel 被拦 -->
+  <!-- v10.1.0：default-src/connect-src 放行 blob:，修复网页端 XLSX.writeFile 导出 Excel 被拦 -->
   <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob:; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' blob:;">
-  <title>KOKALabel报价系统 v10.0.0</title>
-  <link rel="icon" type="image/x-icon" href="favicon.ico?v=10.0.0">
-  <link rel="icon" type="image/png" href="favicon.png?v=10.0.0">
-  <link rel="apple-touch-icon" href="apple-touch-icon.png?v=10.0.0">
-  <link rel="stylesheet" href="css/style.css?v=10.0.0">
+  <title>亲成报价系统 v10.1.0</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg?v=10.1.0">
+  <link rel="icon" type="image/x-icon" href="favicon.ico?v=10.1.0">
+  <link rel="icon" type="image/png" href="favicon.png?v=10.1.0">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png?v=10.1.0">
+  <link rel="stylesheet" href="css/style.css?v=10.1.0">
   <!-- v9.3 账号访问控制：http 部署时强制登录（file:// 本地离线不启用） -->
-  <script src="js/auth.js?v=10.0.0"></script>
+  <script src="js/auth.js?v=10.1.0"></script>
 </head>
 <body>
-  <!-- v10.0.0：app-shell 包裹 = 左侧导航 + 主区（扁平化宽泛式架构） -->
+  <!-- v10.1.0：app-shell 包裹 = 左侧导航 + 主区（扁平化宽泛式架构） -->
   <div class="app-shell">
-  <!-- 左侧导航栏（v10.0.0：导航从顶部移至左侧竖栏） -->
+  <!-- 左侧导航栏（v10.1.0：导航从顶部移至左侧竖栏） -->
   <nav class="sidenav">
-    <div class="sidenav-brand">KOKALabel<span class="sidenav-brand-sub">报价系统</span></div>
+    <div class="sidenav-brand">亲成<span class="sidenav-brand-sub">报价系统</span></div>
     <div class="sidenav-menu">
       <button class="nav-btn active" data-page="calculator">智能报价计算器</button>
       <button class="nav-btn" data-page="table">报价表组查询</button>
       <button class="nav-btn" data-page="profile">个人主页</button>
     </div>
+    <button class="sidenav-personalize" id="personalizeBtn" type="button">Aa 个性化</button>
   </nav>
+
+  <!-- 个性化面板（v10.1：字号调整，所有用户可用，仅本机生效） -->
+  <div class="modal-mask" id="personalizeModal" hidden>
+    <div class="personalize-card">
+      <div class="personalize-head">
+        <span>个性化</span>
+        <button type="button" class="personalize-close" id="personalizeClose" aria-label="关闭">✕</button>
+      </div>
+      <div class="personalize-body">
+        <div class="personalize-label">界面字体大小</div>
+        <div class="font-scale-group" id="fontScaleGroup">
+          <button type="button" data-scale="0.85">小</button>
+          <button type="button" data-scale="1">默认</button>
+          <button type="button" data-scale="1.15">大</button>
+          <button type="button" data-scale="1.3">特大</button>
+        </div>
+        <div class="personalize-current" id="fontScaleCurrent">当前：100%</div>
+        <button type="button" class="personalize-reset" id="fontScaleReset">恢复默认</button>
+        <div class="personalize-note">仅调整本机显示，不影响其他设备与账号</div>
+      </div>
+    </div>
+  </div>
 
   <!-- 页面容器 -->
   <main class="pages">
     <!-- 页面1：智能报价计算器 -->
     <section class="page active" id="page-calculator">
       <div class="calc-grid">
-      <!-- 左栏：参数表单（v10.0.0 平铺直列式） -->
+      <!-- 左栏：参数表单（v10.1.0 平铺直列式） -->
       <div class="calc-form-col">
         <!-- 顶部工具条：计算模式 + 报价表切换 + 默认报价开关 -->
         <div class="flat-toolbar">
@@ -187,9 +211,12 @@
         </div></div>
         </div>
 
-        <!-- 区3：吊绳类型 -->
-        <div class="flat-section">
-          <div class="flat-section-title">吊绳类型</div>
+        <!-- 区3：吊绳类型（v10.1 可折叠，默认折叠） -->
+        <div class="flat-section rope-fold collapsed" id="ropeFold">
+          <div class="flat-section-title rope-fold-head" id="ropeFoldHead" role="button" tabindex="0" aria-expanded="false" title="点击展开/收起">
+            <span class="fold-arrow">▸</span>吊绳类型
+            <span class="fold-summary" id="ropeFoldSummary"></span>
+          </div>
           <div id="rope" class="rope-list">
         <label class="rope-item">
           <input type="radio" name="rope" value="rope0">
@@ -332,7 +359,7 @@
         </div>
       </div>
 
-      <!-- 右栏：报价结果（v10.0.0 sticky 跟随） -->
+      <!-- 右栏：报价结果（v10.1.0 sticky 跟随） -->
       <div class="calc-result-col">
       <div class="card">
         <h2 class="card-title">报价结果</h2>
@@ -591,7 +618,7 @@
       <div class="profile-hero">
         <div class="avatar">海</div>
         <div class="profile-meta">
-          <h3>KOKALabel <span class="placeholder-badge">占位 UI</span></h3>
+          <h3>亲成 <span class="placeholder-badge">占位 UI</span></h3>
           <p>管理员 · 本地配置 · 下次打开保留</p>
         </div>
       </div>
@@ -658,7 +685,7 @@
               <div class="setting-desc">显示在报价单顶部</div>
             </div>
             <div class="setting-control">
-              <input type="text" id="companyName" placeholder="KOKALabel">
+              <input type="text" id="companyName" placeholder="亲成">
             </div>
           </div>
           <div class="setting-row">
@@ -708,6 +735,15 @@
             </div>
             <div class="setting-control">
               <select id="hidePaperIndex"><option value="hide">隐藏序号</option><option value="show">显示序号</option></select>
+            </div>
+          </div>
+          <div class="setting-row">
+            <div class="setting-info">
+              <div class="setting-label">纸张材质选择模式</div>
+              <div class="setting-desc">计算器纸张材质的呈现方式：芯片平铺直选 / 下拉框（支持模糊搜索）</div>
+            </div>
+            <div class="setting-control">
+              <select id="paperSelectMode"><option value="grid">芯片平铺（默认）</option><option value="dropdown">下拉框搜索</option></select>
             </div>
           </div>
           <div class="setting-row">
@@ -925,7 +961,7 @@
           <div class="setting-row">
             <div class="setting-info">
               <div class="setting-label">当前版本</div>
-              <div class="setting-desc">KOKALabel报价系统 v10.0.0</div>
+              <div class="setting-desc">亲成报价系统 v10.1.0</div>
             </div>
             <div class="setting-control">
               <span class="placeholder-badge">正式版</span>
@@ -1034,7 +1070,7 @@
   <div class="toast" id="toast"></div>
 
   <!-- v7.9: SheetJS 本地化（离线双击打开亦可导出/导入 Excel），先于业务脚本加载，XLSX 全局可用 -->
-  <script src="js/vendor/xlsx.full.min.js?v=10.0.0"></script>
-  <script src="js/data.js?v=10.0.0"></script>
-  <script src="js/app.js?v=10.0.0"></script>
+  <script src="js/vendor/xlsx.full.min.js?v=10.1.0"></script>
+  <script src="js/data.js?v=10.1.0"></script>
+  <script src="js/app.js?v=10.1.0"></script>
 </body></html>

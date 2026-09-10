@@ -1,5 +1,5 @@
 // ============================================================
-// KOKALabel报价系统 v10.0.0 - 主程序（计算 + 渲染 + 交互 + 初始化）
+// 亲成报价系统 v10.1.0 - 主程序（计算 + 渲染 + 交互 + 初始化）
 // ============================================================
 "use strict";
 
@@ -766,6 +766,16 @@ const els = {
   defaultSizeType: document.getElementById("defaultSizeType"),
   uiLayoutMode: document.getElementById("uiLayoutMode"),
   hidePaperIndex: document.getElementById("hidePaperIndex"),
+  paperSelectMode: document.getElementById("paperSelectMode"),
+  ropeFold: document.getElementById("ropeFold"),
+  ropeFoldHead: document.getElementById("ropeFoldHead"),
+  ropeFoldSummary: document.getElementById("ropeFoldSummary"),
+  personalizeBtn: document.getElementById("personalizeBtn"),
+  personalizeModal: document.getElementById("personalizeModal"),
+  personalizeClose: document.getElementById("personalizeClose"),
+  fontScaleGroup: document.getElementById("fontScaleGroup"),
+  fontScaleCurrent: document.getElementById("fontScaleCurrent"),
+  fontScaleReset: document.getElementById("fontScaleReset"),
   defaultPaper: document.getElementById("defaultPaper"),
   decimalPlaces: document.getElementById("decimalPlaces"),
   saveProfileBtn: document.getElementById("saveProfileBtn"),
@@ -965,6 +975,53 @@ function applyUiLayoutMode() {
   document.body.classList.toggle("ui-flat", !vertical);
 }
 
+// -------------------- v10.1：个性化（字号缩放，所有用户可用，仅本机生效） --------------------
+const FONT_SCALES = [0.85, 1, 1.15, 1.3];
+function getFontScale() {
+  try {
+    const v = parseFloat(localStorage.getItem("uiFontScale"));
+    return FONT_SCALES.includes(v) ? v : 1;
+  } catch (e) { return 1; }
+}
+function applyFontScale() {
+  const v = getFontScale();
+  document.documentElement.style.zoom = v === 1 ? "" : String(v);
+  if (els.fontScaleCurrent) els.fontScaleCurrent.textContent = "当前：" + Math.round(v * 100) + "%";
+  if (els.fontScaleGroup) {
+    els.fontScaleGroup.querySelectorAll("button[data-scale]").forEach(btn => {
+      btn.classList.toggle("active", Math.abs(parseFloat(btn.dataset.scale) - v) < 0.001);
+    });
+  }
+}
+function setFontScale(v) {
+  try { localStorage.setItem("uiFontScale", String(v)); } catch (e) { /* 静默 */ }
+  applyFontScale();
+}
+function bindPersonalizeEvents() {
+  if (els.personalizeBtn) {
+    els.personalizeBtn.addEventListener("click", () => {
+      if (els.personalizeModal) els.personalizeModal.hidden = false;
+      applyFontScale();
+    });
+  }
+  if (els.personalizeClose) {
+    els.personalizeClose.addEventListener("click", () => { if (els.personalizeModal) els.personalizeModal.hidden = true; });
+  }
+  if (els.personalizeModal) {
+    els.personalizeModal.addEventListener("click", e => {
+      if (e.target === els.personalizeModal) els.personalizeModal.hidden = true;
+    });
+  }
+  if (els.fontScaleGroup) {
+    els.fontScaleGroup.querySelectorAll("button[data-scale]").forEach(btn => {
+      btn.addEventListener("click", () => setFontScale(parseFloat(btn.dataset.scale)));
+    });
+  }
+  if (els.fontScaleReset) {
+    els.fontScaleReset.addEventListener("click", () => setFontScale(1));
+  }
+}
+
 function renderSheets() {
   const count = parseInt(els.sheetCount.value, 10) || 2;
   const currentPapers = getPapersByPriceList(CURRENT_PRICE_LIST_ID);
@@ -996,10 +1053,14 @@ function renderSheets() {
     // Sheet 数量 > 10 时显示编号前缀，方便快速定位
     // v10.0：纸张序号受个人主页「纸张材质序号」开关控制（默认隐藏）
     const showPaperIndex = !APP_PROFILE.hidePaperIndex && currentPapers.length > 10;
-    // v10.0.0：SKU 芯片直选——全称放 title 悬浮显示，高密度平铺
+    // v10.1：纸张材质选择模式（个人主页开关）——grid=芯片平铺直选（默认）/ dropdown=下拉框模糊搜索
+    const useDropdown = APP_PROFILE.paperSelectMode === "dropdown";
+    // v10.1.0：SKU 芯片直选——全称放 title 悬浮显示，高密度平铺
+    // v10.1：下拉模式下选项为「简称芯片 + 全称芯片」同一行
     const paperOptions = currentPapers.map((p, pIdx) => `
       <div class="paper-option${p.id === sheet.paperId ? " active" : ""}" data-sheet="${index}" data-paper="${escapeHtml(p.id)}" title="${escapeHtml(p.name)}">
         <span class="paper-name">${showPaperIndex ? (pIdx + 1) + ". " : ""}${escapeHtml(p.shortName || p.name)}</span>
+        ${useDropdown ? `<span class="paper-desc">${escapeHtml(p.name)}</span>` : ""}
       </div>
     `).join("");
 
@@ -1025,10 +1086,28 @@ function renderSheets() {
     card.innerHTML = `
       <div class="sheet-title">纸张 ${index + 1}</div>
       <div class="form-group">
+        ${useDropdown ? `
+        <label class="field-label">纸张材质 <span class="hint">点击选择，支持输入模糊搜索</span></label>
+        <div class="paper-dropdown paper-dropdown-inline" data-sheet="${index}">
+          <div class="paper-trigger" role="button" tabindex="0" aria-label="选择纸张材质">
+            <span class="paper-chip">${escapeHtml(currentPaper ? (currentPaper.shortName || currentPaper.name) : "无可用纸张")}</span>
+            <span class="paper-chip-desc">${escapeHtml(currentPaper ? currentPaper.name : "请导入报价表")}</span>
+            <span class="paper-trigger-arrow"></span>
+          </div>
+          <div class="paper-options">
+            <div class="paper-search">
+              <input type="search" class="paper-search-input" data-sheet="${index}" placeholder="输入简称或全称模糊搜索" autocomplete="off" aria-label="搜索纸张材质" />
+            </div>
+            <div class="paper-search-empty" hidden>未找到匹配的纸张材质</div>
+            ${paperOptions}
+          </div>
+        </div>
+        ` : `
         <label class="field-label">纸张材质 <span class="hint">点击芯片直选</span></label>
         <div class="sku-grid" data-sheet="${index}">
           ${paperOptions}
         </div>
+        `}
         ${noDirectCoeff ? `
         <div class="sheet-direct-warning">
           <span class="sheet-direct-warning-icon">⚠</span>
@@ -1061,13 +1140,47 @@ function renderSheets() {
     els.sheetList.appendChild(card);
   });
 
-  // v10.0.0：SKU 芯片直选——仅绑定 .paper-option 点击，下拉/搜索交互已移除
+  // v10.1.0：SKU 芯片直选——仅绑定 .paper-option 点击
+  // v10.1：下拉模式下额外绑定 trigger 展开与搜索框（复用旧版交互函数，onPaperChange 共用）
   els.sheetList.querySelectorAll(".paper-option").forEach(opt => {
     opt.addEventListener("click", e => {
       e.stopPropagation();
       onPaperChange(opt);
     });
   });
+  if (APP_PROFILE.paperSelectMode === "dropdown") {
+    els.sheetList.querySelectorAll(".paper-dropdown").forEach(dd => {
+      const trigger = dd.querySelector(".paper-trigger");
+      trigger.addEventListener("click", e => {
+        e.stopPropagation();
+        togglePaperDropdown(dd);
+      });
+      trigger.addEventListener("keydown", e => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          e.stopPropagation();
+          togglePaperDropdown(dd);
+        }
+      });
+    });
+    els.sheetList.querySelectorAll(".paper-search-input").forEach(input => {
+      input.addEventListener("click", e => e.stopPropagation());
+      input.addEventListener("input", e => {
+        e.stopPropagation();
+        filterPaperOptions(input);
+      });
+      input.addEventListener("keydown", e => {
+        e.stopPropagation();
+        if (e.key === "Enter") {
+          e.preventDefault();
+          const firstMatch = input.closest(".paper-dropdown")?.querySelector(".paper-option:not(.is-filtered)");
+          if (firstMatch) onPaperChange(firstMatch);
+        } else if (e.key === "Escape") {
+          closeAllPaperDropdowns();
+        }
+      });
+    });
+  }
   els.sheetList.querySelectorAll("input[type=checkbox][data-craft]").forEach(cb => {
     cb.addEventListener("change", onCraftChange);
   });
@@ -2638,6 +2751,8 @@ function loadProfileToUI() {
   if (els.uiLayoutMode) els.uiLayoutMode.value = getUiLayoutMode();
   // v10.0：纸张序号显隐回填（默认隐藏）
   if (els.hidePaperIndex) els.hidePaperIndex.value = APP_PROFILE.hidePaperIndex ? "hide" : "show";
+  // v10.1：纸张材质选择模式回填
+  if (els.paperSelectMode) els.paperSelectMode.value = APP_PROFILE.paperSelectMode === "dropdown" ? "dropdown" : "grid";
   updateDefaultPaperOptions();
   if (els.defaultPaper) els.defaultPaper.value = APP_PROFILE.defaultPaperId || "";
 }
@@ -2673,6 +2788,7 @@ function updateDefaultPaperOptions() {
 function saveProfile() {
   const prevSizeType = getGlobalSizeType();
   const prevHidePaperIndex = !!APP_PROFILE.hidePaperIndex;
+  const prevPaperSelectMode = APP_PROFILE.paperSelectMode === "dropdown" ? "dropdown" : "grid";
   APP_PROFILE = {
     companyName: els.companyName ? els.companyName.value.trim() : APP_PROFILE.companyName,
     companyPhone: els.companyPhone ? els.companyPhone.value.trim() : APP_PROFILE.companyPhone,
@@ -2683,6 +2799,8 @@ function saveProfile() {
     defaultSizeType: els.defaultSizeType ? (els.defaultSizeType.value || "single") : APP_PROFILE.defaultSizeType,
     // v10.0：纸张材质序号显隐（默认隐藏）
     hidePaperIndex: els.hidePaperIndex ? (els.hidePaperIndex.value !== "show") : APP_PROFILE.hidePaperIndex,
+    // v10.1：纸张材质选择模式（grid/dropdown）
+    paperSelectMode: els.paperSelectMode ? (els.paperSelectMode.value === "dropdown" ? "dropdown" : "grid") : prevPaperSelectMode,
     decimalPlaces: els.decimalPlaces ? parseDecimalPlaces(els.decimalPlaces.value) : parseDecimalPlaces(APP_PROFILE.decimalPlaces)
   };
   saveToStorage("appProfile", APP_PROFILE);
@@ -2694,6 +2812,9 @@ function saveProfile() {
   }
   // v10.0：序号显隐变化时重绘纸张芯片
   if (!!APP_PROFILE.hidePaperIndex !== prevHidePaperIndex) renderSheets();
+  // v10.1：材质选择模式变化时重绘纸张条目
+  const newSelectMode = APP_PROFILE.paperSelectMode === "dropdown" ? "dropdown" : "grid";
+  if (newSelectMode !== prevPaperSelectMode) renderSheets();
   showToast("设置已保存");
   onCalculate();
 }
@@ -2704,7 +2825,7 @@ function exportProfile() {
     appProfile: APP_PROFILE,
     exportAt: new Date().toISOString()
   };
-  downloadJson(data, "KOKALabel配置_" + formatDateFile() + ".json");
+  downloadJson(data, "亲成配置_" + formatDateFile() + ".json");
   showToast("配置已导出");
 }
 
@@ -3228,7 +3349,7 @@ function setLocalBackupStatus(html, isError) {
 
 function exportLocalBackup() {
   const data = {
-    version: "10.0.0",
+    version: "10.1.0",
     kind: "local-backup",
     exportAt: new Date().toISOString(),
     priceLists: PRICE_LISTS,
@@ -3242,7 +3363,7 @@ function exportLocalBackup() {
     snapshots: getSnapshots(),
     history: getHistory()
   };
-  downloadJson(data, "KOKALabel本地备份_" + formatDateFile() + ".json");
+  downloadJson(data, "亲成本地备份_" + formatDateFile() + ".json");
   setLocalBackupStatus(`已保存到本地文件（${new Date().toLocaleString()}）。建议同时存一份到 U 盘 / 网盘。`, false);
   showToast("本地备份已下载");
 }
@@ -3373,7 +3494,7 @@ function importLocalBackup(file) {
 // -------------------- 导入 / 导出完整配置 --------------------
 function exportFullData() {
   const data = {
-    version: "10.0.0",
+    version: "10.1.0",
     exportAt: new Date().toISOString(),
     priceLists: PRICE_LISTS,
     currentPriceListId: CURRENT_PRICE_LIST_ID,
@@ -3386,7 +3507,7 @@ function exportFullData() {
     snapshots: getSnapshots(),
     history: getHistory()
   };
-  downloadJson(data, "KOKALabel完整配置_" + formatDateFile() + ".json");
+  downloadJson(data, "亲成完整配置_" + formatDateFile() + ".json");
   showToast("完整配置已导出");
 }
 
@@ -3557,7 +3678,7 @@ function paperToSheetRows(paper) {
 }
 
 function exportPaperExcel() {
-  // v10.0.0：包一层错误提示，便于定位网页端导出失败原因
+  // v10.1.0：包一层错误提示，便于定位网页端导出失败原因
   try {
     exportPaperExcelInner();
   } catch (e) {
@@ -3579,7 +3700,7 @@ function exportPaperExcelInner() {
     XLSX.utils.book_append_sheet(wb, ws, sanitizeSheetName(paper.shortName || paper.name));
   }
   const plName = getCurrentPriceList().name;
-  XLSX.writeFile(wb, `KOKALabel${plName}_${formatDateFile()}.xlsx`);
+  XLSX.writeFile(wb, `亲成${plName}_${formatDateFile()}.xlsx`);
   showToast(`${plName} Excel 已导出（${currentPapers.length} 张）`);
 }
 
@@ -3656,7 +3777,7 @@ function downloadPaperTemplate() {
     XLSX.utils.book_append_sheet(wb, ws, sanitizeSheetName(paper.shortName || ("Sheet" + (idx + 1))));
   });
 
-  XLSX.writeFile(wb, "KOKALabel1号报价表模板_" + formatDateFile() + ".xlsx");
+  XLSX.writeFile(wb, "亲成1号报价表模板_" + formatDateFile() + ".xlsx");
   showToast("模板已下载（" + DEFAULT_PAPER_CONFIG.length + "张表，含直接系数档位规则行）");
 }
 
@@ -4056,7 +4177,7 @@ function exportRopeExcel() {
   const wb = XLSX.utils.book_new();
   const ws = XLSX.utils.aoa_to_sheet(ropeToSheetRows());
   XLSX.utils.book_append_sheet(wb, ws, sanitizeSheetName("吊绳报价"));
-  XLSX.writeFile(wb, "KOKALabel吊绳报价_" + formatDateFile() + ".xlsx");
+  XLSX.writeFile(wb, "亲成吊绳报价_" + formatDateFile() + ".xlsx");
   showToast("吊绳报价 Excel 已导出");
 }
 
@@ -4072,7 +4193,7 @@ function downloadRopeTemplate() {
   ];
   const ws = XLSX.utils.aoa_to_sheet(rows);
   XLSX.utils.book_append_sheet(wb, ws, sanitizeSheetName("吊绳报价模板"));
-  XLSX.writeFile(wb, "KOKALabel吊绳报价模板_" + formatDateFile() + ".xlsx");
+  XLSX.writeFile(wb, "亲成吊绳报价模板_" + formatDateFile() + ".xlsx");
   showToast("吊绳模板已下载");
 }
 
@@ -4186,8 +4307,29 @@ function importRopeExcel(file) {
 function bindRopeEvents() {
   if (!els.rope) return;
   els.rope.querySelectorAll('input[name="rope"]').forEach(radio => {
-    radio.addEventListener("change", onCalculate);
+    radio.addEventListener("change", () => {
+      updateRopeFoldSummary();
+      onCalculate();
+    });
   });
+}
+
+// v10.1：吊绳折叠面板——摘要显示当前选中吊绳；rebuildRopeUI 后调用保持同步
+function updateRopeFoldSummary() {
+  if (!els.ropeFoldSummary || !els.rope) return;
+  const checked = els.rope.querySelector('input[name="rope"]:checked');
+  const rope = ROPE_CONFIG.find(r => r.id === (checked ? checked.value : ""));
+  const base = rope ? getRopeBasePrice(rope.prices) : null;
+  els.ropeFoldSummary.textContent = rope
+    ? `当前：${rope.name}${base != null ? `（¥${formatPriceRaw(base)}/千张）` : ""}`
+    : "";
+}
+
+function toggleRopeFold() {
+  if (!els.ropeFold) return;
+  const open = els.ropeFold.classList.toggle("open");
+  els.ropeFold.classList.toggle("collapsed", !open);
+  if (els.ropeFoldHead) els.ropeFoldHead.setAttribute("aria-expanded", open ? "true" : "false");
 }
 
 function rebuildRopeUI() {
@@ -4220,7 +4362,7 @@ function exportShippingExcel() {
   const wb = XLSX.utils.book_new();
   const ws = XLSX.utils.aoa_to_sheet(shippingToSheetRows());
   XLSX.utils.book_append_sheet(wb, ws, sanitizeSheetName("邮费报价"));
-  XLSX.writeFile(wb, "KOKALabel邮费报价_" + formatDateFile() + ".xlsx");
+  XLSX.writeFile(wb, "亲成邮费报价_" + formatDateFile() + ".xlsx");
   showToast("邮费报价 Excel 已导出");
 }
 
@@ -4237,7 +4379,7 @@ function downloadShippingTemplate() {
   const ws = XLSX.utils.aoa_to_sheet(rows);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, sanitizeSheetName("邮费报价模板"));
-  XLSX.writeFile(wb, "KOKALabel邮费报价模板_" + formatDateFile() + ".xlsx");
+  XLSX.writeFile(wb, "亲成邮费报价模板_" + formatDateFile() + ".xlsx");
   showToast("邮费模板已下载");
 }
 
@@ -4376,6 +4518,17 @@ function bindEvents() {
     try { localStorage.setItem("uiLayoutMode", els.uiLayoutMode.value); } catch (e) { /* 静默 */ }
     applyUiLayoutMode();
   });
+
+  // v10.1：吊绳类型折叠面板（标题点击/回车切换）
+  if (els.ropeFoldHead) {
+    els.ropeFoldHead.addEventListener("click", toggleRopeFold);
+    els.ropeFoldHead.addEventListener("keydown", e => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleRopeFold(); }
+    });
+  }
+
+  // v10.1：个性化面板（字号调整，所有用户可用）
+  bindPersonalizeEvents();
 
   [els.tier, els.region].forEach(el => {
     if (!el) return;
@@ -4609,6 +4762,10 @@ function bindEvents() {
   // 应用 UI 架构模式（v9.8：移动端自动垂直纵深式，桌面/iPad 扁平化宽泛式）
   try { applyUiLayoutMode(); }
   catch (e) { console.error("[init] UI 架构模式失败:", e); }
+
+  // 应用个性化字号（v10.1）+ 吊绳折叠摘要
+  try { applyFontScale(); updateRopeFoldSummary(); }
+  catch (e) { console.error("[init] 个性化/吊绳摘要失败:", e); }
 
   // 同步直接系数模式按钮状态（默认直接系数模式）
   try {
