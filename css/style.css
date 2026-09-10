@@ -1,4 +1,4 @@
-/* 亲成报价系统 v10.2.0 - 样式表 */
+/* 亲成报价系统 v10.3.0 - 样式表 */
 
 /* ===================== 全局变量与重置 ===================== */
     :root {
@@ -2942,7 +2942,7 @@
 .koka-upload-btn:hover { background: #047857; }
 .koka-readonly-tip { color: #b45309; font-size: 12px; margin-left: 8px; }
 
-/* ===================== v10.2.0 扁平化宽泛式重构（覆盖段） ===================== */
+/* ===================== v10.3.0 扁平化宽泛式重构（覆盖段） ===================== */
 /* 架构：左侧导航竖栏 + 主区宽幅两栏（参数左 / 结果右 sticky）；导航不在顶部 */
 
 /* --- 整体骨架 --- */
@@ -3217,9 +3217,8 @@ body.ui-vertical .calc-result-col .flat-section { box-shadow: none; }
 body.ui-vertical .sidenav-personalize { margin: 0 12px 8px auto; padding: 6px 12px; }
 body.ui-vertical .personalize-panel { left: 12px; top: 120px; bottom: auto; }
 
-/* --- 吊绳折叠面板 --- */
-.rope-fold .rope-list { display: none; }
-.rope-fold.open .rope-list { display: flex; }
+/* --- 吊绳折叠面板（v10.3：仅控制隐藏，展开时保持原三列 grid 布局） --- */
+.rope-fold:not(.open) .rope-list { display: none; }
 .rope-fold-head { cursor: pointer; user-select: none; }
 .rope-fold-head .fold-arrow {
   display: inline-block; margin-right: 2px; font-size: 11px; color: var(--brand);
@@ -3312,4 +3311,40 @@ body.ui-vertical .personalize-panel { left: 12px; top: 120px; bottom: auto; }
   width: 200px; padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px;
 }
 .craft-included-note { font-size: 11px; color: var(--text-secondary); font-weight: 400; }
+
+/* ===================== v10.3 表头/行列内联编辑 ===================== */
+.table-edit-hint {
+  font-size: 11.5px; color: var(--text-secondary); background: var(--brand-light);
+  border-radius: 6px; padding: 6px 10px; margin-bottom: 8px; line-height: 1.6;
+}
+/* 档位表头：可点击改名 + ✕ 删列 */
+#priceTable thead th.tier-th {
+  cursor: pointer; position: relative; padding-right: 20px; white-space: nowrap;
+}
+#priceTable thead th.tier-th:hover { background: var(--brand-light); }
+#priceTable thead th.tier-th .tier-th-text { font-weight: 700; }
+#priceTable thead th .th-del {
+  position: absolute; top: 2px; right: 2px;
+  background: transparent; border: none; cursor: pointer;
+  font-size: 10px; line-height: 1; color: var(--text-secondary);
+  padding: 1px 3px; border-radius: 4px;
+}
+#priceTable thead th .th-del:hover { background: var(--danger-light); color: var(--danger); }
+#priceTable thead th.tier-th-add {
+  cursor: pointer; color: var(--brand); font-weight: 700; text-align: center;
+  min-width: 44px; white-space: nowrap;
+}
+#priceTable thead th.tier-th-add:hover { background: var(--brand-light); }
+#priceTable thead th .price-cell-input { width: 72px; padding: 2px 4px; font-size: 13px; }
+/* 规格行：代码列（可编辑文字 + 行删除） */
+#priceTable tbody td.spec-code-cell { white-space: nowrap; }
+#priceTable tbody td.spec-code-cell .spec-code-text { cursor: pointer; padding: 1px 2px; border-radius: 4px; }
+#priceTable tbody td.spec-code-cell .spec-code-text:hover { background: var(--brand-light); color: var(--brand); }
+#priceTable tbody td .row-del {
+  background: transparent; border: none; cursor: pointer;
+  font-size: 10px; line-height: 1; color: var(--text-secondary);
+  padding: 2px 4px; border-radius: 4px; margin-left: 4px;
+}
+#priceTable tbody td .row-del:hover { background: var(--danger-light); color: var(--danger); }
+.table-row-actions { margin-top: 8px; }
 

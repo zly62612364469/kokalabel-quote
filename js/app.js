@@ -1,5 +1,5 @@
 // ============================================================
-// 亲成报价系统 v10.2.0 - 主程序（计算 + 渲染 + 交互 + 初始化）
+// 亲成报价系统 v10.3.0 - 主程序（计算 + 渲染 + 交互 + 初始化）
 // ============================================================
 "use strict";
 
@@ -783,10 +783,14 @@ const els = {
   fontScaleReset: document.getElementById("fontScaleReset"),
   fontScaleInput: document.getElementById("fontScaleInput"),
   fontScaleApply: document.getElementById("fontScaleApply"),
+  fontScaleDefaults: document.getElementById("fontScaleDefaults"),
   tierHeaderEditor: document.getElementById("tierHeaderEditor"),
   tierHeaderChips: document.getElementById("tierHeaderChips"),
   tierHeaderInput: document.getElementById("tierHeaderInput"),
   tierHeaderAddBtn: document.getElementById("tierHeaderAddBtn"),
+  tableEditHint: document.getElementById("tableEditHint"),
+  specRowActions: document.getElementById("specRowActions"),
+  addSpecRowBtn: document.getElementById("addSpecRowBtn"),
   defaultPaper: document.getElementById("defaultPaper"),
   decimalPlaces: document.getElementById("decimalPlaces"),
   saveProfileBtn: document.getElementById("saveProfileBtn"),
@@ -1004,6 +1008,13 @@ function applyFontScale() {
       btn.classList.toggle("active", Math.abs(parseFloat(btn.dataset.scale) - v) < 0.001);
     });
   }
+  // v10.3：显示系统默认字号与实际渲染字号（默认 16px × 缩放倍数）
+  if (els.fontScaleDefaults) {
+    const base = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+    const cur = base * v;
+    const fmt = n => (Math.round(n * 10) / 10).toString();
+    els.fontScaleDefaults.textContent = `系统默认字号：${fmt(base)}px（100%） ｜ 当前字号：${fmt(cur)}px`;
+  }
 }
 function setFontScale(v) {
   try { localStorage.setItem("uiFontScale", String(v)); } catch (e) { /* 静默 */ }
@@ -1093,7 +1104,7 @@ function renderSheets() {
     const showPaperIndex = !APP_PROFILE.hidePaperIndex && currentPapers.length > 10;
     // v10.1：纸张材质选择模式（个人主页开关）——grid=芯片平铺直选（默认）/ dropdown=下拉框模糊搜索
     const useDropdown = APP_PROFILE.paperSelectMode === "dropdown";
-    // v10.2.0：SKU 芯片直选——全称放 title 悬浮显示，高密度平铺
+    // v10.3.0：SKU 芯片直选——全称放 title 悬浮显示，高密度平铺
     // v10.1：下拉模式下选项为「简称芯片 + 全称芯片」同一行
     const paperOptions = currentPapers.map((p, pIdx) => `
       <div class="paper-option${p.id === sheet.paperId ? " active" : ""}" data-sheet="${index}" data-paper="${escapeHtml(p.id)}" title="${escapeHtml(p.name)}">
@@ -1178,7 +1189,7 @@ function renderSheets() {
     els.sheetList.appendChild(card);
   });
 
-  // v10.2.0：SKU 芯片直选——仅绑定 .paper-option 点击
+  // v10.3.0：SKU 芯片直选——仅绑定 .paper-option 点击
   // v10.1：下拉模式下额外绑定 trigger 展开与搜索框（复用旧版交互函数，onPaperChange 共用）
   els.sheetList.querySelectorAll(".paper-option").forEach(opt => {
     opt.addEventListener("click", e => {
@@ -2218,20 +2229,7 @@ function getTableTierUniverse() {
 }
 
 function renderTierHeaderEditor() {
-  if (!els.tierHeaderEditor) return;
-  const canEdit = window.KOKA && KOKA.canEditQuote && KOKA.canEditQuote();
-  els.tierHeaderEditor.style.display = canEdit ? "" : "none";
-  if (!canEdit) return;
-  const tiers = getTableTierUniverse();
-  if (els.tierHeaderChips) {
-    els.tierHeaderChips.innerHTML = tiers.length
-      ? tiers.map(t => `
-          <span class="tier-chip">${t} 张
-            <button type="button" class="tier-chip-btn" data-act="rename" data-tier="${t}" title="重命名该档位">✎</button>
-            <button type="button" class="tier-chip-btn danger" data-act="remove" data-tier="${t}" title="删除该档位">✕</button>
-          </span>`).join("")
-      : '<span class="hint">当前无档位</span>';
-  }
+  // v10.3：表头编辑已改为表格内联交互（点击表头/单元格），此函数保留为空壳兼容旧调用
 }
 
 function afterTierHeaderChange() {
@@ -2275,10 +2273,9 @@ function removeTierEverywhere(t) {
   showToast(`档位 ${t} 张已删除`);
 }
 
-function renameTierEverywhere(from) {
-  const input = prompt(`将档位「${from} 张」重命名为（输入新的张数）：`, from);
-  if (input == null) return;
-  const to = Number(input);
+// v10.3：重命名档位（确认由调用方负责）；作用于当前组纸张规格 + 该组工艺 + 吊绳 + 邮费
+function renameTierEverywhere(from, to) {
+  from = Number(from); to = Number(to);
   if (!Number.isInteger(to) || to <= 0) { showToast("档位必须为正整数（张数）"); return; }
   if (to === from) return;
   if (getTableTierUniverse().includes(to)) { showToast(`档位 ${to} 张已存在，无法重命名`); return; }
@@ -2296,7 +2293,64 @@ function renameTierEverywhere(from) {
   ROPE_CONFIG.forEach(r => renamePrices(r.prices));
   SHIPPING_CONFIG.forEach(s => renamePrices(s.basePrices));
   afterTierHeaderChange();
-  showToast(`档位已重命名：${from} 张 → ${to} 张`);
+  showToast(`档位已修改：${from} 张 → ${to} 张`);
+}
+
+// v10.3：新增规格行（当前纸张）
+function addSpecRow() {
+  const paper = getPapersByPriceList(CURRENT_PRICE_LIST_ID)[currentPaperIndex];
+  if (!paper) return;
+  let n = paper.specs.length + 1, code;
+  do { code = String(n).padStart(3, "0"); n++; } while (paper.specs.some(s => s.code === code));
+  const prices = {};
+  getTableTierUniverse().forEach(t => { prices[t] = null; });
+  paper.specs.push({ code, maxArea: 0, prices });
+  saveToStorage("paperConfig", PAPER_CONFIG);
+  renderPriceTable();
+  showToast(`已新增规格行「${code}」，请点击代码/面积/价格单元格填写内容`);
+}
+
+// v10.3：删除规格行（当前纸张）
+function removeSpecRow(code) {
+  const paper = getPapersByPriceList(CURRENT_PRICE_LIST_ID)[currentPaperIndex];
+  if (!paper) return;
+  const spec = paper.specs.find(s => s.code === code);
+  if (!spec) return;
+  if (paper.specs.length <= 1) { showToast("至少需保留一行规格"); return; }
+  if (!confirm(`确认删除规格行「${code}」（最大面积 ${spec.maxArea} mm²）及其全部档位价格？\n\n仅影响本机数据；云端需再点「↑ 保存为全局默认」确认上传。`)) return;
+  paper.specs = paper.specs.filter(s => s.code !== code);
+  saveToStorage("paperConfig", PAPER_CONFIG);
+  renderPriceTable();
+  showToast(`规格行「${code}」已删除`);
+}
+
+// v10.3：表头「＋」列内联新增档位
+let _editingTierAdd = false;
+function startTierAddEdit(th) {
+  if (_editingTierAdd || _editingCell) return;
+  _editingTierAdd = true;
+  const input = document.createElement("input");
+  input.type = "number";
+  input.className = "price-cell-input";
+  input.placeholder = "张数";
+  th.textContent = "";
+  th.appendChild(input);
+  input.focus();
+  const finish = commit => {
+    if (!_editingTierAdd) return;
+    _editingTierAdd = false;
+    const v = Number(input.value);
+    if (!commit || !input.value.trim()) { renderPriceTable(); return; }
+    if (!Number.isInteger(v) || v <= 0) { showToast("档位必须为正整数（张数）"); renderPriceTable(); return; }
+    if (getTableTierUniverse().includes(v)) { showToast(`档位 ${v} 张已存在`); renderPriceTable(); return; }
+    if (!confirm(`确认新增档位列「${v} 张」？\n各价格表该列初始为空（点击单元格填写）。\n\n仅存本地，云端需再点「↑ 保存为全局默认」确认上传。`)) { renderPriceTable(); return; }
+    addTierEverywhere(v);
+  };
+  input.addEventListener("keydown", e => {
+    if (e.key === "Enter") { e.preventDefault(); input.blur(); }
+    else if (e.key === "Escape") { _editingTierAdd = false; renderPriceTable(); }
+  });
+  input.addEventListener("blur", () => finish(true));
 }
 
 function renderPriceTable() {
@@ -2313,15 +2367,25 @@ function renderPriceTable() {
   // 动态表头：取第一个规格的价格 keys 作为档位列
   const tiers = paper.specs.length ? Object.keys(paper.specs[0].prices).map(Number).sort((a, b) => a - b) : [];
 
+  // v10.3：表头/行列内联编辑（仅超管）——档位列改名/删列/加列，规格行增删，代码与面积可改
+  const canEditTable = !!(window.KOKA && KOKA.canEditQuote && KOKA.canEditQuote());
+  if (els.tableEditHint) els.tableEditHint.style.display = canEditTable ? "" : "none";
+  if (els.specRowActions) els.specRowActions.style.display = canEditTable ? "" : "none";
+
   const theadRow = els.priceTable.querySelector("thead tr");
   theadRow.innerHTML = '<th>代码</th><th>最大含出血面积 (mm²)</th>' +
-    tiers.map(t => `<th>${t} 张</th>`).join("");
+    tiers.map(t => canEditTable
+      ? `<th class="tier-th price-editable" data-type="tier-name" data-tier="${t}" title="点击修改档位名"><span class="tier-th-text">${t} 张</span><button type="button" class="th-del" data-tier="${t}" title="删除该档位列">✕</button></th>`
+      : `<th>${t} 张</th>`).join("") +
+    (canEditTable ? '<th class="tier-th-add" title="点击新增档位列">＋</th>' : "");
 
   const tbody = els.priceTable.querySelector("tbody");
   tbody.innerHTML = filtered.map(s => `
     <tr>
-      <td>${escapeHtml(s.code)}</td>
-      <td>${s.maxArea}</td>
+      <td class="spec-code-cell">${canEditTable
+        ? `<span class="spec-code-text price-editable" data-type="spec-code" data-code="${escapeHtml(s.code)}" title="点击修改代码">${escapeHtml(s.code)}</span><button type="button" class="row-del" data-code="${escapeHtml(s.code)}" title="删除该规格行">✕</button>`
+        : escapeHtml(s.code)}</td>
+      <td class="price-cell${canEditTable ? " price-editable" : ""}" data-type="spec-maxarea" data-code="${escapeHtml(s.code)}"${canEditTable ? ' title="点击编辑最大面积"' : ""}>${s.maxArea}</td>
       ${tiers.map(t => {
         const v = s.prices[t];
         if (v == null) return `<td class="price-cell price-editable" data-type="spec" data-code="${escapeHtml(s.code)}" data-tier="${t}" data-empty="1" title="点击填写价格"><span class="price-missing">无该批量定价</span></td>`;
@@ -2463,9 +2527,13 @@ function startCellEdit(cell) {
   if (_editingCell) return; // 已有编辑进行中，忽略（blur 会负责提交）
   const type = cell.dataset.type;
   const isEmpty = cell.hasAttribute("data-empty");
-  const raw = extractNumericFromCell(cell.textContent);
+  // v10.3：代码列用文本输入（保留前导零），其余为数值
+  const isTextType = type === "spec-code";
+  const raw = isTextType
+    ? String(cell.textContent || "").trim()
+    : extractNumericFromCell(cell.textContent);
   const input = document.createElement("input");
-  input.type = "number";
+  input.type = isTextType ? "text" : "number";
   input.step = "any";
   input.min = type === "bd-maxarea" ? "1" : "0";
   input.className = "price-cell-input";
@@ -2517,6 +2585,23 @@ function applyPriceEdit(type, data, value) {
       if (spec) { spec.prices[data.tier] = value; changed = true; }
       break;
     }
+    case "spec-code": {
+      // v10.3：修改规格代码（value 为字符串，唯一性由 commitCellEdit 预校验）
+      const spec = paper.specs.find(s => s.code === data.code);
+      const newCode = typeof value === "string" ? value.trim() : "";
+      if (spec && newCode && !paper.specs.some(s => s.code === newCode)) {
+        spec.code = newCode;
+        changed = true;
+      }
+      break;
+    }
+    case "spec-maxarea": {
+      // v10.3：修改规格最大含出血面积
+      const spec = paper.specs.find(s => s.code === data.code);
+      const num = Number(value);
+      if (spec && Number.isFinite(num) && num > 0) { spec.maxArea = num; changed = true; }
+      break;
+    }
     case "craft": {
       const crafts = CRAFT_CONFIG[paper.id];
       const craft = crafts && crafts.find(c => c.id === data.craftId);
@@ -2562,6 +2647,33 @@ function commitCellEdit() {
   const valueStr = input.value.trim();
   const originalStr = input.dataset.originalValue || "";
   const originalDisplay = input.dataset.originalDisplay || "";
+
+  // v10.3：档位表头（tier-name）与规格代码（spec-code）为文本/独立语义，单独处理
+  if (type === "tier-name") {
+    const from = Number(input.dataset.tier);
+    const to = Number(valueStr);
+    if (!Number.isInteger(to) || to <= 0) { showToast("档位必须为正整数（张数）"); renderPriceTable(); return; }
+    if (to === from) { renderPriceTable(); return; }
+    if (getTableTierUniverse().includes(to)) { showToast(`档位 ${to} 张已存在，无法修改`); renderPriceTable(); return; }
+    if (!confirm(`确认修改档位？\n\n原档位：${from} 张\n新档位：${to} 张\n（价格保留；作用于纸张规格/附加工艺/吊绳/邮费表）\n\n仅存本地，云端需再点「↑ 保存为全局默认」。`)) {
+      renderPriceTable(); showToast("已取消修改"); return;
+    }
+    renameTierEverywhere(from, to);
+    return;
+  }
+  if (type === "spec-code") {
+    const oldCode = input.dataset.code || "";
+    const newCode = valueStr;
+    if (!newCode) { showToast("代码不能为空"); renderPriceTable(); return; }
+    if (newCode === oldCode) { renderPriceTable(); return; }
+    const paper0 = getPapersByPriceList(CURRENT_PRICE_LIST_ID)[currentPaperIndex];
+    if (paper0 && paper0.specs.some(s => s.code === newCode)) { showToast(`代码「${newCode}」已存在`); renderPriceTable(); return; }
+    if (!confirm(`确认修改代码？\n\n原代码：${oldCode}\n新代码：${newCode}`)) { renderPriceTable(); showToast("已取消修改"); return; }
+    if (applyPriceEdit("spec-code", input.dataset, newCode)) {
+      renderPriceTable(); onCalculate(); showToast("代码已更新");
+    } else renderPriceTable();
+    return;
+  }
 
   // v7.9.1：数值相等视为未改动（避免 "35.00" vs "35" 这种字符串差异误弹 confirm）
   const origNum = originalStr === "" ? null : Number(originalStr);
@@ -3488,7 +3600,7 @@ function setLocalBackupStatus(html, isError) {
 
 function exportLocalBackup() {
   const data = {
-    version: "10.2.0",
+    version: "10.3.0",
     kind: "local-backup",
     exportAt: new Date().toISOString(),
     priceLists: PRICE_LISTS,
@@ -3633,7 +3745,7 @@ function importLocalBackup(file) {
 // -------------------- 导入 / 导出完整配置 --------------------
 function exportFullData() {
   const data = {
-    version: "10.2.0",
+    version: "10.3.0",
     exportAt: new Date().toISOString(),
     priceLists: PRICE_LISTS,
     currentPriceListId: CURRENT_PRICE_LIST_ID,
@@ -3817,7 +3929,7 @@ function paperToSheetRows(paper) {
 }
 
 function exportPaperExcel() {
-  // v10.2.0：包一层错误提示，便于定位网页端导出失败原因
+  // v10.3.0：包一层错误提示，便于定位网页端导出失败原因
   try {
     exportPaperExcelInner();
   } catch (e) {
@@ -4670,29 +4782,20 @@ function bindEvents() {
   // v10.1：个性化面板（字号调整，所有用户可用）
   bindPersonalizeEvents();
 
-  // v10.2：表头（批量档位）编辑（超管）
-  if (els.tierHeaderChips) {
-    els.tierHeaderChips.addEventListener("click", e => {
-      const btn = e.target.closest(".tier-chip-btn");
-      if (!btn) return;
-      const t = Number(btn.dataset.tier);
-      if (btn.dataset.act === "remove") removeTierEverywhere(t);
-      else if (btn.dataset.act === "rename") renameTierEverywhere(t);
+  // v10.3：报价表内联编辑委托（表头档位列 改名/删列/加列，规格行删除）
+  // 注意：档位表头文字点击走现有 .price-editable 委托（startCellEdit → tier-name 分支）
+  if (els.priceTable) {
+    els.priceTable.addEventListener("click", e => {
+      if (!(window.KOKA && KOKA.canEditQuote && KOKA.canEditQuote())) return;
+      const del = e.target.closest(".th-del");
+      if (del) { e.stopPropagation(); removeTierEverywhere(Number(del.dataset.tier)); return; }
+      const addTh = e.target.closest(".tier-th-add");
+      if (addTh) { e.stopPropagation(); startTierAddEdit(addTh); return; }
+      const rowDel = e.target.closest(".row-del");
+      if (rowDel) { e.stopPropagation(); removeSpecRow(rowDel.dataset.code); }
     });
   }
-  if (els.tierHeaderAddBtn) {
-    els.tierHeaderAddBtn.addEventListener("click", () => {
-      const v = Number(els.tierHeaderInput.value);
-      if (!v) { showToast("请输入要新增的档位（张数）"); return; }
-      addTierEverywhere(v);
-      els.tierHeaderInput.value = "";
-    });
-  }
-  if (els.tierHeaderInput) {
-    els.tierHeaderInput.addEventListener("keydown", e => {
-      if (e.key === "Enter") { e.preventDefault(); els.tierHeaderAddBtn.click(); }
-    });
-  }
+  if (els.addSpecRowBtn) els.addSpecRowBtn.addEventListener("click", addSpecRow);
 
   [els.tier, els.region].forEach(el => {
     if (!el) return;
