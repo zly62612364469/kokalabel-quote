@@ -3193,6 +3193,18 @@ body.ui-vertical .calc-result-col .flat-section { box-shadow: none; }
 }
 .font-scale-group button:hover { border-color: var(--brand); color: var(--brand); }
 .font-scale-group button.active { background: var(--brand); border-color: var(--brand); color: #fff; font-weight: 700; }
+.font-scale-custom { display: flex; align-items: center; gap: 6px; margin-top: 8px; }
+.font-scale-custom input {
+  flex: 1; min-width: 0; padding: 6px 10px; border: 1px solid var(--border);
+  border-radius: 6px; font-size: 13px; outline: none;
+}
+.font-scale-custom input:focus { border-color: var(--brand); }
+.font-scale-pct { font-size: 12.5px; color: var(--text-secondary); }
+.font-scale-apply {
+  padding: 6px 14px; border: 1px solid var(--brand); background: var(--brand);
+  color: #fff; border-radius: 6px; font-size: 12.5px; cursor: pointer;
+}
+.font-scale-apply:hover { background: var(--brand-dark); }
 .personalize-current { margin: 12px 0 10px; font-size: 13px; color: var(--text); font-weight: 600; }
 .personalize-reset {
   width: 100%; padding: 9px 0; border: 1px solid var(--border); background: #fff;

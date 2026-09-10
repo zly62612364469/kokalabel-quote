@@ -781,6 +781,8 @@ const els = {
   fontScaleGroup: document.getElementById("fontScaleGroup"),
   fontScaleCurrent: document.getElementById("fontScaleCurrent"),
   fontScaleReset: document.getElementById("fontScaleReset"),
+  fontScaleInput: document.getElementById("fontScaleInput"),
+  fontScaleApply: document.getElementById("fontScaleApply"),
   tierHeaderEditor: document.getElementById("tierHeaderEditor"),
   tierHeaderChips: document.getElementById("tierHeaderChips"),
   tierHeaderInput: document.getElementById("tierHeaderInput"),
@@ -996,6 +998,7 @@ function applyFontScale() {
   const v = getFontScale();
   document.documentElement.style.zoom = v === 1 ? "" : String(v);
   if (els.fontScaleCurrent) els.fontScaleCurrent.textContent = "当前：" + Math.round(v * 100) + "%";
+  if (els.fontScaleInput) els.fontScaleInput.value = String(Math.round(v * 100));
   if (els.fontScaleGroup) {
     els.fontScaleGroup.querySelectorAll("button[data-scale]").forEach(btn => {
       btn.classList.toggle("active", Math.abs(parseFloat(btn.dataset.scale) - v) < 0.001);
@@ -1005,6 +1008,16 @@ function applyFontScale() {
 function setFontScale(v) {
   try { localStorage.setItem("uiFontScale", String(v)); } catch (e) { /* 静默 */ }
   applyFontScale();
+}
+function applyCustomFontScale() {
+  // v10.2：自定义输入字号（百分比，限制 50~200）
+  if (!els.fontScaleInput) return;
+  const pct = Number(els.fontScaleInput.value);
+  if (!Number.isFinite(pct) || pct < 50 || pct > 200) {
+    showToast("请输入 50~200 之间的缩放百分比");
+    return;
+  }
+  setFontScale(Math.round(pct) / 100);
 }
 function bindPersonalizeEvents() {
   // v10.2：内联面板（无遮罩），点击按钮开/关，点击面板外部关闭
@@ -1035,6 +1048,15 @@ function bindPersonalizeEvents() {
   }
   if (els.fontScaleReset) {
     els.fontScaleReset.addEventListener("click", () => setFontScale(1));
+  }
+  // v10.2：自定义输入字号（50~200%），应用按钮 + 回车
+  if (els.fontScaleApply) {
+    els.fontScaleApply.addEventListener("click", applyCustomFontScale);
+  }
+  if (els.fontScaleInput) {
+    els.fontScaleInput.addEventListener("keydown", e => {
+      if (e.key === "Enter") { e.preventDefault(); applyCustomFontScale(); }
+    });
   }
 }
 

@@ -44,9 +44,14 @@
         <button type="button" data-scale="1.15">大</button>
         <button type="button" data-scale="1.3">特大</button>
       </div>
+      <div class="font-scale-custom">
+        <input type="number" id="fontScaleInput" min="50" max="200" step="1" placeholder="自定义" aria-label="自定义缩放百分比">
+        <span class="font-scale-pct">%</span>
+        <button type="button" class="font-scale-apply" id="fontScaleApply">应用</button>
+      </div>
       <div class="personalize-current" id="fontScaleCurrent">当前：100%</div>
       <button type="button" class="personalize-reset" id="fontScaleReset">恢复默认</button>
-      <div class="personalize-note">仅调整本机显示，不影响其他设备与账号</div>
+      <div class="personalize-note">可输入 50~200 的百分比；仅调整本机显示，不影响其他设备与账号</div>
     </div>
   </div>
 
