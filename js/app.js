@@ -1,5 +1,5 @@
 // ============================================================
-// KOKALabel报价系统 v9.9.0 - 主程序（计算 + 渲染 + 交互 + 初始化）
+// KOKALabel报价系统 v10.0.0 - 主程序（计算 + 渲染 + 交互 + 初始化）
 // ============================================================
 "use strict";
 
@@ -765,6 +765,7 @@ const els = {
   defaultRope: document.getElementById("defaultRope"),
   defaultSizeType: document.getElementById("defaultSizeType"),
   uiLayoutMode: document.getElementById("uiLayoutMode"),
+  hidePaperIndex: document.getElementById("hidePaperIndex"),
   defaultPaper: document.getElementById("defaultPaper"),
   decimalPlaces: document.getElementById("decimalPlaces"),
   saveProfileBtn: document.getElementById("saveProfileBtn"),
@@ -834,7 +835,8 @@ let toastTimer = null;
 let sheetsState = [];
 let activeHistoryRecordId = null;
 // 计算模式：默认直接系数计算（v6.1 起），持久化到 localStorage
-let calcMode = loadFromStorage("currentCalcMode", "direct"); // "standard" | "direct"
+// v10.0：默认计价模式改为标准报价（用户手动切换后记忆其选择）
+let calcMode = loadFromStorage("currentCalcMode", "standard"); // "standard" | "direct"
 let defaultQuoteVisible = loadFromStorage("defaultQuoteVisible", true) !== false;
 // v8.0：邮费输入缓存（会话级，不持久化，刷新后重新询问）
 let shippingWeightCache = {};   // regionId -> 吊牌重量(kg)
@@ -992,8 +994,9 @@ function renderSheets() {
 
     const currentPaper = currentPapers.find(p => p.id === sheet.paperId) || currentPapers[0];
     // Sheet 数量 > 10 时显示编号前缀，方便快速定位
-    const showPaperIndex = currentPapers.length > 10;
-    // v9.9.0：SKU 芯片直选——全称放 title 悬浮显示，高密度平铺
+    // v10.0：纸张序号受个人主页「纸张材质序号」开关控制（默认隐藏）
+    const showPaperIndex = !APP_PROFILE.hidePaperIndex && currentPapers.length > 10;
+    // v10.0.0：SKU 芯片直选——全称放 title 悬浮显示，高密度平铺
     const paperOptions = currentPapers.map((p, pIdx) => `
       <div class="paper-option${p.id === sheet.paperId ? " active" : ""}" data-sheet="${index}" data-paper="${escapeHtml(p.id)}" title="${escapeHtml(p.name)}">
         <span class="paper-name">${showPaperIndex ? (pIdx + 1) + ". " : ""}${escapeHtml(p.shortName || p.name)}</span>
@@ -1022,7 +1025,7 @@ function renderSheets() {
     card.innerHTML = `
       <div class="sheet-title">纸张 ${index + 1}</div>
       <div class="form-group">
-        <label>纸张材质 <span class="hint">点击芯片直选</span></label>
+        <label class="field-label">纸张材质 <span class="hint">点击芯片直选</span></label>
         <div class="sku-grid" data-sheet="${index}">
           ${paperOptions}
         </div>
@@ -1037,7 +1040,7 @@ function renderSheets() {
         </div>` : ""}
       </div>
       <div class="form-group" style="margin-bottom: 0;">
-        <label>吊牌展开尺寸 <span class="hint">自动加 3mm 出血</span></label>
+        <label class="field-label">吊牌展开尺寸 <span class="hint">自动加 3mm 出血</span></label>
         <div class="sheet-size-row">
           <div class="form-group">
             <label class="unit">宽 (mm)</label>
@@ -1050,7 +1053,7 @@ function renderSheets() {
         </div>
       </div>
       <div class="form-group" style="margin-bottom: 0; margin-top: 12px;">
-        <label>附加工艺</label>
+        <label class="field-label">附加工艺</label>
         <div class="craft-list">${craftHtml}</div>
       </div>
     `;
@@ -1058,7 +1061,7 @@ function renderSheets() {
     els.sheetList.appendChild(card);
   });
 
-  // v9.9.0：SKU 芯片直选——仅绑定 .paper-option 点击，下拉/搜索交互已移除
+  // v10.0.0：SKU 芯片直选——仅绑定 .paper-option 点击，下拉/搜索交互已移除
   els.sheetList.querySelectorAll(".paper-option").forEach(opt => {
     opt.addEventListener("click", e => {
       e.stopPropagation();
@@ -2633,6 +2636,8 @@ function loadProfileToUI() {
   if (els.defaultSizeType) els.defaultSizeType.value = getGlobalSizeType();
   // v9.8：UI 架构模式回填
   if (els.uiLayoutMode) els.uiLayoutMode.value = getUiLayoutMode();
+  // v10.0：纸张序号显隐回填（默认隐藏）
+  if (els.hidePaperIndex) els.hidePaperIndex.value = APP_PROFILE.hidePaperIndex ? "hide" : "show";
   updateDefaultPaperOptions();
   if (els.defaultPaper) els.defaultPaper.value = APP_PROFILE.defaultPaperId || "";
 }
@@ -2667,6 +2672,7 @@ function updateDefaultPaperOptions() {
 
 function saveProfile() {
   const prevSizeType = getGlobalSizeType();
+  const prevHidePaperIndex = !!APP_PROFILE.hidePaperIndex;
   APP_PROFILE = {
     companyName: els.companyName ? els.companyName.value.trim() : APP_PROFILE.companyName,
     companyPhone: els.companyPhone ? els.companyPhone.value.trim() : APP_PROFILE.companyPhone,
@@ -2675,6 +2681,8 @@ function saveProfile() {
     defaultPaperId: els.defaultPaper ? (els.defaultPaper.value || "") : APP_PROFILE.defaultPaperId,
     // v9.6：全局尺寸类型
     defaultSizeType: els.defaultSizeType ? (els.defaultSizeType.value || "single") : APP_PROFILE.defaultSizeType,
+    // v10.0：纸张材质序号显隐（默认隐藏）
+    hidePaperIndex: els.hidePaperIndex ? (els.hidePaperIndex.value !== "show") : APP_PROFILE.hidePaperIndex,
     decimalPlaces: els.decimalPlaces ? parseDecimalPlaces(els.decimalPlaces.value) : parseDecimalPlaces(APP_PROFILE.decimalPlaces)
   };
   saveToStorage("appProfile", APP_PROFILE);
@@ -2684,6 +2692,8 @@ function saveProfile() {
     sheetsState.forEach(s => { s.sizeType = getGlobalSizeType(); });
     renderSheets();
   }
+  // v10.0：序号显隐变化时重绘纸张芯片
+  if (!!APP_PROFILE.hidePaperIndex !== prevHidePaperIndex) renderSheets();
   showToast("设置已保存");
   onCalculate();
 }
@@ -3218,7 +3228,7 @@ function setLocalBackupStatus(html, isError) {
 
 function exportLocalBackup() {
   const data = {
-    version: "9.9.0",
+    version: "10.0.0",
     kind: "local-backup",
     exportAt: new Date().toISOString(),
     priceLists: PRICE_LISTS,
@@ -3363,7 +3373,7 @@ function importLocalBackup(file) {
 // -------------------- 导入 / 导出完整配置 --------------------
 function exportFullData() {
   const data = {
-    version: "9.9.0",
+    version: "10.0.0",
     exportAt: new Date().toISOString(),
     priceLists: PRICE_LISTS,
     currentPriceListId: CURRENT_PRICE_LIST_ID,
@@ -3547,7 +3557,7 @@ function paperToSheetRows(paper) {
 }
 
 function exportPaperExcel() {
-  // v9.9.0：包一层错误提示，便于定位网页端导出失败原因
+  // v10.0.0：包一层错误提示，便于定位网页端导出失败原因
   try {
     exportPaperExcelInner();
   } catch (e) {

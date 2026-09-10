@@ -1,4 +1,4 @@
-/* KOKALabel报价系统 v9.9.0 - 样式表 */
+/* KOKALabel报价系统 v10.0.0 - 样式表 */
 
 /* ===================== 全局变量与重置 ===================== */
     :root {
@@ -2942,7 +2942,7 @@
 .koka-upload-btn:hover { background: #047857; }
 .koka-readonly-tip { color: #b45309; font-size: 12px; margin-left: 8px; }
 
-/* ===================== v9.9.0 扁平化宽泛式重构（覆盖段） ===================== */
+/* ===================== v10.0.0 扁平化宽泛式重构（覆盖段） ===================== */
 /* 架构：左侧导航竖栏 + 主区宽幅两栏（参数左 / 结果右 sticky）；导航不在顶部 */
 
 /* --- 整体骨架 --- */
@@ -3138,4 +3138,19 @@ body.ui-vertical .flat-section {
 body.ui-vertical .calc-form-col > .flat-section:first-of-type { margin-top: 0; }
 body.ui-vertical .calc-result-col .card { box-shadow: var(--shadow); border: none; }
 body.ui-vertical .calc-result-col .flat-section { box-shadow: none; }
+
+/* ===================== v10.0 表单字段标题显眼化 ===================== */
+/* 纸张材质/吊牌展开尺寸/附加工艺（field-label）与 吊绳类型/纸张设置等分区标题 统一视觉 */
+.calc-form-col .form-group > label.field-label {
+  font-size: 13px; font-weight: 700; color: var(--brand-dark);
+  background: var(--brand-light); border-left: 3px solid var(--brand);
+  padding: 3px 10px 3px 8px; border-radius: 0 6px 6px 0;
+  min-width: 0;
+}
+.calc-form-col .form-group > label.field-label .hint { color: var(--text-secondary); }
+.calc-form-col .flat-section-title {
+  font-size: 13.5px;
+  background: var(--brand-light); border-radius: 0 6px 6px 0;
+  padding: 4px 10px 4px 8px;
+}
 
