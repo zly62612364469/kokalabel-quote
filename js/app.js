@@ -1,5 +1,5 @@
 // ============================================================
-// KOKALabel报价系统 v9.7.1 - 主程序（计算 + 渲染 + 交互 + 初始化）
+// KOKALabel报价系统 v9.8.0 - 主程序（计算 + 渲染 + 交互 + 初始化）
 // ============================================================
 "use strict";
 
@@ -747,6 +747,7 @@ const els = {
   defaultTier: document.getElementById("defaultTier"),
   defaultRope: document.getElementById("defaultRope"),
   defaultSizeType: document.getElementById("defaultSizeType"),
+  uiLayoutMode: document.getElementById("uiLayoutMode"),
   defaultPaper: document.getElementById("defaultPaper"),
   decimalPlaces: document.getElementById("decimalPlaces"),
   saveProfileBtn: document.getElementById("saveProfileBtn"),
@@ -928,6 +929,23 @@ function getGlobalSizeType() {
   return APP_PROFILE.defaultSizeType === "spread" ? "spread" : "single";
 }
 
+// -------------------- v9.8：UI 架构模式 --------------------
+// auto = 手机自动「垂直纵深式」，桌面/iPad「扁平化宽泛式」；可在个人主页手动强制
+// 偏好存 localStorage（按设备生效，不入 APP_PROFILE 云同步，避免跨设备互相干扰）
+function getUiLayoutMode() {
+  try { return localStorage.getItem("uiLayoutMode") || "auto"; } catch (e) { return "auto"; }
+}
+function detectMobilePhone() {
+  const ua = navigator.userAgent || "";
+  return /iPhone|iPod|Android.*Mobile|Windows Phone|BlackBerry|Opera Mini|IEMobile/i.test(ua);
+}
+function applyUiLayoutMode() {
+  const mode = getUiLayoutMode();
+  const vertical = mode === "vertical" || (mode === "auto" && detectMobilePhone());
+  document.body.classList.toggle("ui-vertical", vertical);
+  document.body.classList.toggle("ui-flat", !vertical);
+}
+
 function renderSheets() {
   const count = parseInt(els.sheetCount.value, 10) || 2;
   const currentPapers = getPapersByPriceList(CURRENT_PRICE_LIST_ID);
@@ -958,7 +976,7 @@ function renderSheets() {
     const currentPaper = currentPapers.find(p => p.id === sheet.paperId) || currentPapers[0];
     // Sheet 数量 > 10 时显示编号前缀，方便快速定位
     const showPaperIndex = currentPapers.length > 10;
-    // v9.7.1：SKU 芯片直选——全称放 title 悬浮显示，高密度平铺
+    // v9.8.0：SKU 芯片直选——全称放 title 悬浮显示，高密度平铺
     const paperOptions = currentPapers.map((p, pIdx) => `
       <div class="paper-option${p.id === sheet.paperId ? " active" : ""}" data-sheet="${index}" data-paper="${escapeHtml(p.id)}" title="${escapeHtml(p.name)}">
         <span class="paper-name">${showPaperIndex ? (pIdx + 1) + ". " : ""}${escapeHtml(p.shortName || p.name)}</span>
@@ -1023,7 +1041,7 @@ function renderSheets() {
     els.sheetList.appendChild(card);
   });
 
-  // v9.7.1：SKU 芯片直选——仅绑定 .paper-option 点击，下拉/搜索交互已移除
+  // v9.8.0：SKU 芯片直选——仅绑定 .paper-option 点击，下拉/搜索交互已移除
   els.sheetList.querySelectorAll(".paper-option").forEach(opt => {
     opt.addEventListener("click", e => {
       e.stopPropagation();
@@ -1331,7 +1349,9 @@ function onCalculate() {
             </div>
           </div>
         </td>
-        <td>${s.missing ? '<span class="price-missing">无该批量定价</span>' : '¥ ' + formatMoney(s.baseOriginalUnitPrice)}</td>
+        <td>${s.missing ? '<span class="price-missing">无该批量定价</span>' : (s.areaCoefficient > 1 && s.originalUnitPrice != null
+          ? '¥ ' + formatMoney(s.baseOriginalUnitPrice) + ' × ' + s.areaCoefficient + ' = <span style="color:var(--brand);font-weight:600;">¥ ' + formatMoney(s.originalUnitPrice) + '</span>'
+          : '¥ ' + formatMoney(s.baseOriginalUnitPrice))}</td>
       </tr>
     `;}).join("");
     // 绑定代码切换按钮事件
@@ -2589,6 +2609,8 @@ function loadProfileToUI() {
   if (els.defaultRope) els.defaultRope.value = APP_PROFILE.defaultRope || "rope1";
   // v9.6：全局尺寸类型
   if (els.defaultSizeType) els.defaultSizeType.value = getGlobalSizeType();
+  // v9.8：UI 架构模式回填
+  if (els.uiLayoutMode) els.uiLayoutMode.value = getUiLayoutMode();
   updateDefaultPaperOptions();
   if (els.defaultPaper) els.defaultPaper.value = APP_PROFILE.defaultPaperId || "";
 }
@@ -3174,7 +3196,7 @@ function setLocalBackupStatus(html, isError) {
 
 function exportLocalBackup() {
   const data = {
-    version: "9.7.1",
+    version: "9.8.0",
     kind: "local-backup",
     exportAt: new Date().toISOString(),
     priceLists: PRICE_LISTS,
@@ -3319,7 +3341,7 @@ function importLocalBackup(file) {
 // -------------------- 导入 / 导出完整配置 --------------------
 function exportFullData() {
   const data = {
-    version: "9.7.1",
+    version: "9.8.0",
     exportAt: new Date().toISOString(),
     priceLists: PRICE_LISTS,
     currentPriceListId: CURRENT_PRICE_LIST_ID,
@@ -3503,7 +3525,7 @@ function paperToSheetRows(paper) {
 }
 
 function exportPaperExcel() {
-  // v9.7.1：包一层错误提示，便于定位网页端导出失败原因
+  // v9.8.0：包一层错误提示，便于定位网页端导出失败原因
   try {
     exportPaperExcelInner();
   } catch (e) {
@@ -4317,6 +4339,12 @@ function bindEvents() {
     btn.addEventListener("click", () => switchPage(btn.dataset.page));
   });
 
+  // v9.8：UI 架构模式切换（即时生效 + 本地持久化）
+  if (els.uiLayoutMode) els.uiLayoutMode.addEventListener("change", () => {
+    try { localStorage.setItem("uiLayoutMode", els.uiLayoutMode.value); } catch (e) { /* 静默 */ }
+    applyUiLayoutMode();
+  });
+
   [els.tier, els.region].forEach(el => {
     if (!el) return;
     el.addEventListener("change", onCalculate);
@@ -4545,6 +4573,10 @@ function bindEvents() {
       if (tierExists) els.tier.value = String(APP_PROFILE.defaultTier);
     }
   } catch (e) { console.error("[init] 默认档位失败:", e); }
+
+  // 应用 UI 架构模式（v9.8：移动端自动垂直纵深式，桌面/iPad 扁平化宽泛式）
+  try { applyUiLayoutMode(); }
+  catch (e) { console.error("[init] UI 架构模式失败:", e); }
 
   // 同步直接系数模式按钮状态（默认直接系数模式）
   try {

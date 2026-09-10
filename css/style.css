@@ -1,4 +1,4 @@
-/* KOKALabel报价系统 v9.7.1 - 样式表 */
+/* KOKALabel报价系统 v9.8.0 - 样式表 */
 
 /* ===================== 全局变量与重置 ===================== */
     :root {
@@ -2942,7 +2942,7 @@
 .koka-upload-btn:hover { background: #047857; }
 .koka-readonly-tip { color: #b45309; font-size: 12px; margin-left: 8px; }
 
-/* ===================== v9.7.1 扁平化宽泛式重构（覆盖段） ===================== */
+/* ===================== v9.8.0 扁平化宽泛式重构（覆盖段） ===================== */
 /* 架构：左侧导航竖栏 + 主区宽幅两栏（参数左 / 结果右 sticky）；导航不在顶部 */
 
 /* --- 整体骨架 --- */
@@ -3094,4 +3094,48 @@
   .flat-toolbar { gap: 8px; }
   .flat-toolbar .quick-price-switcher { margin-left: 0; }
 }
+
+/* ===================== v9.8 补充 ===================== */
+
+/* --- SKU 芯片长名称完整显示（v9.8：去截断，自动换行） --- */
+.sku-grid { grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); }
+.sku-grid .paper-option { min-height: 30px; display: flex; align-items: center; justify-content: center; }
+.sku-grid .paper-option .paper-name {
+  white-space: normal; word-break: break-all; text-overflow: clip;
+  font-size: 11.5px; line-height: 1.35;
+}
+
+/* --- 垂直纵深式架构（body.ui-vertical：手机自动 / 个人主页手动） --- */
+/* 导航回顶部横条 + 参数/结果单栏纵排 + 卡片观感还原（v9.6 风格） */
+body.ui-vertical .app-shell { display: block; }
+body.ui-vertical .sidenav {
+  position: static; width: 100%; flex: none;
+  background: linear-gradient(90deg, var(--brand-dark), var(--brand));
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+body.ui-vertical .sidenav-brand { flex-direction: row; gap: 6px; padding: 10px 16px 6px; border-bottom: none; align-items: baseline; }
+body.ui-vertical .sidenav-brand-sub { display: inline; }
+body.ui-vertical .sidenav-menu { flex-direction: row; padding: 0 12px 4px; }
+body.ui-vertical .sidenav-menu .nav-btn {
+  width: auto; flex: 1; text-align: center; padding: 10px 8px;
+  border-left: none; border-radius: 6px 6px 0 0;
+}
+body.ui-vertical .sidenav-menu .nav-btn.active { background: rgba(255, 255, 255, 0.16); border-left: none; }
+body.ui-vertical .sidenav #kokaTopBar { margin: 0 12px 8px auto; background: transparent; padding: 2px 6px; }
+body.ui-vertical .pages { margin-left: 0; padding-top: 12px; max-width: 960px; margin-right: auto; margin-left: auto; }
+body.ui-vertical .calc-grid { grid-template-columns: 1fr; gap: 12px; }
+body.ui-vertical .calc-result-col { position: static; }
+/* 参数区恢复卡片观感（垂直纵深：一卡接一卡向下） */
+body.ui-vertical .calc-form-col {
+  background: var(--card); border-radius: var(--radius);
+  box-shadow: var(--shadow); padding: 16px 18px;
+}
+body.ui-vertical .flat-toolbar { border: none; padding: 0 0 10px; border-bottom: 1px solid var(--border); border-radius: 0; margin-bottom: 12px; }
+body.ui-vertical .flat-section {
+  background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 12px 14px; margin-top: 12px;
+}
+body.ui-vertical .calc-form-col > .flat-section:first-of-type { margin-top: 0; }
+body.ui-vertical .calc-result-col .card { box-shadow: var(--shadow); border: none; }
+body.ui-vertical .calc-result-col .flat-section { box-shadow: none; }
 

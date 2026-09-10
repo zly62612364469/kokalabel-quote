@@ -51,3 +51,9 @@ nav-btn×3(data-page)、tier、sheetCount、sheetList、rope、region、quickPri
 - `git checkout main-work`（回到 v9.6.0）
 - 单文件回退：`git checkout main-work -- index.html js/app.js css/style.css`
 - 本分支保留全部历史，废案不删除（与 v9.5 系列同一策略）
+
+## v9.8.0 迭代（09-10，已部署）
+1. **面积系数过程展示**：规格表（#resSheetTable）单价列 areaCoefficient>1 时显示 `¥基准 × 系数 = ¥结果`（原仅明细行有 × 系数、规格表只显基准价）。
+2. **SKU 芯片完整显示**：去 ellipsis 截断 → word-break 换行，列宽 104px、字号 11.5px。
+3. **UI 架构模式**：同一 DOM 双架构——body.ui-flat（左侧竖栏+双栏，默认）/ body.ui-vertical（顶部横条+单栏+卡片观感=垂直纵深式还原）。auto 按 UA 检测手机（iPhone/Android Mobile/Windows Phone…；iPad 不匹配→扁平）。个人主页→报价设置→UI 架构模式 select#uiLayoutMode，即时生效，localStorage「uiLayoutMode」按设备存储（不入云同步）。
+4. 版本 v9.8.0（python 精确替换）；v9.7.1/v9.8.0 推 GitHub（tag v9.7.1/v9.8.0）；v9.8.0 部署 CF。
