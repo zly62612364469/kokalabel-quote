@@ -5,21 +5,21 @@
   <meta name="robots" content="noindex, nofollow, noarchive">
   <meta name="googlebot" content="noindex, nofollow">
   <!-- P0 安全：CSP 策略（v7.9：SheetJS 已本地化，script-src 仅允许 'self'，离线双击打开亦可用） -->
-  <!-- v10.1.0：default-src/connect-src 放行 blob:，修复网页端 XLSX.writeFile 导出 Excel 被拦 -->
+  <!-- v10.2.0：default-src/connect-src 放行 blob:，修复网页端 XLSX.writeFile 导出 Excel 被拦 -->
   <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob:; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' blob:;">
-  <title>亲成报价系统 v10.1.0</title>
-  <link rel="icon" type="image/svg+xml" href="favicon.svg?v=10.1.0">
-  <link rel="icon" type="image/x-icon" href="favicon.ico?v=10.1.0">
-  <link rel="icon" type="image/png" href="favicon.png?v=10.1.0">
-  <link rel="apple-touch-icon" href="apple-touch-icon.png?v=10.1.0">
-  <link rel="stylesheet" href="css/style.css?v=10.1.0">
+  <title>亲成报价系统 v10.2.0</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg?v=10.2.0">
+  <link rel="icon" type="image/x-icon" href="favicon.ico?v=10.2.0">
+  <link rel="icon" type="image/png" href="favicon.png?v=10.2.0">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png?v=10.2.0">
+  <link rel="stylesheet" href="css/style.css?v=10.2.0">
   <!-- v9.3 账号访问控制：http 部署时强制登录（file:// 本地离线不启用） -->
-  <script src="js/auth.js?v=10.1.0"></script>
+  <script src="js/auth.js?v=10.2.0"></script>
 </head>
 <body>
-  <!-- v10.1.0：app-shell 包裹 = 左侧导航 + 主区（扁平化宽泛式架构） -->
+  <!-- v10.2.0：app-shell 包裹 = 左侧导航 + 主区（扁平化宽泛式架构） -->
   <div class="app-shell">
-  <!-- 左侧导航栏（v10.1.0：导航从顶部移至左侧竖栏） -->
+  <!-- 左侧导航栏（v10.2.0：导航从顶部移至左侧竖栏） -->
   <nav class="sidenav">
     <div class="sidenav-brand">亲成<span class="sidenav-brand-sub">报价系统</span></div>
     <div class="sidenav-menu">
@@ -30,25 +30,23 @@
     <button class="sidenav-personalize" id="personalizeBtn" type="button">Aa 个性化</button>
   </nav>
 
-  <!-- 个性化面板（v10.1：字号调整，所有用户可用，仅本机生效） -->
-  <div class="modal-mask" id="personalizeModal" hidden>
-    <div class="personalize-card">
-      <div class="personalize-head">
-        <span>个性化</span>
-        <button type="button" class="personalize-close" id="personalizeClose" aria-label="关闭">✕</button>
+  <!-- 个性化面板（v10.2：内联下拉面板，非弹窗，无遮罩，点外部关闭；所有用户可用，仅本机生效） -->
+  <div class="personalize-panel" id="personalizePanel">
+    <div class="personalize-head">
+      <span>个性化</span>
+      <button type="button" class="personalize-close" id="personalizeClose" aria-label="关闭">✕</button>
+    </div>
+    <div class="personalize-body">
+      <div class="personalize-label">界面字体大小</div>
+      <div class="font-scale-group" id="fontScaleGroup">
+        <button type="button" data-scale="0.85">小</button>
+        <button type="button" data-scale="1">默认</button>
+        <button type="button" data-scale="1.15">大</button>
+        <button type="button" data-scale="1.3">特大</button>
       </div>
-      <div class="personalize-body">
-        <div class="personalize-label">界面字体大小</div>
-        <div class="font-scale-group" id="fontScaleGroup">
-          <button type="button" data-scale="0.85">小</button>
-          <button type="button" data-scale="1">默认</button>
-          <button type="button" data-scale="1.15">大</button>
-          <button type="button" data-scale="1.3">特大</button>
-        </div>
-        <div class="personalize-current" id="fontScaleCurrent">当前：100%</div>
-        <button type="button" class="personalize-reset" id="fontScaleReset">恢复默认</button>
-        <div class="personalize-note">仅调整本机显示，不影响其他设备与账号</div>
-      </div>
+      <div class="personalize-current" id="fontScaleCurrent">当前：100%</div>
+      <button type="button" class="personalize-reset" id="fontScaleReset">恢复默认</button>
+      <div class="personalize-note">仅调整本机显示，不影响其他设备与账号</div>
     </div>
   </div>
 
@@ -57,7 +55,7 @@
     <!-- 页面1：智能报价计算器 -->
     <section class="page active" id="page-calculator">
       <div class="calc-grid">
-      <!-- 左栏：参数表单（v10.1.0 平铺直列式） -->
+      <!-- 左栏：参数表单（v10.2.0 平铺直列式） -->
       <div class="calc-form-col">
         <!-- 顶部工具条：计算模式 + 报价表切换 + 默认报价开关 -->
         <div class="flat-toolbar">
@@ -359,7 +357,7 @@
         </div>
       </div>
 
-      <!-- 右栏：报价结果（v10.1.0 sticky 跟随） -->
+      <!-- 右栏：报价结果（v10.2.0 sticky 跟随） -->
       <div class="calc-result-col">
       <div class="card">
         <h2 class="card-title">报价结果</h2>
@@ -496,6 +494,19 @@
           <label class="switcher-label">当前报价表：</label>
           <select id="priceListSelector" class="price-list-selector"></select>
           <button class="btn danger-outline sm" id="deletePriceListBtn" title="删除当前报价表（不允许删除最后一个）">删除当前报价表</button>
+        </div>
+
+        <!-- v10.2：表头（批量档位）编辑（仅超级管理员可编辑；修改存本地，经「保存为全局默认」确认后上传云端） -->
+        <div id="tierHeaderEditor" class="tier-header-editor" style="display:none;">
+          <div class="tier-header-head">
+            <strong>表头（批量档位）编辑</strong>
+            <span class="hint">新增/重命名/删除作用于当前报价表组的纸张规格、附加工艺及吊绳、邮费表；修改仅存本地，请核对后点击「↑ 保存为全局默认」上传云端</span>
+          </div>
+          <div class="tier-header-chips" id="tierHeaderChips"></div>
+          <div class="tier-header-add">
+            <input type="number" id="tierHeaderInput" min="1" step="1" placeholder="新增档位（张），如 3500">
+            <button class="btn sm" id="tierHeaderAddBtn" type="button">新增档位</button>
+          </div>
         </div>
 
         <div class="table-toolbar">
@@ -961,7 +972,7 @@
           <div class="setting-row">
             <div class="setting-info">
               <div class="setting-label">当前版本</div>
-              <div class="setting-desc">亲成报价系统 v10.1.0</div>
+              <div class="setting-desc">亲成报价系统 v10.2.0</div>
             </div>
             <div class="setting-control">
               <span class="placeholder-badge">正式版</span>
@@ -1070,7 +1081,7 @@
   <div class="toast" id="toast"></div>
 
   <!-- v7.9: SheetJS 本地化（离线双击打开亦可导出/导入 Excel），先于业务脚本加载，XLSX 全局可用 -->
-  <script src="js/vendor/xlsx.full.min.js?v=10.1.0"></script>
-  <script src="js/data.js?v=10.1.0"></script>
-  <script src="js/app.js?v=10.1.0"></script>
+  <script src="js/vendor/xlsx.full.min.js?v=10.2.0"></script>
+  <script src="js/data.js?v=10.2.0"></script>
+  <script src="js/app.js?v=10.2.0"></script>
 </body></html>

@@ -1,4 +1,4 @@
-/* 亲成报价系统 v10.1.0 - 样式表 */
+/* 亲成报价系统 v10.2.0 - 样式表 */
 
 /* ===================== 全局变量与重置 ===================== */
     :root {
@@ -2942,7 +2942,7 @@
 .koka-upload-btn:hover { background: #047857; }
 .koka-readonly-tip { color: #b45309; font-size: 12px; margin-left: 8px; }
 
-/* ===================== v10.1.0 扁平化宽泛式重构（覆盖段） ===================== */
+/* ===================== v10.2.0 扁平化宽泛式重构（覆盖段） ===================== */
 /* 架构：左侧导航竖栏 + 主区宽幅两栏（参数左 / 结果右 sticky）；导航不在顶部 */
 
 /* --- 整体骨架 --- */
@@ -3165,16 +3165,14 @@ body.ui-vertical .calc-result-col .flat-section { box-shadow: none; }
 }
 .sidenav-personalize:hover { background: rgba(255, 255, 255, 0.22); color: #fff; }
 
-/* --- 个性化面板 --- */
-.modal-mask {
-  position: fixed; inset: 0; z-index: 1000;
-  background: rgba(15, 23, 42, 0.45);
-  display: flex; align-items: center; justify-content: center;
-}
-.personalize-card {
+/* --- 个性化面板（v10.2：内联下拉，无遮罩，修复遮挡全屏导致的卡死） --- */
+.personalize-panel {
+  display: none; position: fixed; left: 210px; bottom: 60px; z-index: 1000;
   background: #fff; border-radius: 12px; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.22);
-  width: min(360px, calc(100vw - 32px)); overflow: hidden;
+  width: min(320px, calc(100vw - 40px)); overflow: hidden;
+  border: 1px solid var(--border);
 }
+.personalize-panel.open { display: block; }
 .personalize-head {
   display: flex; align-items: center; justify-content: space-between;
   padding: 12px 16px; font-weight: 700; font-size: 15px; color: var(--text);
@@ -3203,8 +3201,9 @@ body.ui-vertical .calc-result-col .flat-section { box-shadow: none; }
 .personalize-reset:hover { border-color: var(--brand); color: var(--brand); background: var(--brand-light); }
 .personalize-note { margin-top: 10px; font-size: 11.5px; color: var(--text-secondary); }
 
-/* 窄屏（垂直模式/手机）个性化按钮在顶部横条内 */
+/* 窄屏（垂直模式/手机）个性化按钮在顶部横条内，面板从横条下方弹出 */
 body.ui-vertical .sidenav-personalize { margin: 0 12px 8px auto; padding: 6px 12px; }
+body.ui-vertical .personalize-panel { left: 12px; top: 120px; bottom: auto; }
 
 /* --- 吊绳折叠面板 --- */
 .rope-fold .rope-list { display: none; }
@@ -3275,4 +3274,30 @@ body.ui-vertical .sidenav-personalize { margin: 0 12px 8px auto; padding: 6px 12
 .paper-dropdown-inline .paper-option.active { background: var(--brand-light); }
 .paper-dropdown-inline .paper-option.active .paper-name { background: var(--brand); color: #fff; }
 .paper-dropdown-inline .paper-option.is-filtered { display: none; }
+
+/* ===================== v10.2 表头编辑 / 工艺并入提示 ===================== */
+.tier-header-editor {
+  background: var(--brand-light); border: 1px solid var(--border); border-radius: 8px;
+  padding: 10px 14px; margin-bottom: 12px;
+}
+.tier-header-head { display: flex; flex-direction: column; gap: 2px; margin-bottom: 8px; font-size: 13px; color: var(--brand-dark); }
+.tier-header-head .hint { font-size: 11.5px; color: var(--text-secondary); font-weight: 400; }
+.tier-header-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.tier-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: #fff; border: 1px solid var(--border); border-radius: 6px;
+  padding: 3px 8px; font-size: 12.5px; font-weight: 600; color: var(--text);
+}
+.tier-chip-btn {
+  background: transparent; border: none; cursor: pointer; font-size: 11px;
+  color: var(--brand); padding: 1px 3px; border-radius: 4px;
+}
+.tier-chip-btn:hover { background: var(--brand-light); }
+.tier-chip-btn.danger { color: var(--danger); }
+.tier-chip-btn.danger:hover { background: var(--danger-light); }
+.tier-header-add { display: flex; gap: 8px; }
+.tier-header-add input {
+  width: 200px; padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px;
+}
+.craft-included-note { font-size: 11px; color: var(--text-secondary); font-weight: 400; }
 
