@@ -57,3 +57,9 @@ nav-btn×3(data-page)、tier、sheetCount、sheetList、rope、region、quickPri
 2. **SKU 芯片完整显示**：去 ellipsis 截断 → word-break 换行，列宽 104px、字号 11.5px。
 3. **UI 架构模式**：同一 DOM 双架构——body.ui-flat（左侧竖栏+双栏，默认）/ body.ui-vertical（顶部横条+单栏+卡片观感=垂直纵深式还原）。auto 按 UA 检测手机（iPhone/Android Mobile/Windows Phone…；iPad 不匹配→扁平）。个人主页→报价设置→UI 架构模式 select#uiLayoutMode，即时生效，localStorage「uiLayoutMode」按设备存储（不入云同步）。
 4. 版本 v9.8.0（python 精确替换）；v9.7.1/v9.8.0 推 GitHub（tag v9.7.1/v9.8.0）；v9.8.0 部署 CF。
+
+## v9.9.0 迭代（09-10，本地修改）
+吊绳价格倍数制：1000 张基准；500 张与 1000 张同价；其余 = 基准 × 档位/1000（不再依赖精确档位，3500/7500 等任意档可算）。
+- app.js：getRopeBasePrice（1000 档优先/500 回退）；calculate 吊绳段改倍数制（round2）；result 增 ropeBase/ropeMult；明细行 >1000 档显示 `¥基准/千张 × 倍数 = ¥结果`。
+- data.js：DEFAULT_ROPE_CONFIG 27 组 500 档=1000 档（python 精确替换 26 处）；migrateRopeV99（dataVersion→9.9.0，老用户 500 档自动同价，内存+存储同步重赋）。
+- node 同作用域模拟验证：新用户模板/老用户迁移双路径 + 500/3500/10000 档计算全部符合预期。

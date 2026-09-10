@@ -1,5 +1,5 @@
 // ============================================================
-// KOKALabel报价系统 v9.8.0 - 主程序（计算 + 渲染 + 交互 + 初始化）
+// KOKALabel报价系统 v9.9.0 - 主程序（计算 + 渲染 + 交互 + 初始化）
 // ============================================================
 "use strict";
 
@@ -94,6 +94,16 @@ function formatPriceRaw(value) {
 
 // 工艺与吊绳选项右上角统一展示 1000 档的初始价格，不随当前报价档位变化。
 const INITIAL_OPTION_PRICE_TIER = 1000;
+
+// v9.9：吊绳 1000 张基准价——优先取 1000 档，缺省回退 500 档（两者同价）
+function getRopeBasePrice(prices) {
+  if (!prices) return null;
+  let v = prices["1000"] != null && prices["1000"] !== "" ? Number(prices["1000"]) : NaN;
+  if (isNaN(v) || v <= 0) {
+    v = prices["500"] != null && prices["500"] !== "" ? Number(prices["500"]) : NaN;
+  }
+  return isNaN(v) || v <= 0 ? null : v;
+}
 
 function getInitialOptionPrice(prices) {
   if (!prices || prices[INITIAL_OPTION_PRICE_TIER] == null || prices[INITIAL_OPTION_PRICE_TIER] === "") {
@@ -501,14 +511,19 @@ function calculate(inputs) {
   }
 
   // 吊绳费用（直接系数模式跳过）
+  // v9.9：吊绳价格倍数制——以 1000 张为基准价，500 张与 1000 张同价，
+  // 其余档位按 基准价 × (档位/1000) 计算，不再依赖数据表中的精确档位
   let ropePrice = null;
+  let ropeBase = null;    // 1000 张基准价
+  let ropeMult = 1;       // 当前档位倍数
   if (!isDirect) {
-    ropePrice = hasExactTier(rope.prices, tier)
-      ? Number(rope.prices[tier])
-      : null;
-    if (ropePrice == null) {
+    ropeBase = getRopeBasePrice(rope.prices);
+    if (ropeBase != null) {
+      ropeMult = tier <= 1000 ? 1 : tier / 1000;
+      ropePrice = Math.round(ropeBase * ropeMult * 100) / 100;
+    } else {
       hasMissingTier = true;
-      warnings.push(`吊绳「${rope.name}」无 ${tier} 张批量定价`);
+      warnings.push(`吊绳「${rope.name}」未设置 1000 张基准价`);
     }
   }
 
@@ -656,6 +671,8 @@ function calculate(inputs) {
     paperOriginalTotal,
     craftTotal,
     ropePrice,
+    ropeBase,
+    ropeMult,
     shippingPrice,
     shippingMode,
     shippingWeightUsed,
@@ -976,7 +993,7 @@ function renderSheets() {
     const currentPaper = currentPapers.find(p => p.id === sheet.paperId) || currentPapers[0];
     // Sheet 数量 > 10 时显示编号前缀，方便快速定位
     const showPaperIndex = currentPapers.length > 10;
-    // v9.8.0：SKU 芯片直选——全称放 title 悬浮显示，高密度平铺
+    // v9.9.0：SKU 芯片直选——全称放 title 悬浮显示，高密度平铺
     const paperOptions = currentPapers.map((p, pIdx) => `
       <div class="paper-option${p.id === sheet.paperId ? " active" : ""}" data-sheet="${index}" data-paper="${escapeHtml(p.id)}" title="${escapeHtml(p.name)}">
         <span class="paper-name">${showPaperIndex ? (pIdx + 1) + ". " : ""}${escapeHtml(p.shortName || p.name)}</span>
@@ -1041,7 +1058,7 @@ function renderSheets() {
     els.sheetList.appendChild(card);
   });
 
-  // v9.8.0：SKU 芯片直选——仅绑定 .paper-option 点击，下拉/搜索交互已移除
+  // v9.9.0：SKU 芯片直选——仅绑定 .paper-option 点击，下拉/搜索交互已移除
   els.sheetList.querySelectorAll(".paper-option").forEach(opt => {
     opt.addEventListener("click", e => {
       e.stopPropagation();
@@ -1423,14 +1440,19 @@ function onCalculate() {
     if (paperDiscountRow) paperDiscountRow.style.display = "";
     const selectedRope = ROPE_CONFIG.find(item => item.id === ropeId);
     const ropeName = selectedRope ? selectedRope.name : "未选择吊绳";
+    // v9.9：倍数制展示——档位>1000 时显示计算过程 ¥基准 × 倍数 = ¥结果，否则沿用原格式
     const ropePrice = result.ropePrice != null
       ? `<span class="rope-result-price">¥ ${formatMoney(result.ropePrice)}</span>`
       : '<span class="price-missing">无该批量定价</span>';
+    const ropeFormula = (result.ropeBase != null && result.tier > 1000)
+      ? `<span class="rope-result-formula">（¥ ${formatMoney(result.ropeBase)}/千张 × ${formatPriceRaw(result.ropeMult)} = </span>`
+      : `<span class="rope-result-formula"> × ${result.tier}个 = </span>`;
+    const ropeFormulaEnd = (result.ropeBase != null && result.tier > 1000) ? '）' : '';
     els.resRopePrice.innerHTML = `
       <span class="rope-result-detail">
         <span class="rope-result-name">${escapeHtml(ropeName)}</span>
-        <span class="rope-result-formula"> × ${result.tier}个 = </span>
-        ${ropePrice}
+        ${ropeFormula}
+        ${ropePrice}${ropeFormulaEnd}
       </span>
     `;
     // v8.0：邮费按三种情况展示明细
@@ -3196,7 +3218,7 @@ function setLocalBackupStatus(html, isError) {
 
 function exportLocalBackup() {
   const data = {
-    version: "9.8.0",
+    version: "9.9.0",
     kind: "local-backup",
     exportAt: new Date().toISOString(),
     priceLists: PRICE_LISTS,
@@ -3341,7 +3363,7 @@ function importLocalBackup(file) {
 // -------------------- 导入 / 导出完整配置 --------------------
 function exportFullData() {
   const data = {
-    version: "9.8.0",
+    version: "9.9.0",
     exportAt: new Date().toISOString(),
     priceLists: PRICE_LISTS,
     currentPriceListId: CURRENT_PRICE_LIST_ID,
@@ -3525,7 +3547,7 @@ function paperToSheetRows(paper) {
 }
 
 function exportPaperExcel() {
-  // v9.8.0：包一层错误提示，便于定位网页端导出失败原因
+  // v9.9.0：包一层错误提示，便于定位网页端导出失败原因
   try {
     exportPaperExcelInner();
   } catch (e) {

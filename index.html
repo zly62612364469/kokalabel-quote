@@ -5,20 +5,20 @@
   <meta name="robots" content="noindex, nofollow, noarchive">
   <meta name="googlebot" content="noindex, nofollow">
   <!-- P0 安全：CSP 策略（v7.9：SheetJS 已本地化，script-src 仅允许 'self'，离线双击打开亦可用） -->
-  <!-- v9.8.0：default-src/connect-src 放行 blob:，修复网页端 XLSX.writeFile 导出 Excel 被拦 -->
+  <!-- v9.9.0：default-src/connect-src 放行 blob:，修复网页端 XLSX.writeFile 导出 Excel 被拦 -->
   <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob:; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' blob:;">
-  <title>KOKALabel报价系统 v9.8.0</title>
-  <link rel="icon" type="image/x-icon" href="favicon.ico?v=9.8.0">
-  <link rel="icon" type="image/png" href="favicon.png?v=9.8.0">
-  <link rel="apple-touch-icon" href="apple-touch-icon.png?v=9.8.0">
-  <link rel="stylesheet" href="css/style.css?v=9.8.0">
+  <title>KOKALabel报价系统 v9.9.0</title>
+  <link rel="icon" type="image/x-icon" href="favicon.ico?v=9.9.0">
+  <link rel="icon" type="image/png" href="favicon.png?v=9.9.0">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png?v=9.9.0">
+  <link rel="stylesheet" href="css/style.css?v=9.9.0">
   <!-- v9.3 账号访问控制：http 部署时强制登录（file:// 本地离线不启用） -->
-  <script src="js/auth.js?v=9.8.0"></script>
+  <script src="js/auth.js?v=9.9.0"></script>
 </head>
 <body>
-  <!-- v9.8.0：app-shell 包裹 = 左侧导航 + 主区（扁平化宽泛式架构） -->
+  <!-- v9.9.0：app-shell 包裹 = 左侧导航 + 主区（扁平化宽泛式架构） -->
   <div class="app-shell">
-  <!-- 左侧导航栏（v9.8.0：导航从顶部移至左侧竖栏） -->
+  <!-- 左侧导航栏（v9.9.0：导航从顶部移至左侧竖栏） -->
   <nav class="sidenav">
     <div class="sidenav-brand">KOKALabel<span class="sidenav-brand-sub">报价系统</span></div>
     <div class="sidenav-menu">
@@ -33,7 +33,7 @@
     <!-- 页面1：智能报价计算器 -->
     <section class="page active" id="page-calculator">
       <div class="calc-grid">
-      <!-- 左栏：参数表单（v9.8.0 平铺直列式） -->
+      <!-- 左栏：参数表单（v9.9.0 平铺直列式） -->
       <div class="calc-form-col">
         <!-- 顶部工具条：计算模式 + 报价表切换 + 默认报价开关 -->
         <div class="flat-toolbar">
@@ -332,7 +332,7 @@
         </div>
       </div>
 
-      <!-- 右栏：报价结果（v9.8.0 sticky 跟随） -->
+      <!-- 右栏：报价结果（v9.9.0 sticky 跟随） -->
       <div class="calc-result-col">
       <div class="card">
         <h2 class="card-title">报价结果</h2>
@@ -916,7 +916,7 @@
           <div class="setting-row">
             <div class="setting-info">
               <div class="setting-label">当前版本</div>
-              <div class="setting-desc">KOKALabel报价系统 v9.8.0</div>
+              <div class="setting-desc">KOKALabel报价系统 v9.9.0</div>
             </div>
             <div class="setting-control">
               <span class="placeholder-badge">正式版</span>
@@ -1025,7 +1025,7 @@
   <div class="toast" id="toast"></div>
 
   <!-- v7.9: SheetJS 本地化（离线双击打开亦可导出/导入 Excel），先于业务脚本加载，XLSX 全局可用 -->
-  <script src="js/vendor/xlsx.full.min.js?v=9.8.0"></script>
-  <script src="js/data.js?v=9.8.0"></script>
-  <script src="js/app.js?v=9.8.0"></script>
+  <script src="js/vendor/xlsx.full.min.js?v=9.9.0"></script>
+  <script src="js/data.js?v=9.9.0"></script>
+  <script src="js/app.js?v=9.9.0"></script>
 </body></html>
