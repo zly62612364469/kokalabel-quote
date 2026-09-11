@@ -1,5 +1,42 @@
 # KOKALabel 报价系统 变更日志
 
+## v10.5.0（2026-09-11，已上线）
+
+### 改造：纸张材质「下拉搜索」模式改为双列网格弹窗 + 只显示简称
+- **选项只显示简称**：下拉列表原先每项显示「序号 + 简称 + 全称」（如 `1. 700米兰纹 / 1楼小组-1：米兰纹 700克 双面过光油`），现改为**仅显示简称**（`700米兰纹`）；完整名称保留在 `title` 属性，鼠标悬浮即可查看。
+- **双列网格排布**：弹窗内选项由单列纵向列表改为 **2 列 Grid**（`grid-template-columns: repeat(2, minmax(0, 1fr))`），列表高度减半、相同屏幕内可容纳近两倍选项。
+- **三种布局全部生效**：
+  - 手机端（**垂直纵深式** `body.ui-vertical`）：2 列网格正常排布，弹窗不再下溢视口；
+  - 电脑 / 平板（**扁平化宽泛式** `body.ui-flat`）：2 列网格正常排布，窄侧栏下同样不溢出。
+- 触发器（已选纸张芯片）同步只显示简称，移除副标题全称，视觉更紧凑。
+- 搜索框提示语改为「输入简称模糊搜索」，交互逻辑不变（实时模糊过滤、方向键/回车选择、Esc 关闭）。
+
+### 修复：UI 框体溢出与规范问题（共 5 处）
+1. **报价结果表格撑破整页（桌面端横向溢出 49px）**
+   - 根因：`.result-section` 为 `display:grid` 容器，隐式列宽默认 `auto`，被 5 列表格按 `min-content` 撑到 493px，逐层传导（`.result-row` → `.result-table-scroll` → 超出 `.calc-result-col` 453px）→ 整页出现横向滚动条。
+   - 修复：`.calc-result-col .result-section { grid-template-columns: minmax(0, 1fr) }` 显式约束列宽；表格外包 `.result-table-scroll{ width:0; min-width:100%; overflow-x:auto }`，表格过宽时在容器内横向滚动而非撑破页面。
+2. **手机端导航按钮被挤出视口 13px**
+   - 根因：`body.ui-vertical .sidenav-menu .nav-btn { flex: 1 }` 使三个按钮平分宽度后总宽超出容器。
+   - 修复：改为 `flex: 0 0 auto; white-space: nowrap`（按钮自适应内容宽度）+ `.sidenav-menu { overflow-x: auto }` 允许横向滑动；文字不再被截断。
+3. **手机端下拉弹窗下溢视口 71px**
+   - 根因 1：`adjustDropdownPosition()` 计算可用高度时未扣除弹窗自身 `padding/border` 与搜索区高度；
+   - 根因 2：`togglePaperDropdown()` 仅通过 `requestAnimationFrame` 调用定位，被浏览器节流时停留在 CSS 默认 `max-height: 300px`。
+   - 修复：JS 改为**同步定位 + 下一帧复测**双保险，并扣除 `boxOverhead` 与 `searchH`、加 `Math.max(120, …)` 下限；CSS 追加 `max-height: min(300px, 52vh)` 兜底（≤520px 屏为 `46vh`）。
+4. **桌面端「订单备注」textarea 右溢 30px**
+   - 根因：`.quote-save-fields { grid-template-columns: minmax(180px, .7fr) minmax(260px, 1.3fr) }` 第二列最小宽 260px 强制撑破窄侧栏。
+   - 修复：改为 `minmax(0, .7fr) minmax(0, 1.3fr)`；窄侧栏（`.calc-result-col`）内强制单列。
+5. **全局防溢出兜底**
+   - `.app-shell / .pages / .page / .calc-grid / .calc-form-col / .flat-section / .sheet-card` 统一补 `max-width: 100%; box-sizing: border-box`；`.pages` 加 `overflow-x: clip`。
+   - 下拉弹窗宽度规范：`min-width: min(420px, calc(100vw - 24px)); max-width: calc(100vw - 24px)`。
+
+### 验证
+- 三视口实测：`desktop 1440×900 (ui-flat)` / `tablet 768×900 (ui-flat)` / `mobile 390×780 (ui-vertical)`
+  - 页面横向溢出均 **0px**（`docScrollW == clientW`）；真实溢出元素计数 **0**；
+  - 下拉选项 66 项，首项简称 `700米兰纹`，全称节点 `.paper-desc` 已不存在，前两项同行（双列确认）**YES**；弹窗下溢/右溢均 0px。
+- 叠加 14 组场景矩阵（扁平/垂直 × 网格/下拉 × 三视口）全部通过。
+- 版本串：`index.html` 16 处、`app.js` 6 处、`style.css` 注释 8 处升为 `10.5.0`；`data.js` 迁移守卫串 `"9.9.0"` 未被污染。
+- JS 语法（`app.js` / `data.js` / `auth.js`）全部通过。
+
 ## v10.3.0（2026-09-10 晚，本地修改）
 
 ### 修复：吊绳类型展开后芯片排布异常
