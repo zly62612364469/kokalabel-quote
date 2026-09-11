@@ -1,5 +1,5 @@
 // ============================================================
-// 亲成报价系统 v10.3.0 - 主程序（计算 + 渲染 + 交互 + 初始化）
+// 亲成报价系统 v10.5.0 - 主程序（计算 + 渲染 + 交互 + 初始化）
 // ============================================================
 "use strict";
 
@@ -1104,12 +1104,11 @@ function renderSheets() {
     const showPaperIndex = !APP_PROFILE.hidePaperIndex && currentPapers.length > 10;
     // v10.1：纸张材质选择模式（个人主页开关）——grid=芯片平铺直选（默认）/ dropdown=下拉框模糊搜索
     const useDropdown = APP_PROFILE.paperSelectMode === "dropdown";
-    // v10.3.0：SKU 芯片直选——全称放 title 悬浮显示，高密度平铺
-    // v10.1：下拉模式下选项为「简称芯片 + 全称芯片」同一行
+    // v10.5.0：SKU 芯片直选——全称放 title 悬浮显示，高密度平铺
+    // v10.5：下拉模式改为双列网格，仅显示简称（全称存 title 悬浮可见）
     const paperOptions = currentPapers.map((p, pIdx) => `
       <div class="paper-option${p.id === sheet.paperId ? " active" : ""}" data-sheet="${index}" data-paper="${escapeHtml(p.id)}" title="${escapeHtml(p.name)}">
         <span class="paper-name">${showPaperIndex ? (pIdx + 1) + ". " : ""}${escapeHtml(p.shortName || p.name)}</span>
-        ${useDropdown ? `<span class="paper-desc">${escapeHtml(p.name)}</span>` : ""}
       </div>
     `).join("");
 
@@ -1138,17 +1137,18 @@ function renderSheets() {
         ${useDropdown ? `
         <label class="field-label">纸张材质 <span class="hint">点击选择，支持输入模糊搜索</span></label>
         <div class="paper-dropdown paper-dropdown-inline" data-sheet="${index}">
-          <div class="paper-trigger" role="button" tabindex="0" aria-label="选择纸张材质">
+          <div class="paper-trigger" role="button" tabindex="0" aria-label="选择纸张材质" title="${escapeHtml(currentPaper ? currentPaper.name : "")}">
             <span class="paper-chip">${escapeHtml(currentPaper ? (currentPaper.shortName || currentPaper.name) : "无可用纸张")}</span>
-            <span class="paper-chip-desc">${escapeHtml(currentPaper ? currentPaper.name : "请导入报价表")}</span>
             <span class="paper-trigger-arrow"></span>
           </div>
           <div class="paper-options">
             <div class="paper-search">
-              <input type="search" class="paper-search-input" data-sheet="${index}" placeholder="输入简称或全称模糊搜索" autocomplete="off" aria-label="搜索纸张材质" />
+              <input type="search" class="paper-search-input" data-sheet="${index}" placeholder="输入简称模糊搜索" autocomplete="off" aria-label="搜索纸张材质" />
             </div>
-            <div class="paper-search-empty" hidden>未找到匹配的纸张材质</div>
-            ${paperOptions}
+            <div class="paper-options-grid">
+              <div class="paper-search-empty" hidden>未找到匹配的纸张材质</div>
+              ${paperOptions}
+            </div>
           </div>
         </div>
         ` : `
@@ -1189,7 +1189,7 @@ function renderSheets() {
     els.sheetList.appendChild(card);
   });
 
-  // v10.3.0：SKU 芯片直选——仅绑定 .paper-option 点击
+  // v10.5.0：SKU 芯片直选——仅绑定 .paper-option 点击
   // v10.1：下拉模式下额外绑定 trigger 展开与搜索框（复用旧版交互函数，onPaperChange 共用）
   els.sheetList.querySelectorAll(".paper-option").forEach(opt => {
     opt.addEventListener("click", e => {
@@ -1250,15 +1250,17 @@ function togglePaperDropdown(dropdown) {
   closeAllPaperDropdowns();
   if (!isOpen) {
     dropdown.classList.add("open");
-    // 下一帧测量弹窗位置，避免 display:none 状态下 getBoundingClientRect 返回 0
-    requestAnimationFrame(() => {
-      const searchInput = dropdown.querySelector(".paper-search-input");
-      if (searchInput) {
-        searchInput.value = "";
-        filterPaperOptions(searchInput);
-      }
-      adjustDropdownPosition(dropdown);
-    });
+    // 清空搜索框并复位过滤状态
+    const searchInput = dropdown.querySelector(".paper-search-input");
+    if (searchInput) {
+      searchInput.value = "";
+      filterPaperOptions(searchInput);
+    }
+    // v10.5：双保险定位——同步一次 + 下一帧复测一次。
+    // 原先仅依赖 requestAnimationFrame，在被节流时会停留在 CSS 默认
+    // max-height（300px）导致手机端弹窗下溢视口 71px。
+    adjustDropdownPosition(dropdown);
+    requestAnimationFrame(() => adjustDropdownPosition(dropdown));
   }
 }
 
@@ -1296,6 +1298,7 @@ function adjustDropdownPosition(dropdown) {
   options.style.maxHeight = "";
 
   const trigger = dropdown.querySelector(".paper-trigger");
+  if (!trigger) return;
   const triggerRect = trigger.getBoundingClientRect();
   const vw = window.innerWidth;
   const vh = window.innerHeight;
@@ -1306,14 +1309,27 @@ function adjustDropdownPosition(dropdown) {
   const spaceBelow = vh - triggerRect.bottom - GAP - SAFE_MARGIN;
   const spaceAbove = triggerRect.top - GAP - SAFE_MARGIN;
 
+  // v10.5：弹窗实际高度受自身上下 padding 影响，max-height 需预留该开销，
+  // 避免「设完 max-height 后整体仍超出视口」导致的底部溢出（手机端曾溢出 67px）。
+  const cs = getComputedStyle(options);
+  const boxOverhead =
+    (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0) +
+    (parseFloat(cs.borderTopWidth) || 0) + (parseFloat(cs.borderBottomWidth) || 0);
+  // 搜索区高度（sticky 顶部，需在可视高度内额外扣除）
+  const searchEl = options.querySelector(".paper-search");
+  const searchH = searchEl ? searchEl.getBoundingClientRect().height : 0;
+
+  const usableBelow = spaceBelow - boxOverhead;
+  const usableAbove = spaceAbove - boxOverhead;
+
   // 选择空间更大的方向，并动态设置 max-height
-  if (spaceBelow >= spaceAbove || spaceBelow >= 200) {
+  if (usableBelow >= usableAbove || usableBelow >= 200) {
     // 下方打开
-    options.style.maxHeight = Math.min(spaceBelow, 400) + "px";
+    options.style.maxHeight = Math.max(120, Math.min(usableBelow, 400)) + "px";
   } else {
     // 上方打开
     options.classList.add("flip-up");
-    options.style.maxHeight = Math.min(spaceAbove, 400) + "px";
+    options.style.maxHeight = Math.max(120, Math.min(usableAbove, 400)) + "px";
   }
 
   // 2. 水平方向：判断右侧是否溢出
@@ -1325,7 +1341,8 @@ function adjustDropdownPosition(dropdown) {
   // 3. 超小屏：弹窗宽度超出视口时使用固定全宽定位
   if (triggerRect.width < vw * 0.6 && vw <= 480) {
     options.classList.add("full-width");
-    options.style.maxHeight = Math.min(Math.max(spaceBelow, spaceAbove), 400) + "px";
+    const usable = Math.max(usableBelow, usableAbove);
+    options.style.maxHeight = Math.max(120, Math.min(usable, 400)) + "px";
   }
 }
 
@@ -3600,7 +3617,7 @@ function setLocalBackupStatus(html, isError) {
 
 function exportLocalBackup() {
   const data = {
-    version: "10.3.0",
+    version: "10.5.0",
     kind: "local-backup",
     exportAt: new Date().toISOString(),
     priceLists: PRICE_LISTS,
@@ -3745,7 +3762,7 @@ function importLocalBackup(file) {
 // -------------------- 导入 / 导出完整配置 --------------------
 function exportFullData() {
   const data = {
-    version: "10.3.0",
+    version: "10.5.0",
     exportAt: new Date().toISOString(),
     priceLists: PRICE_LISTS,
     currentPriceListId: CURRENT_PRICE_LIST_ID,
@@ -3929,7 +3946,7 @@ function paperToSheetRows(paper) {
 }
 
 function exportPaperExcel() {
-  // v10.3.0：包一层错误提示，便于定位网页端导出失败原因
+  // v10.5.0：包一层错误提示，便于定位网页端导出失败原因
   try {
     exportPaperExcelInner();
   } catch (e) {

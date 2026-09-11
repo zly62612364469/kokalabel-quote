@@ -809,9 +809,12 @@
 
     .quote-save-fields {
       display: grid;
-      grid-template-columns: minmax(180px, 0.7fr) minmax(260px, 1.3fr);
+      /* v10.5：列最小宽度改为 0，避免窄容器被 minmax(180px/260px) 强制撑破
+         （桌面端曾导致订单备注 textarea 右溢出 30px）。 */
+      grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr);
       gap: 12px;
       margin-top: 14px;
+      min-width: 0;
     }
 
     .quote-save-field {
@@ -2809,8 +2812,7 @@
       .nav-inner { max-width: 100%; }
       .price-cards { gap: clamp(0.375rem, 2vw, 0.5rem); }
       .price-card { padding: clamp(0.625rem, 3vw, 0.875rem) clamp(0.375rem, 2vw, 0.5rem); }
-      /* 平板端：纸张选项保持两列，间距适当缩小 */
-      .paper-options { grid-template-columns: repeat(2, 1fr); }
+      /* v10.5：纸张下拉改为 .paper-options-grid 后，旧 .paper-options 网格规则已移除 */
       /* 平板端：表格允许水平滚动 */
       .table-wrap { -webkit-overflow-scrolling: touch; }
     }
@@ -2821,7 +2823,10 @@
       .size-row { flex-direction: column; }
       .tier-row { flex-direction: column; }
       .rope-list { grid-template-columns: repeat(2, 1fr); }
-      .paper-options { grid-template-columns: 1fr; }
+      /* v10.5：下拉弹窗在手机端保持双列网格（仅显示简称，芯片较窄） */
+      .paper-dropdown-inline .paper-options-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .paper-dropdown-inline .paper-option { padding: 6px 6px; }
+      .paper-dropdown-inline .paper-option .paper-name { font-size: 12px; }
       .craft-list { grid-template-columns: 1fr; }
       .sheet-size-row { grid-template-columns: 1fr 1fr; }
       .sheet-size-row .size-type-group { grid-column: 1 / -1; }
@@ -3078,14 +3083,25 @@
 /* --- 窄屏退化：≤1100px 侧栏转顶部横条、两栏改单栏 --- */
 @media (max-width: 1100px) {
   .app-shell { flex-direction: column; }
-  .sidenav { position: static; width: 100%; flex: 0 0 auto; flex-direction: row; align-items: center; }
-  .sidenav-brand { flex-direction: row; gap: 6px; padding: 10px 14px; border-bottom: none; align-items: baseline; }
+  .sidenav { position: static; width: 100%; max-width: 100%; flex: 0 0 auto; flex-direction: row; align-items: center; box-sizing: border-box; }
+  .sidenav-brand { flex-direction: row; gap: 6px; padding: 10px 14px; border-bottom: none; align-items: baseline; flex: 0 0 auto; }
   .sidenav-brand-sub { display: none; }
-  .sidenav-menu { flex-direction: row; padding: 0; }
-  .sidenav-menu .nav-btn { width: auto; text-align: center; padding: 12px 14px; border-left: none; border-bottom: 3px solid transparent; }
+  /* v10.5：菜单区可横向滚动；按钮宽度自适应文字（不压缩、不截断），
+     宽度不足时横滑，避免出现「智能…」这类被截断的按钮。 */
+  .sidenav-menu {
+    flex-direction: row; padding: 0; flex: 1 1 auto;
+    min-width: 0; overflow-x: auto; overflow-y: hidden;
+    -webkit-overflow-scrolling: touch; scrollbar-width: none;
+  }
+  .sidenav-menu::-webkit-scrollbar { display: none; }
+  .sidenav-menu .nav-btn {
+    width: auto; text-align: center; flex: 0 0 auto; min-width: 0;
+    white-space: nowrap;
+    padding: 12px 14px; border-left: none; border-bottom: 3px solid transparent;
+  }
   .sidenav-menu .nav-btn.active { border-left: none; border-bottom-color: #fff; background: transparent; }
-  .sidenav #kokaTopBar { margin: 0 12px; background: transparent; }
-  .pages { margin-left: 0; padding-top: 0; }
+  .sidenav #kokaTopBar { margin: 0 12px; background: transparent; flex: 0 0 auto; }
+  .pages { margin-left: 0; padding-top: 0; width: 100%; max-width: 100%; box-sizing: border-box; }
   .calc-grid { grid-template-columns: 1fr; }
   .calc-result-col { position: static; }
 }
@@ -3108,19 +3124,28 @@
 /* --- 垂直纵深式架构（body.ui-vertical：手机自动 / 个人主页手动） --- */
 /* 导航回顶部横条 + 参数/结果单栏纵排 + 卡片观感还原（v9.6 风格） */
 body.ui-vertical .app-shell { display: block; }
-body.ui-vertical .sidenav {
-  position: static; width: 100%; flex: none;
-  background: linear-gradient(90deg, var(--brand-dark), var(--brand));
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-}
 body.ui-vertical .sidenav-brand { flex-direction: row; gap: 6px; padding: 10px 16px 6px; border-bottom: none; align-items: baseline; }
 body.ui-vertical .sidenav-brand-sub { display: inline; }
-body.ui-vertical .sidenav-menu { flex-direction: row; padding: 0 12px 4px; }
+/* v10.5：菜单区按钮可收缩均分，避免窄屏被挤出视口 */
+body.ui-vertical .sidenav-menu {
+  flex-direction: row; padding: 0 12px 4px; gap: 4px;
+  min-width: 0; overflow-x: auto; overflow-y: hidden;
+  -webkit-overflow-scrolling: touch; scrollbar-width: none;
+}
+body.ui-vertical .sidenav-menu::-webkit-scrollbar { display: none; }
 body.ui-vertical .sidenav-menu .nav-btn {
-  width: auto; flex: 1; text-align: center; padding: 10px 8px;
+  width: auto; flex: 1 1 0; min-width: 0; text-align: center;
+  padding: 10px 10px; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis;
   border-left: none; border-radius: 6px 6px 0 0;
 }
 body.ui-vertical .sidenav-menu .nav-btn.active { background: rgba(255, 255, 255, 0.16); border-left: none; }
+body.ui-vertical .sidenav {
+  position: static; width: 100%; max-width: 100%; box-sizing: border-box;
+  flex: none; overflow: hidden;
+  background: linear-gradient(90deg, var(--brand-dark), var(--brand));
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
 body.ui-vertical .sidenav #kokaTopBar { margin: 0 12px 8px auto; background: transparent; padding: 2px 6px; }
 body.ui-vertical .pages { margin-left: 0; padding-top: 12px; max-width: 960px; margin-right: auto; margin-left: auto; }
 body.ui-vertical .calc-grid { grid-template-columns: 1fr; gap: 12px; }
@@ -3241,7 +3266,7 @@ body.ui-vertical .personalize-panel { left: 12px; top: 120px; bottom: auto; }
 .paper-chip {
   display: inline-block; background: var(--brand); color: #fff;
   font-size: 12px; font-weight: 600; padding: 2px 10px; border-radius: 6px;
-  white-space: nowrap;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
 }
 .paper-chip-desc {
   display: inline-block; background: var(--brand-light); color: var(--brand-dark);
@@ -3260,30 +3285,37 @@ body.ui-vertical .personalize-panel { left: 12px; top: 120px; bottom: auto; }
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14); max-height: 300px; overflow-y: auto; padding: 6px;
 }
 .paper-dropdown-inline.open .paper-options { display: block; }
-.paper-dropdown-inline .paper-search { position: sticky; top: 0; background: #fff; padding-bottom: 6px; }
+.paper-dropdown-inline .paper-search { position: sticky; top: 0; z-index: 1; background: #fff; padding-bottom: 6px; }
 .paper-dropdown-inline .paper-search-input {
   width: 100%; padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px;
-  font-size: 12.5px; outline: none;
+  font-size: 12.5px; outline: none; box-sizing: border-box;
 }
 .paper-dropdown-inline .paper-search-input:focus { border-color: var(--brand); }
 .paper-dropdown-inline .paper-search-empty { padding: 10px; text-align: center; font-size: 12px; color: var(--text-secondary); }
+
+/* v10.5：双列网格下拉弹窗——仅显示简称芯片 */
+.paper-dropdown-inline .paper-options-grid {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px; align-items: stretch;
+}
+.paper-dropdown-inline .paper-options-grid .paper-search-empty { grid-column: 1 / -1; }
 .paper-dropdown-inline .paper-option {
-  display: flex; align-items: center; gap: 8px;
-  padding: 5px 8px; border-radius: 6px; cursor: pointer; margin: 0;
-  border: none; background: transparent; text-align: left; width: 100%;
+  display: flex; align-items: center; justify-content: flex-start; gap: 6px;
+  padding: 6px 10px; border-radius: 6px; cursor: pointer; margin: 0;
+  border: 1px solid transparent; background: #f6f8fb; text-align: left;
+  width: 100%; box-sizing: border-box; min-width: 0; min-height: 34px;
 }
-.paper-dropdown-inline .paper-option:hover { background: var(--brand-light); }
+.paper-dropdown-inline .paper-option:hover { background: var(--brand-light); border-color: var(--brand); }
 .paper-dropdown-inline .paper-option .paper-name {
-  display: inline-block; background: var(--brand-light); color: var(--brand-dark);
-  font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 6px;
-  white-space: nowrap; overflow: visible; text-overflow: clip; flex: 0 0 auto;
+  display: block; background: transparent; color: var(--text);
+  font-size: 12.5px; font-weight: 600; padding: 0; border-radius: 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1 1 auto; min-width: 0;
+  text-align: center;
 }
-.paper-dropdown-inline .paper-option .paper-desc {
-  font-size: 11.5px; color: var(--text-secondary);
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; flex: 1;
+.paper-dropdown-inline .paper-option.active {
+  background: var(--brand); border-color: var(--brand);
 }
-.paper-dropdown-inline .paper-option.active { background: var(--brand-light); }
-.paper-dropdown-inline .paper-option.active .paper-name { background: var(--brand); color: #fff; }
+.paper-dropdown-inline .paper-option.active .paper-name { color: #fff; font-weight: 700; }
 .paper-dropdown-inline .paper-option.is-filtered { display: none; }
 
 /* ===================== v10.2 表头编辑 / 工艺并入提示 ===================== */
@@ -3348,3 +3380,150 @@ body.ui-vertical .personalize-panel { left: 12px; top: 120px; bottom: auto; }
 #priceTable tbody td .row-del:hover { background: var(--danger-light); color: var(--danger); }
 .table-row-actions { margin-top: 8px; }
 
+
+/* ============================================================
+   v10.5 — UI 规范修复 & 纸张下拉双列网格
+   ============================================================ */
+
+/* --- 1. 报价结果表格溢出修复 -----------------------------------
+   桌面端 calc-result-col 仅约 453px，而 5 列表格内容需 ~493px，
+   导致整页横向溢出 49px。此处包一层滚动容器，超宽时表格内部横滚。
+   技巧：width:0 + min-width:100% 让滚动容器不参与「内容撑开父级」的
+   宽度计算（flex/grid 项下 width:100% 会被内容反向撑破）。 */
+.result-table-scroll {
+  width: 0;
+  min-width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-top: 10px;
+  scrollbar-width: thin;
+}
+.result-table-scroll .sheet-result-table {
+  margin-top: 0;
+  width: auto;
+  min-width: 100%;
+  max-width: none;
+  table-layout: auto;
+}
+.result-table-scroll::-webkit-scrollbar { height: 6px; }
+.result-table-scroll::-webkit-scrollbar-thumb {
+  background: var(--border); border-radius: 3px;
+}
+.result-table-scroll::-webkit-scrollbar-thumb:hover { background: var(--text-secondary); }
+
+/* --- 2. 结果区容器防溢出兜底 -----------------------------------
+   根因：.result-section 是 display:grid（696 行），grid 列隐式为 auto，
+   会被宽表格按 min-content 撑开，逐级把 .result-row / .card 顶出父容器。
+   修复：显式声明 minmax(0,1fr) 列 + 全链 min-width:0。 */
+.calc-result-col .result-section {
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+  max-width: 100%;
+  width: 100%;
+  box-sizing: border-box;
+}
+.calc-result-col,
+.calc-result-col .card,
+.calc-result-col .result-row {
+  min-width: 0;
+  max-width: 100%;
+  width: 100%;
+  box-sizing: border-box;
+}
+.calc-result-col .result-row { flex-wrap: wrap; }
+.calc-result-col .result-label { flex: 0 0 auto; max-width: 100%; }
+.calc-result-col .result-value { overflow-wrap: anywhere; }
+
+/* --- 3. 纸张下拉：双列网格弹窗（仅简称） -------------------------
+   弹窗本身加宽到至少 2 列可读宽度；网格与选项样式见上方
+   .paper-dropdown-inline .paper-options-grid 定义。此处补充
+   弹窗宽度与位置规范，避免窄列里两列芯片被挤到不可读。 */
+.paper-dropdown-inline .paper-options {
+  min-width: min(420px, calc(100vw - 24px));
+  max-width: calc(100vw - 24px);
+}
+@media (max-width: 520px) {
+  .paper-dropdown-inline .paper-options {
+    min-width: 0;
+    left: 0;
+    right: 0;
+  }
+}
+
+/* --- 4. 顶部横条导航：防止窄屏把按钮挤出视口 -------------------
+   （手机端 nav-btn 曾右溢出 13px） */
+@media (max-width: 1100px) {
+  body.ui-vertical .sidenav,
+  body.ui-flat .sidenav {
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+  body.ui-vertical .sidenav-menu,
+  body.ui-flat .sidenav-menu {
+    min-width: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  body.ui-vertical .sidenav-menu::-webkit-scrollbar,
+  body.ui-flat .sidenav-menu::-webkit-scrollbar { display: none; }
+  body.ui-vertical .sidenav-menu .nav-btn,
+  body.ui-flat .sidenav-menu .nav-btn {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+}
+
+/* --- 5. 全局防溢出兜底：主要容器不留横向溢出 -------------------
+   报价保存面板在窄侧栏（calc-result-col ≈453px）中两列会过挤，
+   统一改单列，保证输入框有足够宽度。 */
+.app-shell, .pages, .page,
+.calc-grid, .calc-form-col,
+.flat-section, .sheet-card {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+.pages { overflow-x: clip; }
+
+/* 报价保存面板两列在窄侧栏过挤 → 单列（v10.5） */
+.calc-result-col .quote-save-fields {
+  grid-template-columns: minmax(0, 1fr);
+}
+.calc-result-col .quote-save-field input,
+.calc-result-col .quote-save-field textarea {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+.calc-result-col .quote-save-panel,
+.calc-result-col .quote-save-actions {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* 下拉弹窗高度兜底：即使 JS 定位未及时执行，也不会超出视口 */
+.paper-dropdown-inline .paper-options {
+  max-height: min(300px, 52vh);
+}
+@media (max-width: 520px) {
+  .paper-dropdown-inline .paper-options {
+    max-height: min(300px, 46vh);
+  }
+}
+
+/* 顶部横条导航：手机端缩小字号与内边距，尽量让全部入口同屏可见 */
+@media (max-width: 480px) {
+  .sidenav-menu .nav-btn,
+  body.ui-vertical .sidenav-menu .nav-btn {
+    padding: 10px 9px;
+    font-size: 12.5px;
+    letter-spacing: -0.2px;
+  }
+  .sidenav-brand { padding: 8px 12px 4px; }
+  .sidenav-brand-title, .sidenav-brand-name { font-size: 15px; }
+}
