@@ -1,4 +1,110 @@
-# KOKALabel 报价系统 变更日志
+# 亲成报价系统 变更日志
+
+## v10.7.1（2026-09-14，品牌回归 + 个性化修复 + 账号体系同步 v10.5）
+
+> 基线：外部交付的 KOKALabel v10.7.0 完整代码（62 文件包）。本版在其上做品牌回归、图标替换、个性化面板缺陷修复，并把**账号体系整体同步为 v10.5 四级体系**。
+
+### 修复：个性化面板「卡死」无法打开（P0）
+- **根因**：HTML 元素 id 为 `personalizePanel`（v10.2 由弹窗改内联面板时更名），但 `js/app.js` 中 `els.personalizeModal = document.getElementById("personalizeModal")` 仍按旧名读取 → 恒为 `null`；点击「Aa 个性化」时 `if (els.personalizeModal) { ... }` 判空直接跳过 `classList.toggle("open")`，面板永远打不开（表现为"点击无反应 / 卡死"）。
+- **修复**：`app.js` 中元素引用与全部使用点由 `personalizeModal` 改为 `personalizePanel`（共 6 处：定义 1 + 使用 5）。
+- **验证**：探针实测点击按钮后 `panel.classList.contains("open")` 由 `false` → **`true`**，面板正常展开。
+
+### 改造：字号显示与手动输入（按 px）
+- **显示当前字号**：面板新增/修正双行显示——
+  - `当前字号：16px（100%）`（`#fontScaleCurrent`，px + 百分比双显示）
+  - `系统默认字号：16px（100%） ｜ 当前字号：16px`（`#fontScaleDefaults`）
+- **手动输入改为像素 px**（原为百分比 50~200）：
+  - 输入框 `min=8 max=32 step=1 placeholder="如 18"`，单位标签由 `%` 改为 **`px`**
+  - 新增 `pxToScale()` / `FONT_BASE_PX(16)` / `FONT_MIN_PX(8)` / `FONT_MAX_PX(32)` 常量
+  - `applyCustomFontScale()` 改为读取 px 值并做 8~32 区间校验（越界 toast 提示「请输入 8~32 之间的字号（px）」）
+  - `applyFontScale()` 回填输入框为 px 值；`setFontScale()` 增加缩放倍数钳制
+  - 说明文案改为「可直接输入 8~32 的字号（px）」
+- **验证**：输入 `22` 点应用 → `当前字号：22px（138%）`、`zoom=1.375`、`localStorage.uiFontScale=1.375`；输入 `99` 被拒（zoom 不变）；「恢复默认」→ `16px（100%）` 且 zoom 清空。
+
+### 品牌回归：KOKALabel → 亲成
+- 显示文案全部改「亲成」：页面标题、侧栏品牌、登录页品牌与标题、设置页版本行、公司名称输入框 placeholder、`data.js` 的 `companyName`、导出文件名（修改模板/快照/统计报表）、各文件头注释。
+- **内部标识符保留不改**（存储与云端兼容）：`KOKA` 全局对象、`KOKA_AUTH` KV、`tagPricing_` 存储前缀、`koka*` 元素 id、`/api/*` 路径。
+- `data.js` 内 3 处 `KOKALabel` 为历史迁移注释（指向旧 Excel 文件名），保留。
+
+### 图标换回亲成全套
+- `assets/favicon.ico` / `favicon.png` / `apple-touch-icon.png` 替换为亲成版；新增 `assets/favicon.svg` 与 `assets/assets-logo-qincheng.svg`。
+- `index.html` 新增 SVG favicon 引用；原 KOKA 图标备份于 `_backup_koka_icons/`。
+
+### 版本号
+- 10.7.0 → **10.7.1**：`index.html` 14 处（title / 资源 `?v=` / 设置页）、`login.html` 3 处、`app.js` 7 处（含 `version` 数据字段）。
+- 历史注释中的 `v10.6.0` / `v10.7.0` 字样保留（记录改动沿革）。
+
+### 账号体系同步 v10.5（v10.7.1 第二项诉求，2026-09-14 补做）
+- **由 v10.7 三级体系改为 v10.5 四级体系**：
+  - 角色：`superadmin`(3) > `admin`(2) > `sales`(1) > `visitor`(0)；旧 `role:user` 自动归一 `sales`。
+  - 端点：`/api/default` → **`/api/quote`**；云端默认数据 KV 键 `default:quote` → **`q:v1`**。
+  - 分级函数：`roleNum()` 改由 `roleRank()` 实现（与 v10.5 一致）。
+- **`js/auth.js` 整文件替换为 v10.5 版本**（304 行）：含四角色能力矩阵、账号管理面板（超管/管理员互管规则）、`syncCloudQuote()` 10 秒轮询、超管「↑ 保存为全局默认（云端共享）」按钮注入。
+- **`functions/` 同步为 v10.5 后端**：`_lib.js`（四角色 roleRank/canManage/requireSession）、`api/quote.js`（KV `q:v1`，GET 任意登录角色 / POST 仅 superadmin）、`api/auth/{login,logout,session}.js`、`api/admin/users.js`、`api/admin/users/[name].js`。
+- **保留 v10.7 的改进**：`api/auth/status.js`（系统初始化状态，供登录页判断是否显示「初始化密钥」输入框）+ `login.js` 的 setupKey 流程。v10.5 的 `_lib.js` 已导出 `listUsers`，`status.js` 无需改动即可工作。
+- **`js/app.js` 两处依赖改造**（原为 v10.7 三级体系硬编码）：
+  - `isOnlineEditAdmin()`：`KOKA.user.role === "admin"` → `KOKA.roleNum() >= 2`（覆盖 admin 与 superadmin）。
+  - `initDefaultDataUpload()`：端点 `/api/default` → `/api/quote`；权限判定改 `roleNum() >= 2`；载荷字段对齐 v10.5 契约（`paperConfig/craftConfig/ropeConfig/shippingConfig`）；回执字段 `version` → `updatedAt`；反馈改用 `KOKA.toast`。
+- **兼容性已验证**：前端 token 键名两版一致（`koka_token`）；`logout.js` / `session.js` 两版逐字节一致；`app.js` 依赖的 `KOKA.api / canEditQuote / roleNum / toast / user` 在 v10.5 auth.js 中全部提供。
+- **登录页**：`login.html` + `js/login.js` 无需改动（走的 `/api/auth/login` 两版一致）。
+
+### 校验
+- JS 语法：`app.js` / `data.js` / `auth.js` / `login.js` / `xlsx.full.min.js` 及 `functions/`（8 文件）全部 `node --check` 通过。
+- 功能实测（jsdom 真实 JS 运行时，模拟 superadmin 登录）：`user.role = superadmin`、`roleNum() = 3`、`canEditQuote() = true`、`esc/fmt/api/logout` 均存在；个性化面板点击后 `open = true`（先前修复未被破坏）；标题与侧栏品牌为「亲成」。
+- 端点配对：`/api/auth/{login,logout,session,status}`、`/api/quote`、`/api/admin/users` 全部存在且与前端调用一致。
+- 行尾符：全部 LF（CRLF = 0）。
+- 横向溢出：`docScrollW == clientW`（1265 = 1265）；HTML 标签栈配对无异常。
+
+## v10.7.0（2026-09-13，三块 9.8 功能加回定版）
+
+### 功能加回（按用户拍板 A+B+C，对齐 v9.8 体系）
+- **A 报价历史增强**：保存时生效的临时修改（临时毛利系数 / 邮费快速修改 / 每纸临时直接系数）固化进历史记录，历史详情按统一单源计算展示；历史表格改事件委托（重建 innerHTML 不叠加监听）；删除报价记录联动刷新统计报表。
+- **B 在线修改**（9.8 F1/F2/F3 加回）：数据管理新增「在线修改」标签页（报价历史与云同步之间），报价表组/报价表在线新增、重命名、删除、调整归属；管理员按模板导出含现有数据 → 修改后导入 → 原地覆盖目标报价表（不新建）；http 部署仅管理员可用，file:// 离线视为机主放行。
+- **C 快照与统计报表**（9.8 F4/F6 加回）：统计报表自动汇总月度报价次数 / 热销尺寸 / 利润分布（柱状图 + 汇总卡片），支持导出统计报表（一个工作簿三个工作表）；快照记录报价表组结构，支持导出快照集合 JSON。
+
+### 数据层与兼容
+- `js/data.js`：新增 `PRICE_LIST_GROUPS` 持久化（默认沿用 1楼小组/3楼小组，向后兼容旧 localStorage），7 个管理函数（getPriceListGroups/getGroupName/addPriceListGroup/renamePriceListGroup/deletePriceListGroup/renamePriceList/movePriceListToGroup/applyPriceListData）；`addPriceList` 支持 groupId/switchTo 参数，ID 追加随机后缀防碰撞。
+- 备份 / 完整配置 / 快照 / 重置 / 云共享全链路覆盖 `priceListGroups`；导入校验新增报价表组结构检查。
+- Excel 导出字符串单元格加公式注入防护（`safeExcelText`）。
+
+### 测试
+- `tests/online-edit.test.mjs`、`tests/stats.test.mjs` 去除 skip 恢复全部用例（13 + 8 项）。
+- 全量测试结果：**45 通过 / 5 跳过（integrity 完整性签名，对应 F8 未加回）/ 0 失败**。
+
+## v10.6.0（2026-09-13，版本整合发版）
+
+### 版本整合：同事 v10.5 合并入库，定位 v10.6.0
+- 同事 v10.0 ~ v10.5 全部并入仓库 `archive/同事V10系列/`（V10.0/V10.1/.../V10.5 快照），工作树更新至 v10.5 代码，版本号定为 **v10.6.0**。
+- 同事 V9 系列（9.0 ~ 9.9）并入 `archive/同事V9系列（vice）/`，全部目录加后缀「（vice）」与仓库 9.8 基线区分，仅作版本记录、不部署。
+
+### 品牌与登录（用户拍板，v10.6 明确规则）
+- **品牌保持 KOKA**：v10.5 同事版的「亲成」品牌/公司名改动全部回退，全站标题/侧栏/登录页/导出文件名/默认公司名保持 KOKALabel。
+- **图标保持 KOKA**：`index.html` 图标引用改回 `assets/` 下 KOKA 菱形铅笔标（v9.8 图标）；删除根目录同事版亲成图标文件（favicon.svg/ico/png、apple-touch-icon.png、assets-logo-qincheng.svg），归档内保留亲成原档备查。
+- **登录保持 9.8**：账号登录体系（login.html / js/auth.js / functions/ Pages Functions + KV，管理员/业务员/访客）采用 9.8 版，不使用 v10.5 的登录实现；auth.js 保留 v10.6.0 兼容补丁（`roleNum/canEditQuote/toast`）供 v10.5 app.js 调用。
+
+### 9.8 功能保留与补全
+- **补全「上传为默认数据」（管理员）**：`js/app.js` 新增 `initDefaultDataUpload()`（继承 9.8 实现），挂入 `safeInit` 启动序列；管理员在 数据管理 标题右侧上传当前 报价表/纸张/工艺/吊绳/邮费/客户等级 为全用户共享默认数据，其他账号下次登录自动应用（`/api/default` POST + KV 存储）。数据包不含 9.8 的 `priceListGroups`（v10.6 无在线修改功能，后端按缺省忽略）。
+- 统一内联编辑提示：4 处过时提示「↑ 保存为全局默认」改为「上传为默认数据」（数据管理）。
+- **功能差别标记文档**：新建 `docs/功能差别标记-9.8与10.6.md`，列出 9.8 独有、v10.6 已移除的功能（F1 在线修改 / F2 按模板改数据 / F3 报价表组 / F4 统计报表 / F5 覆盖明细 / F6 快照集合 / F7 授权门控遗留 / F8 完整性签名 / F9 安全函数严格版 / F10 sheet 名重名序号 / F11 迁移基线差异），作为后续版本加回的唯一标记入口。
+
+### 测试适配（v10.6 代码基线）
+- `tests/floor1-data.test.mjs`：迁移断言基线 `9.7.3 → 9.9.0`（同事版迁移链 `9.5.1→9.9.0`）。
+- `tests/export-sheet-name.test.mjs`：适配 `sanitizeSheetName()`（替换 9.8 的 `SHEET_NAME_SANITIZE_MAP/toSafeSheetName`，差异见 F10）。
+- `tests/security-hardening.test.mjs`：适配 v10.6 `validateImportedData` 内联校验与 `escapeHtml`（DOM mock），差异见 F9。
+- `tests/online-edit.test.mjs`、`tests/stats.test.mjs`、`tests/integrity.test.mjs`：对应 9.8 功能已移除，整文件 skip 暂挂（加回功能后删除 skip 常量即恢复）。
+- 全量测试结果：**26 通过 / 24 跳过（9.8 移除功能）/ 0 失败**。
+
+### 修复（v10.6.0，同事版遗留 bug）
+- `js/data.js` v9.5.1 迁移：同事版只写 localStorage 不同步内存 `PAPER_CONFIG/CRAFT_CONFIG`，老用户升级后**本会话残留旧 1 楼数据，需刷新才正常**；现已同步内存，与 9.8 迁移行为一致（见功能差别标记文档 F11）。
+
+### 其他整理
+- 清理根目录与归档重复的同事版文件：转手文档/、问题日志.md、预览截图/（归档 `archive/同事V10系列/V10.5/` 已有原档）。
+- `.gitignore` 合并恢复（补回 node_modules/、*.tmp、.idea/、.vscode/ 等，保留 _backup_v8/）。
+- 版本头统一：`js/data.js` v9.5.1 → v10.6.0、`css/style.css` v10.3.0 → v10.6.0、`index.html` 全站引用 v10.6.0。
+- 全量验证：JS 语法检查通过、功能差别清单核对完成、git 提交版本管理（v8 分支）。
+
+### 已知差异（不视为缺陷）
+- v10.6 数据管理为 本地快照（含价格配置导入导出）/报价历史/云同步 三 tab；9.8 的「在线修改」tab 与统计报表按用户要求标记待加回（见功能差别标记文档 F1/F4）。
 
 ## v10.5.0（2026-09-11，已上线）
 

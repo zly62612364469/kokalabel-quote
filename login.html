@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>登录 · 亲成 报价系统</title>
+<link rel="icon" type="image/x-icon" href="assets/favicon.ico?v=10.7.1">
+<link rel="icon" type="image/png" href="assets/favicon.png?v=10.7.1">
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   body { font-family:"Microsoft YaHei",system-ui,sans-serif; min-height:100vh; display:flex; align-items:center; justify-content:center;
@@ -32,30 +34,11 @@
   </div>
   <div class="field"><label>账号</label><input id="username" autocomplete="username" placeholder="请输入账号"></div>
   <div class="field"><label>密码</label><input id="password" type="password" autocomplete="current-password" placeholder="请输入密码"></div>
+  <div class="field" id="setupField" style="display:none;"><label>初始化密钥 <span style="font-weight:400;color:#94a3b8;">（仅系统首次初始化时填写）</span></label><input id="setupKey" type="password" autocomplete="off" placeholder="首次初始化密钥"></div>
   <button class="btn" id="loginBtn">登 录</button>
   <div class="msg" id="msg"></div>
   <div class="tip">本系统为授权使用，账号由管理员分配<br>使用期限 / 停用请联系管理员</div>
 </div>
-<script>
-  const $u=document.getElementById('username'), $p=document.getElementById('password'), $m=document.getElementById('msg'), $b=document.getElementById('loginBtn');
-  const returnTo = new URLSearchParams(location.search).get('return') || '/';
-  function setMsg(t,ok){ $m.textContent=t||''; $m.className='msg '+(ok?'ok':'err'); }
-  // 已登录直接回
-  (async()=>{ const t=sessionStorage.getItem('koka_token'); if(t){ const r=await fetch('/api/auth/session',{headers:{Authorization:'Bearer '+t}}); if(r.ok) location.href=returnTo; } })();
-  async function login(){
-    const username=$u.value.trim(), password=$p.value;
-    if(!username||!password){ setMsg('请输入账号和密码'); return; }
-    $b.disabled=true; setMsg('登录中…');
-    try{
-      const r=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password,device:navigator.userAgent})});
-      const d=await r.json();
-      if(d.ok){ sessionStorage.setItem('koka_token', d.token); setMsg('登录成功，正在进入…', true); setTimeout(()=>location.href=returnTo, 400); }
-      else setMsg(d.message||'登录失败');
-    }catch(e){ setMsg('网络错误，请重试'); }
-    $b.disabled=false;
-  }
-  $b.addEventListener('click', login);
-  $p.addEventListener('keydown', e=>{ if(e.key==='Enter') login(); });
-</script>
+<script src="js/login.js?v=10.7.1"></script>
 </body>
 </html>
