@@ -4,6 +4,11 @@ node_modules/
 
 # 版本整合临时备份
 _backup_v8/
+_backup_koka_icons/
+_backup_v107_auth/
+
+# 部署配置（含 KV namespace id，按项目惯例不入库）
+wrangler.toml
 
 # 系统与缓存文件
 .DS_Store
