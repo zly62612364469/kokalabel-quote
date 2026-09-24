@@ -1,5 +1,5 @@
 // ============================================================
-// 亲成报价系统 v10.7.1 - 数据配置层
+// 亲成报价系统 v10.8.0 - 数据配置层
 // ============================================================
 "use strict";
 
@@ -43,7 +43,8 @@ const GROUP_META = {
 // v8.0：小组名映射（按报价表 groupId 取小组名，供导出/展示使用）
 const GROUP_NAME_MAP = {
   group1: "1楼小组",
-  group2: "3楼小组"
+  group2: "3楼小组",
+  group3: "唛头小组"
 };
 
 // EPHEMERAL_KEYS 提前定义为空数组（不拦截任何 key），供 loadFromStorage 安全调用
@@ -53,14 +54,33 @@ const EPHEMERAL_KEYS = [];
 // v10.7.0：报价表组可在线增删改名（默认沿用原有两组，向后兼容旧 localStorage，对齐 v9.8 体系）
 const DEFAULT_PRICE_LIST_GROUPS = [
   { id: "group1", name: "1楼小组" },
-  { id: "group2", name: "3楼小组" }
+  { id: "group2", name: "3楼小组" },
+  { id: "group3", name: "唛头小组" }
 ];
 let PRICE_LIST_GROUPS = loadFromStorage("priceListGroups", DEFAULT_PRICE_LIST_GROUPS.map(g => ({ ...g })));
 
 // 报价表组配置：支持多个报价表，吊绳/邮费按报价表隔离
+// v10.8.0：报价表新增两个字段
+//   bleed —— 是否出血（默认 true）。false 时计算面积不再自动加 3mm 出血，
+//            且「最大含出血面积」列按区间向上取档（取最小的 ≥ 实际面积那档）。
+//   note  —— 报价表备注，在「报价表组查询」页顶部独立框体展示。
 const DEFAULT_PRICE_LISTS = [
-  { id: "priceList1", name: "1楼", groupId: "group1" },
-  { id: "priceList2", name: "3楼", groupId: "group2" }
+  { id: "priceList1", name: "1楼", groupId: "group1", bleed: true, note: "" },
+  { id: "priceList2", name: "3楼", groupId: "group2", bleed: true, note: "" },
+  {
+    id: "priceList3",
+    name: "织边带（消光带）",
+    groupId: "group3",
+    bleed: false,
+    note: "唛头-1：织边带（消光带）\n特点：常做黑白色、米色，出货快；印刷清晰、手感柔软、边缘光滑、图案清晰。\n备注：如有专色或按潘通号印刷，另加10元/款。"
+  },
+  {
+    id: "priceList4",
+    name: "电脑机",
+    groupId: "group3",
+    bleed: false,
+    note: "唛头-2：电脑机织唛\n特点：底色可做多种颜色，字可做细密清晰，尺寸不限；面料厚实、表面紧密，纬高图案细腻精美。"
+  }
 ];
 let PRICE_LISTS = loadFromStorage("priceLists", DEFAULT_PRICE_LISTS.map(p => ({ ...p })));
 let CURRENT_PRICE_LIST_ID = loadFromStorage("currentPriceListId", "priceList1");
@@ -7829,6 +7849,280 @@ const DEFAULT_PAPER_CONFIG = [
         }
       }
     ]
+  },
+  {
+    "id": "paper_qm_zbd",
+    "name": "唛头-1：织边带（消光带）",
+    "shortName": "织边带（消光带）",
+    "priceListId": "priceList3",
+    "discount": 1,
+    "directCoeff": null,
+    "batchDirect": null,
+    "specs": [
+      {
+        "code": "1.3*8",
+        "maxArea": 1040,
+        "prices": {
+          "500": null,
+          "1000": 110,
+          "2000": 160,
+          "3000": 210,
+          "5000": 290,
+          "10000": 380,
+          "20000": null,
+          "50000": null
+        }
+      },
+      {
+        "code": "1.6*8",
+        "maxArea": 1280,
+        "prices": {
+          "500": null,
+          "1000": 120,
+          "2000": 170,
+          "3000": 220,
+          "5000": 300,
+          "10000": 390,
+          "20000": null,
+          "50000": null
+        }
+      },
+      {
+        "code": "2*8",
+        "maxArea": 1600,
+        "prices": {
+          "500": null,
+          "1000": 130,
+          "2000": 180,
+          "3000": 230,
+          "5000": 320,
+          "10000": 420,
+          "20000": null,
+          "50000": null
+        }
+      },
+      {
+        "code": "2.5*8",
+        "maxArea": 2000,
+        "prices": {
+          "500": null,
+          "1000": 150,
+          "2000": 200,
+          "3000": 260,
+          "5000": 340,
+          "10000": 450,
+          "20000": null,
+          "50000": null
+        }
+      },
+      {
+        "code": "3*8",
+        "maxArea": 2400,
+        "prices": {
+          "500": null,
+          "1000": 190,
+          "2000": 240,
+          "3000": 290,
+          "5000": 360,
+          "10000": 480,
+          "20000": null,
+          "50000": null
+        }
+      },
+      {
+        "code": "3.5*8",
+        "maxArea": 2800,
+        "prices": {
+          "500": null,
+          "1000": 220,
+          "2000": 280,
+          "3000": 330,
+          "5000": 420,
+          "10000": 550,
+          "20000": null,
+          "50000": null
+        }
+      },
+      {
+        "code": "4*8",
+        "maxArea": 3200,
+        "prices": {
+          "500": null,
+          "1000": 240,
+          "2000": 320,
+          "3000": 380,
+          "5000": 450,
+          "10000": 590,
+          "20000": null,
+          "50000": null
+        }
+      },
+      {
+        "code": "4.5*8",
+        "maxArea": 3600,
+        "prices": {
+          "500": null,
+          "1000": 280,
+          "2000": 360,
+          "3000": 420,
+          "5000": 520,
+          "10000": 680,
+          "20000": null,
+          "50000": null
+        }
+      },
+      {
+        "code": "5*8",
+        "maxArea": 4000,
+        "prices": {
+          "500": null,
+          "1000": 290,
+          "2000": 390,
+          "3000": 450,
+          "5000": 560,
+          "10000": 750,
+          "20000": null,
+          "50000": null
+        }
+      }
+    ]
+  },
+  {
+    "id": "paper_qm_dnj",
+    "name": "唛头-2：电脑机织唛",
+    "shortName": "电脑机",
+    "priceListId": "priceList4",
+    "discount": 1,
+    "directCoeff": null,
+    "batchDirect": null,
+    "specs": [
+      {
+        "code": "1.3*8",
+        "maxArea": 1040,
+        "prices": {
+          "500": null,
+          "1000": 160,
+          "2000": 220,
+          "3000": 320,
+          "5000": 520,
+          "10000": 980,
+          "20000": null,
+          "50000": null
+        }
+      },
+      {
+        "code": "1.6*8",
+        "maxArea": 1280,
+        "prices": {
+          "500": null,
+          "1000": 170,
+          "2000": 260,
+          "3000": 380,
+          "5000": 580,
+          "10000": 1120,
+          "20000": null,
+          "50000": null
+        }
+      },
+      {
+        "code": "2*8",
+        "maxArea": 1600,
+        "prices": {
+          "500": null,
+          "1000": 180,
+          "2000": 280,
+          "3000": 420,
+          "5000": 680,
+          "10000": 1320,
+          "20000": null,
+          "50000": null
+        }
+      },
+      {
+        "code": "2.5*8",
+        "maxArea": 2000,
+        "prices": {
+          "500": null,
+          "1000": 190,
+          "2000": 320,
+          "3000": 480,
+          "5000": 850,
+          "10000": 1420,
+          "20000": null,
+          "50000": null
+        }
+      },
+      {
+        "code": "3*8",
+        "maxArea": 2400,
+        "prices": {
+          "500": null,
+          "1000": 260,
+          "2000": 480,
+          "3000": 580,
+          "5000": 920,
+          "10000": 1680,
+          "20000": null,
+          "50000": null
+        }
+      },
+      {
+        "code": "3.5*8",
+        "maxArea": 2800,
+        "prices": {
+          "500": null,
+          "1000": 280,
+          "2000": 520,
+          "3000": 750,
+          "5000": 1150,
+          "10000": 2450,
+          "20000": null,
+          "50000": null
+        }
+      },
+      {
+        "code": "4*8",
+        "maxArea": 3200,
+        "prices": {
+          "500": null,
+          "1000": 320,
+          "2000": 580,
+          "3000": 820,
+          "5000": 1250,
+          "10000": 2550,
+          "20000": null,
+          "50000": null
+        }
+      },
+      {
+        "code": "4.5*8",
+        "maxArea": 3600,
+        "prices": {
+          "500": null,
+          "1000": 360,
+          "2000": 620,
+          "3000": 860,
+          "5000": 1350,
+          "10000": 2650,
+          "20000": null,
+          "50000": null
+        }
+      },
+      {
+        "code": "5*8",
+        "maxArea": 4000,
+        "prices": {
+          "500": null,
+          "1000": 420,
+          "2000": 660,
+          "3000": 920,
+          "5000": 1450,
+          "10000": 2850,
+          "20000": null,
+          "50000": null
+        }
+      }
+    ]
   }
 ];
 
@@ -10606,6 +10900,53 @@ function verCompare(a, b) {
   console.info("[v9.9.0] 吊绳价格已切换为 1000 张基准倍数制（500 张与 1000 张同价）");
 })();
 
+/**
+ * v10.8.0 迁移：
+ *  1) 报价表补齐 bleed（是否出血，默认 true）与 note（备注）两个新字段；
+ *  2) 补齐「唛头小组」及两张唛头报价表（织边带（消光带）/ 电脑机）；
+ *  3) 补齐对应的两张唛头纸张配置。
+ * 三者都是"仅在缺失时补齐"，不会覆盖用户已有数据。
+ */
+(function migrateV1080BleedAndMaitou() {
+  const dataVersion = loadFromStorage("dataVersion", "");
+  if (verCompare(dataVersion, "10.8.0") >= 0) return;
+
+  // 1) 报价表补齐新字段
+  let listsChanged = false;
+  PRICE_LISTS.forEach(pl => {
+    if (typeof pl.bleed === "undefined") { pl.bleed = true; listsChanged = true; }
+    if (typeof pl.note === "undefined") { pl.note = ""; listsChanged = true; }
+  });
+
+  // 2) 补齐「唛头小组」组 + 两张唛头报价表
+  if (!PRICE_LIST_GROUPS.some(g => g.id === "group3")) {
+    PRICE_LIST_GROUPS.push({ id: "group3", name: "唛头小组" });
+    GROUP_NAME_MAP.group3 = "唛头小组";
+    saveToStorage("priceListGroups", PRICE_LIST_GROUPS);
+  }
+  DEFAULT_PRICE_LISTS.filter(d => d.groupId === "group3").forEach(d => {
+    if (!PRICE_LISTS.some(p => p.id === d.id)) {
+      PRICE_LISTS.push({ ...d });
+      listsChanged = true;
+    }
+  });
+  if (listsChanged) saveToStorage("priceLists", PRICE_LISTS);
+
+  // 3) 补齐两张唛头纸张（深拷贝，避免与 DEFAULT_PAPER_CONFIG 共享引用）
+  const existIds = new Set(PAPER_CONFIG.map(p => p.id));
+  const addPapers = DEFAULT_PAPER_CONFIG
+    .filter(p => p.priceListId === "priceList3" || p.priceListId === "priceList4")
+    .filter(p => !existIds.has(p.id))
+    .map(p => JSON.parse(JSON.stringify(p)));
+  if (addPapers.length) {
+    PAPER_CONFIG = PAPER_CONFIG.concat(addPapers);
+    saveToStorage("paperConfig", PAPER_CONFIG);
+  }
+
+  saveToStorage("dataVersion", "10.8.0");
+  console.info("[v10.8.0] 报价表新增「是否出血」字段；唛头报价表（织边带（消光带）/ 电脑机）已并入默认数据");
+})();
+
 let APP_PROFILE = loadFromStorage("appProfile", {
   companyName: "亲成",
   companyPhone: null,
@@ -10641,6 +10982,24 @@ function getCurrentPriceListId() {
 /** 获取当前报价表对象 */
 function getCurrentPriceList() {
   return PRICE_LISTS.find(p => p.id === CURRENT_PRICE_LIST_ID) || PRICE_LISTS[0];
+}
+/**
+ * v10.8.0：当前报价表是否出血。缺省视为 true（向后兼容旧数据）。
+ * 为 false 时计算面积不再自动加 3mm 出血，直接按实际长宽算面积。
+ */
+function currentPriceListBleeds() {
+  const pl = getCurrentPriceList();
+  return !pl || pl.bleed !== false;
+}
+/** v10.8.0：指定报价表是否出血（缺省 true） */
+function priceListBleeds(priceListId) {
+  const pl = PRICE_LISTS.find(p => p.id === priceListId);
+  return !pl || pl.bleed !== false;
+}
+/** v10.8.0：取报价表备注；无备注返回空串 */
+function getPriceListNote(priceListId) {
+  const pl = PRICE_LISTS.find(p => p.id === priceListId);
+  return pl && typeof pl.note === "string" ? pl.note : "";
 }
 /** 切换当前报价表 */
 function setCurrentPriceList(priceListId) {
@@ -10810,6 +11169,9 @@ function movePriceListToGroup(priceListId, groupId) {
 function applyPriceListData(priceListId, parsed) {
   const pl = PRICE_LISTS.find(p => p.id === priceListId);
   if (!pl) return { ok: false, message: "目标报价表不存在" };
+  // v10.8.0：同步报价表级的「是否出血」「备注」（Excel 未指定时保持原值不动）
+  if (parsed && parsed.bleed !== undefined && parsed.bleed !== null) pl.bleed = parsed.bleed;
+  if (parsed && parsed.note != null && parsed.note !== "") pl.note = parsed.note;
   const papers = (parsed && parsed.papers) || [];
   if (!papers.length) return { ok: false, message: "解析结果中没有纸张数据" };
   // 1. 清理目标报价表的旧纸张及其工艺

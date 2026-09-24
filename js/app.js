@@ -1,5 +1,5 @@
 // ============================================================
-// 亲成报价系统 v10.7.1 - 主程序（计算 + 渲染 + 交互 + 初始化）
+// 亲成报价系统 v10.8.0 - 主程序（计算 + 渲染 + 交互 + 初始化）
 // ============================================================
 "use strict";
 
@@ -103,6 +103,24 @@ function getRopeBasePrice(prices) {
     v = prices["500"] != null && prices["500"] !== "" ? Number(prices["500"]) : NaN;
   }
   return isNaN(v) || v <= 0 ? null : v;
+}
+
+/**
+ * v10.8.0：判断吊绳是否为「不加吊绳」这类免费选项。
+ * 判定：价格表中至少有一个显式 0，且不存在任何正数价格。
+ * 用途：全 0 价是合法的「免费」定价，不能因 getRopeBasePrice 返回 null 就被误判为缺价。
+ */
+function isFreeRope(rope) {
+  if (!rope || !rope.prices) return false;
+  const vals = Object.values(rope.prices);
+  if (!vals.length) return false;
+  let hasZero = false;
+  for (const v of vals) {
+    const n = Number(v);
+    if (Number.isFinite(n) && n > 0) return false;
+    if (n === 0) hasZero = true;
+  }
+  return hasZero;
 }
 
 function getInitialOptionPrice(prices) {
@@ -412,10 +430,13 @@ function forceSpecByArea(paper, area) {
  * 面积超过 10000 时使用最大规格（code "100"）并附带面积系数；007 与 008 合并显示为 007/008。
  * v7.3：面积 4000-6000 时强制映射 005/055/006，不读取表格数据。
  */
-function matchSpec(paper, area) {
+function matchSpec(paper, area, skipForce) {
   // v7.3：强制面积规格映射（不读取表格数据）
-  const forced = forceSpecByArea(paper, area);
-  if (forced) return forced;
+  // v10.8.0：不出血的报价表跳过该硬编码规则（005/055/006 是吊牌专用）
+  if (!skipForce) {
+    const forced = forceSpecByArea(paper, area);
+    if (forced) return forced;
+  }
   const candidates = paper.specs
     .filter(s => s.maxArea >= area)
     .sort((a, b) => a.maxArea - b.maxArea);
@@ -455,6 +476,8 @@ function hasExactTier(pricesObj, tier) {
 function calculate(inputs) {
   const { sheetCount, tier, sheets, ropeId, regionId, mode, shippingWeight, manualShippingPrice } = inputs;
   const isDirect = mode === "direct";
+  // v10.8.0：当前报价表是否出血（默认 true）。为 false 时面积不加 3mm 出血。
+  const bleeds = currentPriceListBleeds();
 
   // 直接系数模式不需要 ropeId 和 regionId
   if (!sheetCount || !tier || !sheets) {
@@ -492,8 +515,10 @@ function calculate(inputs) {
     const paper = getPapersByPriceList(CURRENT_PRICE_LIST_ID).find(p => p.id === paperId);
     if (!paper) return null;
 
-    // 单张含出血面积（单张尺寸 / 展开尺寸目前均按输入长宽直接计算）
-    const singleArea = calcBleedArea(length, width);
+    // 单张面积（单张尺寸 / 展开尺寸目前均按输入长宽直接计算）
+    // v10.8.0：按当前报价表的「是否出血」决定是否加 3mm 出血——
+    //   出血（默认）= 长宽各 +3mm；不出血 = 直接用实际长宽。
+    const singleArea = bleeds ? calcBleedArea(length, width) : length * width;
 
     // 代码选择：优先使用手动指定的代码，否则按面积自动匹配
     let spec;
@@ -501,7 +526,8 @@ function calculate(inputs) {
       spec = findSpecByDisplayCode(paper, sheet.manualCode, singleArea);
     }
     if (!spec) {
-      spec = matchSpec(paper, singleArea);
+      // 不出血的报价表跳过 005/055/006 的强制映射（那是吊牌专用的硬编码规则）
+      spec = matchSpec(paper, singleArea, !bleeds);
     }
     if (spec && spec.error) {
       return { error: spec.message };
@@ -613,6 +639,8 @@ function calculate(inputs) {
   let ropeMult = 1;       // 当前档位倍数
   if (!isDirect) {
     ropeBase = getRopeBasePrice(rope.prices);
+    // v10.8.0：全 0 价的「不加吊绳」视为合法免费选项，基准价补 0，不再误报缺价
+    if (ropeBase == null && isFreeRope(rope)) ropeBase = 0;
     if (ropeBase != null) {
       ropeMult = tier <= 1000 ? 1 : tier / 1000;
       ropePrice = Math.round(ropeBase * ropeMult * 100) / 100;
@@ -846,6 +874,9 @@ const els = {
   paperSelector: document.getElementById("paperSelector"),
   priceListSelector: document.getElementById("priceListSelector"),
   quickPriceListSelector: document.getElementById("quickPriceListSelector"),
+  // v10.8.0：报价表备注框体
+  priceListNote: document.getElementById("priceListNote"),
+  priceListNoteBody: document.getElementById("priceListNoteBody"),
   defaultQuoteToggle: document.getElementById("defaultQuoteToggle"),
   defaultQuoteToggleState: document.getElementById("defaultQuoteToggleState"),
   deletePriceListBtn: document.getElementById("deletePriceListBtn"),
@@ -1026,8 +1057,8 @@ function initOptions() {
   // 批量档位：基于第一张纸的规格价格 keys（取并集）
   updateTierOptions(true);
 
-  // 吊绳（三列单选）
-  els.rope.innerHTML = renderRopeRadios();
+  // 吊绳（三列单选）——v10.8.0：改走 rebuildRopeUI，确保重渲染后 change 事件仍被绑定
+  rebuildRopeUI();
 
   // 地区：默认选中第一项（广东省内），确保页面加载后即可计算
   if (els.region) {
@@ -1560,8 +1591,10 @@ function onCodeSwitch(sheetIdx, dir) {
     const w = parseFloat(state.width);
     const l = parseFloat(state.length);
     if (w && l) {
-      const area = calcBleedArea(l, w);
-      const spec = matchSpec(paper, area);
+      // v10.8.0：与 calculate 保持一致——不出血的报价表按实际长宽算面积
+      const bleeds = currentPriceListBleeds();
+      const area = bleeds ? calcBleedArea(l, w) : l * w;
+      const spec = matchSpec(paper, area, !bleeds);
       currentCode = spec.code;
     }
   }
@@ -2907,6 +2940,24 @@ function renderPriceListSelector() {
   };
   renderOne(els.priceListSelector);
   renderOne(els.quickPriceListSelector);
+  renderPriceListNote();
+}
+
+/**
+ * v10.8.0：渲染「报价表备注」框体。
+ * 当前报价表有备注 → 显示（独立成行的框体，位于切换器下方）；无备注 → 整块隐藏。
+ * 报价表切换（onPriceListChange → renderPriceListSelector）时自动刷新。
+ */
+function renderPriceListNote() {
+  if (!els.priceListNote || !els.priceListNoteBody) return;
+  const note = getPriceListNote(CURRENT_PRICE_LIST_ID).trim();
+  if (!note) {
+    els.priceListNote.hidden = true;
+    els.priceListNoteBody.textContent = "";
+    return;
+  }
+  els.priceListNoteBody.textContent = note;
+  els.priceListNote.hidden = false;
 }
 
 function onPriceListChange() {
@@ -3106,7 +3157,8 @@ function resetToDefaults() {
 
   rebuildPaperUI();
   renderLevelSettings();
-  renderRopeRadios();
+  // v10.8.0：原此处 renderRopeRadios(); 是空调用（返回值被丢弃，并未写入 DOM）。
+  // 吊绳区渲染统一交给 initOptions()（其内部走 rebuildRopeUI，含事件重绑）。
   initOptions();
   // 重新填充下拉框默认值
   updateDefaultPaperOptions && updateDefaultPaperOptions();
@@ -3600,7 +3652,7 @@ function exportSnapshotSet() {
     showToast("暂无快照可导出");
     return;
   }
-  downloadJson({ version: "10.7.1", count: list.length, snapshots: list }, "亲成快照_" + formatDateFile() + ".json");
+  downloadJson({ version: "10.8.0", count: list.length, snapshots: list }, "亲成快照_" + formatDateFile() + ".json");
   showToast("快照已导出");
 }
 
@@ -4268,7 +4320,7 @@ function setLocalBackupStatus(html, isError) {
 
 function exportLocalBackup() {
   const data = {
-    version: "10.7.1",
+    version: "10.8.0",
     kind: "local-backup",
     exportAt: new Date().toISOString(),
     priceLists: PRICE_LISTS,
@@ -4424,7 +4476,7 @@ function importLocalBackup(file) {
 // -------------------- 导入 / 导出完整配置 --------------------
 function exportFullData() {
   const data = {
-    version: "10.7.1",
+    version: "10.8.0",
     exportAt: new Date().toISOString(),
     priceLists: PRICE_LISTS,
     priceListGroups: PRICE_LIST_GROUPS, // v10.7.0：随配置导出报价表组结构
@@ -4605,9 +4657,11 @@ function paperToSheetRows(paper, priceList) {
     ["报价表全称", safeExcelText(paper.name)],
     ["简称", safeExcelText(paper.shortName)],
     ["折扣系数", paper.discount],
+    // v10.8.0：新增「是否出血」行；「备注」行改为写出报价表备注（原为固定空串）
+    ["是否出血", pl.bleed === false ? "否" : "是"],
     ...directCoeffRows(paper, tierKeys),
     ...batchDirectRows(paper, tierKeys),
-    ["备注", ""],
+    ["备注", pl.note ? String(pl.note) : ""],
     [],
     headerRow,
     ...dataRows,
@@ -4654,11 +4708,17 @@ function downloadPaperTemplate() {
   DEFAULT_PAPER_CONFIG.forEach((paper, idx) => {
     const rows = [];
     // 元信息区
-    rows.push(["所属小组", GROUP_NAME_MAP[getCurrentPriceList().groupId] || GROUP_META.name]);
-    rows.push(["总报价表", getCurrentPriceList().name]);
+    // v10.8.0：模板现含多个报价表，元信息须按"纸张所属报价表"取名（原实现一律用当前报价表会标错）；
+    //          并新增「是否出血」行，导入时据此决定该报价表是否加 3mm 出血。
+    const tplPl = PRICE_LISTS.find(p => p.id === paper.priceListId)
+      || DEFAULT_PRICE_LISTS.find(p => p.id === paper.priceListId)
+      || getCurrentPriceList();
+    rows.push(["所属小组", GROUP_NAME_MAP[tplPl.groupId] || GROUP_META.name]);
+    rows.push(["总报价表", tplPl.name]);
     rows.push(["报价表全称", paper.name]);
     rows.push(["简称", paper.shortName]);
     rows.push(["折扣系数", paper.discount]);
+    rows.push(["是否出血", tplPl.bleed === false ? "否" : "是"]);
     // 直接系数三行（有系数填实际值，无系数用价格档位占位）
     const dc = paper.directCoeff;
     const hasDC = dc && Array.isArray(dc.tiers) && dc.tiers.length > 0 &&
@@ -4719,9 +4779,12 @@ function downloadPaperTemplate() {
   showToast("模板已下载（" + DEFAULT_PAPER_CONFIG.length + "张表，含直接系数档位规则行）");
 }
 
+// v10.8.0：报价表模板「备注」行里写的是格式填写说明，不是真备注——导入时按此前缀识别并忽略
+const NOTE_PLACEHOLDER_PREFIX = "直接系数档位/最高倍数/最低倍数三行";
+
 function parsePaperExcel(arrayBuffer) {
   if (typeof XLSX === "undefined") {
-    throw new Error("Excel 库未加载，请稍后重试");
+    // v10.8.0：原实现有两行紧邻的 throw，第二行永远不可达（死代码），已删除
     throw new Error("Excel 库未加载，请检查网络");
   }
   const wb = XLSX.read(new Uint8Array(arrayBuffer), { type: "array" });
@@ -4735,6 +4798,9 @@ function parsePaperExcel(arrayBuffer) {
   const usedIds = new Set([...DEFAULT_PAPER_CONFIG.map(p => p.id), ...PAPER_CONFIG.map(p => p.id)]);
   // 解析报价表名称（取第一个 Sheet 的"总报价表"行）
   let priceListName = "";
+  // v10.8.0：报价表级字段——是否出血 / 备注（多 Sheet 时取第一个有值者）
+  let plBleed = null;
+  let plNote = null;
 
   wb.SheetNames.forEach((sheetName, sheetIndex) => {
     const ws = wb.Sheets[sheetName];
@@ -4746,7 +4812,10 @@ function parsePaperExcel(arrayBuffer) {
 
     // 读取表头信息区（按标签匹配，兼容有无"所属小组"/"总报价表"行）
     let name = "", shortName = "", discountRaw = "";
-    for (let i = 0; i < Math.min(rows.length, 8); i++) {
+    // v10.8.0：新增读取「是否出血」（是/否）与「备注」
+    let bleedRaw = "", noteRaw = null;
+    // v10.8.0：信息区行数由 8 放宽到 16（新增两行后，原窗口已不够覆盖到「备注」之前的全部标签）
+    for (let i = 0; i < Math.min(rows.length, 16); i++) {
       const label = String(rows[i] && rows[i][0] || "").trim();
       const val = rows[i] && rows[i][1];
       if (label === "所属小组") continue;
@@ -4758,8 +4827,16 @@ function parsePaperExcel(arrayBuffer) {
       if (label === "1号报价表全称" || label === "报价表全称") name = String(val || "").trim();
       else if (label === "简称") shortName = String(val || "").trim();
       else if (label === "折扣系数") discountRaw = val;
+      else if (label === "是否出血") bleedRaw = String(val == null ? "" : val).trim();
+      else if (label === "备注") { if (noteRaw === null) noteRaw = String(val == null ? "" : val); }
     }
     const discount = discountRaw === "" || discountRaw == null ? 1 : Number(discountRaw);
+    // 是否出血：留空 = 未指定（返回 null，调用方不改动）；"否/no/false/0/n" 视为不出血
+    const bleed = bleedRaw === "" ? null : !/^(否|no|false|0|n)$/i.test(bleedRaw);
+    // v10.8.0：汇总为报价表级字段（多 Sheet 时取第一个有值者）
+    if (plBleed === null && bleed !== null) plBleed = bleed;
+    // 模板里的「备注」是填写说明，不能当成报价表备注读进来
+    if ((plNote === null || plNote === "") && noteRaw && !noteRaw.startsWith(NOTE_PLACEHOLDER_PREFIX)) plNote = noteRaw;
 
     // 解析直接系数三行（直接系数档位 / 最高倍数 / 最低倍数），与报价表表格格式一致
     // 三行均填有值 → { tiers, max, min }；仅档位占位或缺失 → null（按标准报价计算）
@@ -5025,7 +5102,7 @@ function parsePaperExcel(arrayBuffer) {
     throw new Error(errors.join("；") || "没有可导入的报价表");
   }
 
-  return { papers, crafts: craftsByPaper, errors, priceListName: priceListName || "" };
+  return { papers, crafts: craftsByPaper, errors, priceListName: priceListName || "", bleed: plBleed, note: plNote };
 }
 
 function importPaperExcel(file) {
@@ -5037,10 +5114,19 @@ function importPaperExcel(file) {
   const reader = new FileReader();
   reader.onload = e => {
     try {
-      const { papers, crafts, errors, priceListName } = parsePaperExcel(e.target.result);
+      const { papers, crafts, errors, priceListName, bleed, note } = parsePaperExcel(e.target.result);
       // 创建新报价表
       const plName = priceListName || `报价表${PRICE_LISTS.length + 1}`;
       const newPriceListId = addPriceList(plName);
+      // v10.8.0：把「是否出血」「备注」写入新建的报价表
+      {
+        const pl = PRICE_LISTS.find(p => p.id === newPriceListId);
+        if (pl) {
+          if (bleed !== null) pl.bleed = bleed;
+          if (note != null && note !== "") pl.note = note;
+          saveToStorage("priceLists", PRICE_LISTS);
+        }
+      }
       // 为导入的纸张设置 priceListId
       papers.forEach(p => { p.priceListId = newPriceListId; });
       // 追加到 PAPER_CONFIG（不替换已有报价表的纸张）
@@ -5174,19 +5260,29 @@ function parseRopeExcel(arrayBuffer) {
 
     const prices = {};
     let allZero = true;
+    let hasAnyValue = false;
     for (let i = 0; i < tierKeys.length; i++) {
       const tier = tierKeys[i];
       const val = row[1 + i];
-      const price = val === "" || val == null ? 0 : Number(val);
+      // v10.8.0：空单元格保留为 null（未设价），不再折算成 0——
+      // 否则「忘了填价」与「不加吊绳的合法 0 价」无法区分，会导致缺价警示失效。
+      if (val === "" || val == null) {
+        prices[tier] = null;
+        allZero = false;
+        continue;
+      }
+      const price = Number(val);
       if (isNaN(price)) {
-        errors.push(`「${name}」的 ${tier} 档价格无效，已按 0 处理`);
-        prices[tier] = 0;
+        errors.push(`「${name}」的 ${tier} 档价格无效，已按未设价处理`);
+        prices[tier] = null;
+        allZero = false;
       } else {
         prices[tier] = price;
+        hasAnyValue = true;
+        if (price !== 0) allZero = false;
       }
-      if (prices[tier] !== 0) allZero = false;
     }
-    if (allZero) hasZeroOption = true;
+    if (allZero && hasAnyValue) hasZeroOption = true;
 
     ropes.push({ id: "rope" + (ropes.length), name, prices });
   }
@@ -5257,7 +5353,9 @@ function updateRopeFoldSummary() {
   if (!els.ropeFoldSummary || !els.rope) return;
   const checked = els.rope.querySelector('input[name="rope"]:checked');
   const rope = ROPE_CONFIG.find(r => r.id === (checked ? checked.value : ""));
-  const base = rope ? getRopeBasePrice(rope.prices) : null;
+  // v10.8.0：全 0 价的「不加吊绳」基准价补 0，摘要显示「¥0/千张」而不是留空
+  let base = rope ? getRopeBasePrice(rope.prices) : null;
+  if (base == null && isFreeRope(rope)) base = 0;
   els.ropeFoldSummary.textContent = rope
     ? `当前：${rope.name}${base != null ? `（¥${formatPriceRaw(base)}/千张）` : ""}`
     : "";
@@ -5271,9 +5369,19 @@ function toggleRopeFold() {
 }
 
 function rebuildRopeUI() {
-  // 重新渲染吊绳选择区（沿用与初始化一致的默认选择逻辑），并重新绑定实时计算事件
+  // v10.8.0（缺陷修复）：原实现直接用 renderRopeRadios() 重渲染，而该函数按
+  // APP_PROFILE.defaultRope 决定选中项 → 会把用户当前选中的吊绳悄悄换回默认值；
+  // 且调用方是「先 rebuildRopeUI() 再 onCalculate()」，导致报价算的是被换掉的那个吊绳。
+  // 现在：先记住当前选中项，重渲染后还原；仅在原选中项已不存在时才回落到默认。
+  if (!els.rope) return;
+  const prev = els.rope.querySelector('input[name="rope"]:checked')?.value || "";
   els.rope.innerHTML = renderRopeRadios();
+  if (prev && ROPE_CONFIG.some(r => r.id === prev)) {
+    const input = Array.from(els.rope.querySelectorAll('input[name="rope"]')).find(i => i.value === prev);
+    if (input) input.checked = true;
+  }
   bindRopeEvents();
+  updateRopeFoldSummary();
 }
 
 // -------------------- 邮费 Excel 导入 / 导出 / 模板 --------------------
