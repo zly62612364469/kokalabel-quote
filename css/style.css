@@ -1,4 +1,4 @@
-/* 亲成报价系统 v11.1 - 样式表 */
+/* 亲成报价系统 v11.2 - 样式表 */
 
 /* ===================== 全局变量与重置 ===================== */
     :root {
@@ -1222,6 +1222,36 @@
       color: var(--text-secondary);
       white-space: nowrap;
     }
+    /* v11.2：快速切换档位折叠面板（默认折叠，标题行可点击） */
+    .tier-quick-head {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      cursor: pointer;
+      font: inherit;
+      transition: background-color 0.15s;
+    }
+    .tier-quick-head:hover {
+      background: rgba(15, 111, 196, 0.08);
+    }
+    .tier-quick-arrow {
+      font-size: 11px;
+      color: var(--text-secondary);
+      transition: transform 0.15s;
+    }
+    .tier-quick-switch.open .tier-quick-arrow {
+      transform: rotate(180deg);
+    }
+    .tier-quick-switch.collapsed #tierQuickBtns {
+      display: none !important;
+    }
+    .tier-quick-switch.open #tierQuickBtns {
+      display: flex;
+    }
     .tier-quick-btns {
       display: flex;
       flex-wrap: wrap;
@@ -2083,6 +2113,12 @@
       font-size: 12px;
     }
 
+    /* v11.2：全局 dialog 居中——全局 * reset 的 margin:0 覆盖了 UA 的 margin:auto，
+       导致所有 dialog 贴左上角显示 */
+    dialog {
+      margin: auto;
+    }
+
     .history-dialog {
       width: min(760px, calc(100vw - 28px));
       max-width: 760px;
@@ -2093,6 +2129,19 @@
       border-radius: 16px;
       background: transparent;
       box-shadow: 0 24px 70px rgba(15, 23, 42, 0.28);
+    }
+
+    /* v11.2：报价历史列表浮窗——加大尺寸 + 内容区滚动，显示完整不局促 */
+    #historyListDialog {
+      width: min(1040px, calc(100vw - 24px));
+      max-width: none;
+      max-height: calc(100vh - 32px);
+    }
+    #historyListDialog .history-dialog-content {
+      overflow: auto;
+    }
+    #historyListDialog .history-dialog-footer {
+      justify-content: space-between;
     }
 
     .history-dialog::backdrop {

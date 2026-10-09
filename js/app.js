@@ -1,5 +1,5 @@
 // ============================================================
-// 亲成报价系统 v11.1 - 主程序（计算 + 渲染 + 交互 + 初始化）
+// 亲成报价系统 v11.2 - 主程序（计算 + 渲染 + 交互 + 初始化）
 // ============================================================
 "use strict";
 
@@ -914,6 +914,11 @@ const els = {
   ropeFold: document.getElementById("ropeFold"),
   ropeFoldHead: document.getElementById("ropeFoldHead"),
   ropeFoldSummary: document.getElementById("ropeFoldSummary"),
+  // v11.2：快速切换档位折叠面板
+  tierQuickHead: document.getElementById("tierQuickHead"),
+  // v11.2：个人主页功能入口（移动端顶部菜单 3 项时由此进入数据管理/报价设置）
+  gotoDataMgrBtn: document.getElementById("gotoDataMgrBtn"),
+  gotoSettingsBtn: document.getElementById("gotoSettingsBtn"),
   personalizeBtn: document.getElementById("personalizeBtn"),
   // v10.7.1 修复：HTML 元素 id 为 personalizePanel（v10.2 改内联面板时更名），
   // 原代码读 personalizeModal → 恒为 null，导致点击「Aa 个性化」时
@@ -1152,6 +1157,13 @@ function applyUiLayoutMode() {
   const vertical = mode === "vertical" || (mode === "auto" && detectMobilePhone());
   document.body.classList.toggle("ui-vertical", vertical);
   document.body.classList.toggle("ui-flat", !vertical);
+  // v11.2：数据管理/报价设置独立菜单——桌面（扁平化宽泛式）显示 5 项；
+  // 移动端（垂直纵深式）顶部菜单保持 3 项，两个入口改由个人主页「功能入口」卡提供；
+  // file:// 本地版（无账号体系）始终隐藏（v11.1 遗漏 web 端移除 hidden 的修复也在此收敛）
+  const isWeb = !!window.KOKA;
+  document.querySelectorAll(".nav-btn.web-only").forEach(btn => {
+    btn.hidden = !isWeb || vertical;
+  });
 }
 
 // -------------------- v10.1：个性化（字号缩放，所有用户可用，仅本机生效） --------------------
@@ -3735,7 +3747,7 @@ function exportSnapshotSet() {
     showToast("暂无快照可导出");
     return;
   }
-  downloadJson({ version: "11.1", count: list.length, snapshots: list }, "亲成快照_" + formatDateFile() + ".json");
+  downloadJson({ version: "11.2", count: list.length, snapshots: list }, "亲成快照_" + formatDateFile() + ".json");
   showToast("快照已导出");
 }
 
@@ -4476,7 +4488,7 @@ function setLocalBackupStatus(html, isError) {
 
 function exportLocalBackup() {
   const data = {
-    version: "11.1",
+    version: "11.2",
     kind: "local-backup",
     exportAt: new Date().toISOString(),
     priceLists: PRICE_LISTS,
@@ -4632,7 +4644,7 @@ function importLocalBackup(file) {
 // -------------------- 导入 / 导出完整配置 --------------------
 function exportFullData() {
   const data = {
-    version: "11.1",
+    version: "11.2",
     exportAt: new Date().toISOString(),
     priceLists: PRICE_LISTS,
     priceListGroups: PRICE_LIST_GROUPS, // v10.7.0：随配置导出报价表组结构
@@ -5527,6 +5539,15 @@ function toggleRopeFold() {
   if (els.ropeFoldHead) els.ropeFoldHead.setAttribute("aria-expanded", open ? "true" : "false");
 }
 
+// v11.2：快速切换档位折叠面板切换（默认折叠，状态不持久化）
+function toggleTierQuickFold() {
+  const box = els.tierQuickHead ? els.tierQuickHead.closest(".tier-quick-switch") : null;
+  if (!box) return;
+  const open = box.classList.toggle("open");
+  box.classList.toggle("collapsed", !open);
+  els.tierQuickHead.setAttribute("aria-expanded", open ? "true" : "false");
+}
+
 function rebuildRopeUI() {
   // v10.8.0（缺陷修复）：原实现直接用 renderRopeRadios() 重渲染，而该函数按
   // APP_PROFILE.defaultRope 决定选中项 → 会把用户当前选中的吊绳悄悄换回默认值；
@@ -5744,6 +5765,18 @@ function bindEvents() {
       if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleRopeFold(); }
     });
   }
+
+  // v11.2：快速切换档位折叠面板（默认折叠）
+  if (els.tierQuickHead) {
+    els.tierQuickHead.addEventListener("click", toggleTierQuickFold);
+    els.tierQuickHead.addEventListener("keydown", e => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleTierQuickFold(); }
+    });
+  }
+
+  // v11.2：个人主页功能入口（数据管理/报价设置）
+  if (els.gotoDataMgrBtn) els.gotoDataMgrBtn.addEventListener("click", () => switchPage("data"));
+  if (els.gotoSettingsBtn) els.gotoSettingsBtn.addEventListener("click", () => switchPage("settings"));
 
   // v10.1：个性化面板（字号调整，所有用户可用）
   bindPersonalizeEvents();
@@ -6050,7 +6083,9 @@ function initDefaultDataUpload() {
 // -------------------- 启动 --------------------
 // 兜底：任何 init 步骤失败不影响其他步骤，错误会显示在控制台
 (function safeInit() {
-  // v11.1：报价设置/数据管理独立菜单仅 web 端显示——本地 file:// 版无账号体系，保持原个人主页结构
+  // v11.1/v11.2：报价设置/数据管理独立菜单的显示控制——
+  // file:// 本地版始终隐藏；web 端由 applyUiLayoutMode 按「设备架构 + 是否移动端」决定
+  // （此处先做一次初始判定，applyUiLayoutMode 会按垂直/扁平模式再次同步）
   if (!window.KOKA) {
     document.querySelectorAll(".nav-btn.web-only").forEach(btn => { btn.hidden = true; });
   }
