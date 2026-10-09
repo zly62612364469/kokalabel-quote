@@ -1,6 +1,6 @@
 # DEVELOPMENT.md · 开发与验证流程
 
-> 当前版本 v10.8.0 ｜ 更新 2026-10-07
+> 当前版本 v11.2 ｜ 更新 2026-10-09
 
 ---
 
@@ -12,16 +12,18 @@
 |---|---|
 | 本地运行 | 浏览器直接打开 `index.html` |
 | 语法检查 | Node.js（`node --check`） |
-| 功能验证 | Node.js + jsdom |
-| 部署 | Node.js + `npx wrangler@3.114.0` |
+| 功能验证 | Node.js + jsdom（自建回归脚本） |
+| 部署 | Node.js + wrangler v3（本机实例见 docs/DEPLOYMENT.md 第二节） |
 
-本机路径（供 AI Agent 参考）：
+本机路径（供 AI Agent 参考，2026-10-09 更新）：
 
 ```
-node   = C:/Users/Mayn/.workbuddy/binaries/node/versions/22.22.2-3/node.exe
-jsdom  = C:/Users/Mayn/.workbuddy/binaries/node/workspace/node_modules/jsdom   （已装，勿重装）
-git    = C:/Users/Mayn/.workbuddy/binaries/PortableGit/versions/1.2.0/bin/git.exe
-回归测试 = E:/报价系统7.9/_verify/v1080.test.cjs
+node    = C:/Users/Mayn/.workbuddy/binaries/node/versions/22.22.2-6/node.exe
+jsdom   = C:/Users/Mayn/.workbuddy/binaries/node/workspace/node_modules/jsdom   （NODE_PATH 引用）
+wrangler = C:/Users/Mayn/.workbuddy/binaries/node/wrangler3/node_modules/wrangler（v3.112.0，含手动补的 @esbuild/win32-x64）
+git     = 系统Git（仓库级身份已配置 zly62612364469@users.noreply.github.com）
+⚠️ 回归测试 = 原 E:/报价系统7.9/_verify/v1080.test.cjs（21 项）未进仓库、本机不存在——
+   重建列入 TODO；当前验证方式 = 自建 jsdom 综合回归（覆盖计价/就地编辑/页面/浮窗/折叠）+ 静态检查
 ```
 
 ---
@@ -29,10 +31,10 @@ git    = C:/Users/Mayn/.workbuddy/binaries/PortableGit/versions/1.2.0/bin/git.ex
 ## 二、日常开发循环
 
 ```
-1. 跑一次回归测试，建立基线（应 21 项全绿）
-        node "E:/报价系统7.9/_verify/v1080.test.cjs"
+1. 跑一次综合回归建立基线（jsdom 全绿为准）
+        NODE_PATH=<workspace>/node_modules node <回归脚本>
 
-2. 改代码（只改本仓库 KOKALabel报价系统-v7.8/）
+2. 改代码（只改本仓库 kokalabel-quote/）
 
 3. 语法检查
         node --check js/app.js && node --check js/data.js
@@ -101,7 +103,7 @@ const rope0    = window.eval('ROPE_CONFIG.find(function(r){return r.id==="rope0"
 
 ## 四、提交前检查清单
 
-- [ ] 回归测试全绿（`node _verify/v1080.test.cjs`）
+- [ ] 回归测试全绿（自建 jsdom 综合回归；原 `_verify/v1080.test.cjs` 未进仓库，重建列入 TODO）
 - [ ] `node --check` 前端 JS + `functions/**/*.js` 全部通过
 - [ ] 全项目 CRLF = 0
 - [ ] 改过 HTML id → 已全局 grep 旧 id，`els` 悬空引用 = 0

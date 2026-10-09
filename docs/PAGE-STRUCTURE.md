@@ -1,7 +1,7 @@
 # PAGE-STRUCTURE.md · 页面结构与关键 DOM 锚点
 
-> 当前版本 v10.8.0 ｜ 更新 2026-10-07
-> 本项目只有 **3 个视图**（单页切换），没有独立的"页面"与"组件详情页"。
+> 当前版本 v11.2 ｜ 更新 2026-10-09
+> web 端共 **5 个视图**（单页切换）+ 2 个历史浮窗；本地 `file://` 版保持原 3 视图（新菜单隐藏）。
 
 ---
 
@@ -12,19 +12,29 @@
 ```html
 <nav class="sidenav">
   <button class="nav-btn active" data-page="calculator">智能报价计算器</button>
-  <button class="nav-btn"        data-page="table">报价表组查询</button>
-  <button class="nav-btn"        data-page="profile">个人主页</button>
+  <button class="nav-btn web-only" data-page="data" hidden>数据管理</button>      <!-- v11.1 -->
+  <button class="nav-btn web-only" data-page="settings" hidden>报价设置</button>  <!-- v11.1 -->
+  <button class="nav-btn" data-page="table">报价表组查询</button>
+  <button class="nav-btn" data-page="profile">个人主页</button>
 </nav>
 ```
 
-| `data-page` | 容器 id | 默认 |
+| `data-page` | 容器 id | 显示条件 |
 |---|---|---|
-| `calculator` | `#page-calculator` | ✅ 显示 |
+| `calculator` | `#page-calculator` | ✅ 默认显示 |
+| `data` | `#page-data` | 仅 web 端；移动端（ui-vertical）隐藏 |
+| `settings` | `#page-settings` | 仅 web 端；移动端（ui-vertical）隐藏 |
 | `table` | `#page-table` | |
 | `profile` | `#page-profile` | |
 
+- web-only 按钮的显示控制在 `applyUiLayoutMode()`：`hidden = 无KOKA || 移动端`。
+- 访客（visitor）由 `auth.js` 的 `applyPagePermission()` 隐藏除计算器外的全部按钮。
+
 另有全局浮层：
-- `#personalizePanel` —— 个性化面板（**内联下拉，非弹窗、无遮罩**，点外部关闭）
+- `#personalizePanel` —— 个性化面板（内联下拉，点外部关闭）
+- `#historyListDialog` —— 报价历史列表浮窗（v11.1，见「浮窗」节）
+- `#historyDetailDialog` —— 报价详情浮窗
+- `#shippingWeightDialog` / `#manualShippingDialog` —— 邮费输入对话框
 
 ---
 
@@ -39,100 +49,97 @@
 | 报价表快捷切换 | `#quickPriceListSelector` | 顶栏快捷下拉 |
 | 纸张数量 / 档位 / 地区 | `#sheetCount` `#tier` `#region` | |
 | 纸张卡片 | `#sheetsWrap`（动态） | 每张纸独立选材质/尺寸/工艺 |
-| 纸张选择器 | — | 下拉 + 数字分页（`#paperPageInfo`） |
-| 吊绳类型 | `#ropeFold` `#ropeFoldHead` `#ropeFoldSummary` `#rope` | **可折叠**，默认折叠；`#rope` 内为单选 |
-| 直接系数模式 | `#customCoeffBar` `#customCoeffInput` | 直接系数模式专用 |
+| 吊绳类型 | `#ropeFold` `#ropeFoldHead` `#ropeFoldSummary` `#rope` | **可折叠**，默认折叠 |
+| 快速切换档位（v11.2） | `#tierQuickSwitch` `#tierQuickHead` `#tierQuickBtns` | **可折叠，默认折叠** |
+| 临时直接系数 | `#tempCoeffBar` `#tempCoeffInputs` | 直接系数模式专用 |
 
 ### 结果区
 
 | 区块 | 关键 id | 说明 |
 |---|---|---|
-| 报价结果卡片 | — | 标题「报价结果」 |
-| 各纸张明细表 | `#resSheetTable` | 显示代码 `▲▼` 切换器（`onCodeSwitch`） |
-| 吊绳费 | `#resRopePrice` `#ropePriceWrap` `#ropePriceTable` | |
-| 邮费 | `#resShipping` `#shippingPriceWrap` `#shippingPriceTable` | |
+| 各纸张明细表 | `#resSheetTable` | 显示代码 `▲▼` 切换器 |
+| 吊绳费 | `#resRopePrice` | 金额 `.rope-result-price[data-rope-edit]` **可点击修改**（v10.9.0），覆盖时 `.rope-price-overridden` 高亮 |
+| 邮费 | `#resShippingPrice` | 金额 `.ship-result-price[data-ship-edit]` **可点击修改**（v11.0），覆盖高亮同上 |
+| 成本合计 / 吊牌成本 | `#resCost` `#resTagCost` | 随覆盖联动 |
+| 临时修改重置（v11.0） | `#resultResetRow` `#resetRopeShipBtn` | 仅存在吊绳/邮费覆盖时显示 |
 | 面积系数行 | `#areaCoefficientRow` | 面积 > 10000 时显示 |
-| 价格表（可编辑） | `#priceTable` `#craftTable` `#directCoeffTable` `#batchDirectTable` | **点单元格就地编辑** |
-| 保存面板 | `.quote-save-panel` | 报价历史 / 快照 |
-| 自定义价格卡 | `#customPriceCard` | 临时系数 |
+| 临时毛利系数 | `#customCoeffBar` `#customCoeffInput` `#customPriceCard` | 提示与标题同行（v11.2） |
+| 保存面板 | `.quote-save-panel` | `#saveQuoteBtn`（保存含改动提示）/ `#openQuoteHistoryBtn`（打开历史浮窗） |
 
 ---
 
-## 三、视图 2：报价表组查询（`#page-table`）
+## 三、视图 2：数据管理（`#page-data`，v11.1 新增）
 
-查看与维护价格矩阵。
+tabs 顺序（**报价历史第一、默认激活**）：
 
-| 区块 | 关键 id | 说明 |
+| tab | 关键 id | 说明 |
 |---|---|---|
-| 报价表切换器 | `#priceListSelector` `#deletePriceListBtn` | |
-| **报价表备注**（v10.8.0） | `#priceListNote` `#priceListNoteBody` | 独立框体，位于切换器下方；无备注整块 `hidden` |
-| 搜索框 | `#searchInput` | 按代码或面积搜索 |
-| 纸张信息 | `#paperDiscount` `#tableMeta` | |
-| 纸张分页 | `#paperPageInfo` | |
-| 价格矩阵表 | `#priceTable` `#craftTable` `#directCoeffTable` `#batchDirectTable` | 内联编辑 |
-| 新增规格行 | `#addSpecRowBtn` | |
-| Excel | `#exportExcelBtn` `#importExcelBtn` `#importExcelFile` `#downloadTemplateBtn` `#excelImportStatus` | 纸张表 |
-| 吊绳/邮费表 | `#ropePriceTable` `#shippingPriceTable` + 各自导入导出按钮 | |
+| **报价历史** | `#historyTable` `#historyEmpty` `#clearHistoryBtn` | 与浮窗共用渲染（`buildHistoryRowsHtml`） |
+| 价格配置 | `#exportExcelBtn` `#importExcelBtn` `#exportRopeExcelBtn` `#exportShippingExcelBtn` `#exportDataBtn` `#exportLocalBackupBtn` `#resetToDefaultsBtn` 等 | 各类导入导出 |
+| 在线修改 | `#onlineLockNotice` `#onlineManagerRoot` `#onlineAddGroupBtn` `#onlineTplPriceList` | 仅超管可编辑 |
+| 云同步 | — | 占位 |
+
+另有：**快照与统计报表卡**（`#snapshotTable` `#createSnapshotBtn` `#statsContent` `#exportStatsBtn`）、
+**上传为默认数据**按钮（`#uploadDefaultBtn`，仅超管可见）。
 
 ---
 
-## 四、视图 3：个人主页（`#page-profile`）
+## 四、视图 3：报价设置（`#page-settings`，v11.1 新增）
 
 | 区块 | 关键 id | 说明 |
 |---|---|---|
-| 仓库链接 | — | |
-| 报价设置 | `#defaultPaper` `#defaultRope` `#defaultTier` `#defaultSizeType` `#defaultQuoteToggle` `#hidePaperIndex` `#decimalPlaces` | |
+| 客户毛利系数 | `#levelSettings` `#addLevelBtn` `#resetLevelBtn` | |
+| 金额显示 | `#decimalPlaces` | |
 | 公司信息 | `#companyName` `#companyPhone` | |
-| 计算规则说明 | — | 静态说明文本 |
-| **数据管理** | `#uploadDefaultBtn` | ★「上传为默认数据」（仅管理员可见） |
-| 快照与统计 | `#createSnapshotBtn` `#exportSnapshotsBtn` `#clearSnapshotBtn` `#exportStatsBtn` | |
-| 报价历史 | `#historyTable` `#historyEmpty` `#clearHistoryBtn` `#historyDetailDialog` | |
-| 导入导出 | `#exportDataBtn` `#importDataBtn` `#exportLocalBackupBtn` `#importLocalBackupBtn` | |
-| 更多功能 | — | 占位功能入口 |
-| 账号管理 | — | 仅超管可见 |
-
-### 个性化面板（`#personalizePanel`）
-
-| 元素 | 说明 |
-|---|---|
-| `#fontScaleGroup` | 预设按钮（小 / 默认 / 大 / 特大） |
-| `#fontScaleInput` `#fontScaleApply` | 手输 px（8~32） |
-| `#fontScaleCurrent` | 「当前字号：16px（100%）」 |
-| `#fontScaleDefaults` | 系统默认字号 |
-| `#fontScaleReset` | 恢复默认 |
+| 默认选项 | `#defaultTier` `#defaultSizeType` `#defaultRope` `#defaultPaper` `#uiLayoutMode` `#hidePaperIndex` `#paperSelectMode` | |
+| 保存/导出 | `#saveProfileBtn` `#exportProfileBtn` | |
+| 计算规则说明 | — | 静态说明 |
 
 ---
 
-## 五、⚠️ 改 DOM 时的强制检查
+## 五、视图 4：报价表组查询（`#page-table`）
 
-`js/app.js` 顶部有一个集中的 `els` 对象，形如：
-
-```js
-const els = {
-  rope: document.getElementById("rope"),
-  personalizePanel: document.getElementById("personalizePanel"),
-  priceListNote: document.getElementById("priceListNote"),
-  // ...
-};
-```
-
-**任何 HTML `id` 的改动都必须：**
-
-1. 全局 grep 旧 id —— 确认 `app.js` 里没有残留引用
-2. 同步更新 `els` 中的对应项
-
-否则 `getElementById` 返回 `null`，被 `if (els.xxx)` 静默吞掉，
-表现为**「点击没反应」「功能卡死」**且**控制台不报错** —— 这是本项目最隐蔽的一类 bug
-（v10.2 就因此产生了"个性化面板卡死"，直到 v10.7.1 才定位）。
-
-> 排查技巧：先确认"元素到底存不存在"，再怀疑逻辑。
+| 区块 | 关键 id | 说明 |
+|---|---|---|
+| 报价表切换器 | `#priceListSelector` `#deletePriceListBtn` | 删除按钮仅超管可见（v10.8.1） |
+| **报价表备注** | `#priceListNote` `#priceListNoteBody` | 无备注整块 `hidden` |
+| 搜索框 | `#searchInput` | |
+| 价格矩阵表 | `#priceTable` `#craftTable` `#directCoeffTable` `#batchDirectTable` | 内联编辑 |
+| Excel | `#exportExcelBtn` 等 | |
 
 ---
 
-## 六、DOM 生成方式
+## 六、视图 5：个人主页（`#page-profile`）
 
+| 区块 | 关键 id | 说明 |
+|---|---|---|
+| 账号区 | （auth.js 注入 `#kokaTopBar` / 账号卡） | 网页版 |
+| **功能入口**（v11.2） | `#gotoDataMgrBtn` `#gotoSettingsBtn` | 移动端进入数据管理/报价设置的主入口 |
+| 系统信息 | — | 当前版本 / 数据存储 / 测试阶段提示 |
+| 全局恢复 | `#resetAllSettingsBtn` | 清除全部本地配置 |
+| 账号管理 | （auth.js 注入） | 仅管理员+ 可见 |
+
+---
+
+## 七、浮窗
+
+| 浮窗 | 关键 id | 说明 |
+|---|---|---|
+| **报价历史列表**（v11.1） | `#historyListDialog` `#dialogHistoryTable` `#dialogHistoryEmpty` `#dialogClearHistoryBtn` | 计算器「查看报价记录」打开；与数据管理主表共用渲染；载入参数后自动关闭 |
+| 报价详情 | `#historyDetailDialog` `#historyDetailContent` `#historyDetailLoadBtn` | 保存时快照 + 临时修改明细 |
+| 邮费重量 / 手动邮费 | `#shippingWeightDialog` `#manualShippingDialog` | 缺档时弹出 |
+
+---
+
+## 八、⚠️ 改 DOM 时的强制检查
+
+`js/app.js` 顶部有一个集中的 `els` 对象——**任何 HTML `id` 的改动都必须全局 grep 同步 `els.*` 引用**；
+`if (els.xxx)` 的判空会静默吞掉失效引用（表现为"点击无反应"）。
+
+渲染方式：
 - **静态**：`index.html` 里写死骨架（导航、卡片容器、固定表单）
 - **动态渲染**：`app.js` 的 `render*` 函数用模板字符串写入 `innerHTML`
   （如 `renderPriceTable()` / `renderSheets()` / `renderRopeRadios()`）
 - ⚠️ **`innerHTML` 重写 = 该区域内所有事件监听器全部丢失**，
-  重渲染后必须重新绑定（统一封成 `rebuild*` 函数，内含 render + bind）。
+  重渲染后必须重新绑定（统一封成 `rebuild*` 函数，内含 render + bind）；
+  长列表用表格级事件委托（`tbody.onclick` 赋值幂等，如 `bindHistoryTableActions`）。

@@ -1,6 +1,6 @@
 # DEPLOYMENT.md · 构建与部署说明
 
-> 当前版本 v10.8.0 ｜ 更新 2026-10-07 ｜ 线上 https://kokalabel-quote.pages.dev
+> 当前版本 v11.2 ｜ 更新 2026-10-09 ｜ 线上 https://kokalabel-quote.pages.dev
 
 ---
 
@@ -32,6 +32,29 @@ css/  js/  functions/  assets/
 ---
 
 ## 二、部署到 Cloudflare Pages
+
+### 本机可用 SOP（2026-10-09 实战验证）
+
+⚠️ `npx wrangler` 在本机会因环境守卫失败；必须用本机 wrangler 实例直调 cli.js：
+
+```bash
+cd <干净部署目录>   # 如 E:\Wb\报价优化\KOKALabel-v11.2（24 个文件：index/login/robots/_headers/wrangler.toml + css/js/functions/assets）
+
+env -u http_proxy -u https_proxy -u HTTP_PROXY -u HTTPS_PROXY -u ALL_PROXY -u all_proxy \
+  CLOUDFLARE_API_TOKEN=<CF API Token> \
+  node --no-warnings --experimental-vm-modules \
+    "C:/Users/Mayn/.workbuddy/binaries/node/wrangler3/node_modules/wrangler/wrangler-dist/cli.js" \
+    pages deploy "." --project-name kokalabel-quote --branch main
+```
+
+⚠️ 坑链记录（详见 `.workbuddy` 项目记忆）：
+1. bin/wrangler.js 是 spawn 包装，直接 require cli.js 不会执行 main——必须按上面命令行直调 cli.js。
+2. wrangler 安装时 `@esbuild/win32-x64` optional dep 可能静默缺失（npm 环境守卫拦截）→
+   所有打包命令**无输出闪退 exit 1**；用 `npm pack @esbuild/win32-x64@0.17.19` 手动解压补齐。
+3. 环境注入的代理变量会让 wrangler 走代理失败，必须 `env -u` 清掉。
+4. wrangler 3.114.0 在 Windows 管道下 pages deploy 崩溃，**固定用 3.112.0**。
+
+### 旧参考（原机器环境）
 
 ```bash
 cd "E:\报价系统7.9\KOKALabel-v10.8.0"

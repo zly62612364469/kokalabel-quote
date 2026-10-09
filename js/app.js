@@ -3226,6 +3226,7 @@ function switchCalcMode(mode) {
 function resetToDefaults() {
   const confirmMsg = "将清空以下本地修改并恢复出厂默认：\n\n• 报价表组（恢复为默认 1楼/3楼 报价表）\n• 纸张配置（44 张）\n• 工艺配置（含 烫金/UV/鸡眼/凹凸 等）\n• 吊绳配置\n• 邮费配置\n• 客户等级\n\n报价历史与本地快照不会被删除。\n\n确定继续？";
   if (!confirm(confirmMsg)) return;
+  clearRopeShipPriceCaches(); // v11.3：重置后 rope/region id 回到默认，清理临时价缓存
 
   const keysToReset = ["paperConfig", "craftConfig", "ropeConfig", "shippingConfig", "customerLevels", "priceLists", "priceListGroups", "currentPriceListId"];
   keysToReset.forEach(k => {
@@ -4610,6 +4611,7 @@ function importLocalBackup(file) {
         SHIPPING_CONFIG.length = 0;
         data.shippingConfig.forEach(s => SHIPPING_CONFIG.push(s));
         saveToStorage("shippingConfig", SHIPPING_CONFIG);
+        clearRopeShipPriceCaches(); // v11.3：region id 可能变化，清理临时价缓存
         if (els.region) {
           els.region.innerHTML = '<option value="">请选择地区</option>' +
             SHIPPING_CONFIG.map(s => `<option value="${escapeHtml(s.id)}">${escapeHtml(s.name)}</option>`).join("");
@@ -4709,6 +4711,7 @@ function importFullData(file) {
         SHIPPING_CONFIG.length = 0;
         data.shippingConfig.forEach(s => SHIPPING_CONFIG.push(s));
         saveToStorage("shippingConfig", SHIPPING_CONFIG);
+        clearRopeShipPriceCaches(); // v11.3：region id 可能变化，清理临时价缓存
         if (els.region) {
           els.region.innerHTML = '<option value="">请选择地区</option>' +
             SHIPPING_CONFIG.map(s => `<option value="${escapeHtml(s.id)}">${escapeHtml(s.name)}</option>`).join("");
@@ -5488,6 +5491,7 @@ function importRopeExcel(file) {
     try {
       const { ropes, errors } = parseRopeExcel(e.target.result);
       ROPE_CONFIG = ropes;
+      clearRopeShipPriceCaches(); // v11.3：rope id 重排，临时价缓存作废
       saveToStorage("ropeConfig", ROPE_CONFIG);
       rebuildRopeUI();
       onCalculate();
@@ -5546,6 +5550,16 @@ function toggleTierQuickFold() {
   const open = box.classList.toggle("open");
   box.classList.toggle("collapsed", !open);
   els.tierQuickHead.setAttribute("aria-expanded", open ? "true" : "false");
+}
+
+/**
+ * v11.3 审查修复：清空吊绳/邮费临时价缓存。
+ * 导入吊绳/邮费 Excel 或恢复备份/重置后，rope/region 的 id 会重排（rope0..n / region1..n），
+ * 旧缓存 key 会错误命中新 id 对应的数据（临时价套到别的绳/地区上），必须在数据替换后清理。
+ */
+function clearRopeShipPriceCaches() {
+  ropePriceCache = {};
+  shippingPriceCache = {};
 }
 
 function rebuildRopeUI() {
@@ -5684,6 +5698,7 @@ function importShippingExcel(file) {
       // 直接替换 SHIPPING_CONFIG 的内容（保持引用不变）
       SHIPPING_CONFIG.length = 0;
       regions.forEach(r => SHIPPING_CONFIG.push(r));
+      clearRopeShipPriceCaches(); // v11.3：region id 重排，临时价缓存作废
       // v8.2：导入后持久化到 localStorage，刷新不丢失
       saveToStorage("shippingConfig", SHIPPING_CONFIG);
       // 重新渲染地区下拉
