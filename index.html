@@ -7,15 +7,15 @@
   <!-- P0 安全：CSP 策略（v7.9：SheetJS 已本地化，script-src 仅允许 'self'，离线双击打开亦可用） -->
   <!-- v10.6.0：default-src/connect-src 放行 blob:，修复网页端 XLSX.writeFile 导出 Excel 被拦 -->
   <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob:; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' blob:;">
-  <title>亲成报价系统 v11.5</title>
+  <title>亲成报价系统 v11.6</title>
   <!-- v10.7.1：品牌与图标换回「亲成」（沿用 v10.5 全套亲成图标），版本号 10.7.0 → 10.7.1 -->
-  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg?v=11.5">
-  <link rel="icon" type="image/x-icon" href="assets/favicon.ico?v=11.5">
-  <link rel="icon" type="image/png" href="assets/favicon.png?v=11.5">
-  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png?v=11.5">
-  <link rel="stylesheet" href="css/style.css?v=11.5">
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg?v=11.6">
+  <link rel="icon" type="image/x-icon" href="assets/favicon.ico?v=11.6">
+  <link rel="icon" type="image/png" href="assets/favicon.png?v=11.6">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png?v=11.6">
+  <link rel="stylesheet" href="css/style.css?v=11.6">
   <!-- v9.3 账号访问控制：http 部署时强制登录（file:// 本地离线不启用） -->
-  <script src="js/auth.js?v=11.5"></script>
+  <script src="js/auth.js?v=11.6"></script>
 </head>
 <body>
   <!-- v10.6.0：app-shell 包裹 = 左侧导航 + 主区（扁平化宽泛式架构） -->
@@ -509,9 +509,9 @@
 
         <!-- v11.4：查询页分页——报价表 / 吊绳价格 / 邮费价格 三个子视图，避免单页过长滚动 -->
         <div class="table-view-tabs" id="tableViewTabs" role="tablist">
-          <button type="button" class="table-view-tab active" data-tview="quote">当前报价表</button>
-          <button type="button" class="table-view-tab" data-tview="rope">吊绳价格</button>
-          <button type="button" class="table-view-tab" data-tview="shipping">邮费价格</button>
+          <button type="button" class="table-view-tab active" data-tview-tab="quote">当前报价表</button>
+          <button type="button" class="table-view-tab" data-tview-tab="rope">吊绳价格</button>
+          <button type="button" class="table-view-tab" data-tview-tab="shipping">邮费价格</button>
         </div>
 
         <div id="tview-quote" class="table-view-panel active" data-tview="quote">
@@ -664,10 +664,10 @@
     <!-- 页面3：个人主页 -->
     <section class="page" id="page-profile">
       <div class="profile-hero">
-        <div class="avatar">海</div>
+        <div class="avatar">亲</div>
         <div class="profile-meta">
-          <h3>KOKA <span class="placeholder-badge">占位 UI</span></h3>
-          <p>管理员 · 本地配置 · 下次打开保留</p>
+          <h3>亲成报价系统</h3>
+          <p>报价配置 · 本机保存 · 下次打开保留</p>
         </div>
       </div>
 
@@ -694,7 +694,7 @@
           <div class="setting-row">
             <div class="setting-info">
               <div class="setting-label">当前版本</div>
-              <div class="setting-desc">亲成报价系统 v11.5</div>
+              <div class="setting-desc">亲成报价系统 v11.6</div>
             </div>
             <div class="setting-control">
               <span class="placeholder-badge">正式版</span>
@@ -738,7 +738,9 @@
     <section class="page" id="page-data">
       <!-- v11.1：数据管理独立菜单页（仅 web 端；本地版保留原个人主页结构） -->
       <div class="card">
-        <h2 class="card-title">数据管理 <button class="btn sm" id="uploadDefaultBtn" style="display:none;float:right;background:#059669;color:#fff;" title="把当前纸张/工艺/吊绳/邮费/客户等级配置上传为全用户共享的默认数据（仅管理员）">上传为默认数据</button></h2>
+        <h2 class="card-title">数据管理</h2>
+        <p class="card-desc">报价历史、价格配置导入导出、在线修改与快照统计；历史与快照保存在本机浏览器。</p>
+        <button class="btn sm" id="uploadDefaultBtn" style="display:none;float:right;background:#059669;color:#fff;" title="把当前纸张/工艺/吊绳/邮费/客户等级配置上传为全用户共享的默认数据（仅管理员）">上传为默认数据</button>
         <div class="tabs">
           <button class="tab active" data-tab="history">报价历史</button>
           <button class="tab" data-tab="config">价格配置</button>
@@ -926,6 +928,7 @@
       <!-- v11.1：报价设置独立菜单页（仅 web 端） -->
       <div class="card">
         <h2 class="card-title">报价设置</h2>
+        <p class="card-desc">客户毛利系数、金额显示与默认项；设置保存在本机浏览器。</p>
 
         <div class="profile-section">
           <h3 class="section-title">客户建议价格 · 毛利系数</h3>
@@ -1182,7 +1185,7 @@
   <div class="toast" id="toast"></div>
 
   <!-- v7.9: SheetJS 本地化（离线双击打开亦可导出/导入 Excel），先于业务脚本加载，XLSX 全局可用 -->
-  <script src="js/vendor/xlsx.full.min.js?v=11.5"></script>
-  <script src="js/data.js?v=11.5"></script>
-  <script src="js/app.js?v=11.5"></script>
+  <script src="js/vendor/xlsx.full.min.js?v=11.6"></script>
+  <script src="js/data.js?v=11.6"></script>
+  <script src="js/app.js?v=11.6"></script>
 </body></html>

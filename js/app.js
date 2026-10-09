@@ -1,5 +1,5 @@
 // ============================================================
-// 亲成报价系统 v11.5 - 主程序（计算 + 渲染 + 交互 + 初始化）
+// 亲成报价系统 v11.6 - 主程序（计算 + 渲染 + 交互 + 初始化）
 // ============================================================
 "use strict";
 
@@ -3756,7 +3756,7 @@ function exportSnapshotSet() {
     showToast("暂无快照可导出");
     return;
   }
-  downloadJson({ version: "11.5", count: list.length, snapshots: list }, "亲成快照_" + formatDateFile() + ".json");
+  downloadJson({ version: "11.6", count: list.length, snapshots: list }, "亲成快照_" + formatDateFile() + ".json");
   showToast("快照已导出");
 }
 
@@ -4497,7 +4497,7 @@ function setLocalBackupStatus(html, isError) {
 
 function exportLocalBackup() {
   const data = {
-    version: "11.5",
+    version: "11.6",
     kind: "local-backup",
     exportAt: new Date().toISOString(),
     priceLists: PRICE_LISTS,
@@ -4654,7 +4654,7 @@ function importLocalBackup(file) {
 // -------------------- 导入 / 导出完整配置 --------------------
 function exportFullData() {
   const data = {
-    version: "11.5",
+    version: "11.6",
     exportAt: new Date().toISOString(),
     priceLists: PRICE_LISTS,
     priceListGroups: PRICE_LIST_GROUPS, // v10.7.0：随配置导出报价表组结构
@@ -5604,12 +5604,15 @@ function toggleTierQuickFold() {
  */
 function switchTableView(view) {
   if (!["quote", "rope", "shipping"].includes(view)) view = "quote";
+  // v11.6 修复：只切换 [data-tview] 区块——原选择器会把子导航按钮（同名 data-tview 属性）
+  // 一并 hidden，导致点「返回报价表」后吊绳/邮费按钮消失、无法再切换（用户反馈"卡死"）
   document.querySelectorAll("#page-table [data-tview]").forEach(el => {
+    if (el.classList.contains("table-view-tab")) return;
     el.hidden = el.dataset.tview !== view;
   });
   if (els.tableViewTabs) {
     els.tableViewTabs.querySelectorAll(".table-view-tab").forEach(b => {
-      b.classList.toggle("active", b.dataset.tview === view);
+      b.classList.toggle("active", b.dataset.tviewTab === view);
     });
   }
 }
@@ -5894,7 +5897,7 @@ function bindEvents() {
   if (els.tableViewTabs) {
     els.tableViewTabs.addEventListener("click", e => {
       const btn = e.target.closest(".table-view-tab");
-      if (btn) switchTableView(btn.dataset.tview);
+      if (btn) switchTableView(btn.dataset.tviewTab);
     });
   }
   // v11.5：吊绳/邮费子视图内的「← 返回报价表」按钮（与顶部子导航双路径，杜绝卡在子视图）
