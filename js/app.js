@@ -1,5 +1,5 @@
 // ============================================================
-// 亲成报价系统 v11.2 - 主程序（计算 + 渲染 + 交互 + 初始化）
+// 亲成报价系统 v11.3 - 主程序（计算 + 渲染 + 交互 + 初始化）
 // ============================================================
 "use strict";
 
@@ -3748,7 +3748,7 @@ function exportSnapshotSet() {
     showToast("暂无快照可导出");
     return;
   }
-  downloadJson({ version: "11.2", count: list.length, snapshots: list }, "亲成快照_" + formatDateFile() + ".json");
+  downloadJson({ version: "11.3", count: list.length, snapshots: list }, "亲成快照_" + formatDateFile() + ".json");
   showToast("快照已导出");
 }
 
@@ -4489,7 +4489,7 @@ function setLocalBackupStatus(html, isError) {
 
 function exportLocalBackup() {
   const data = {
-    version: "11.2",
+    version: "11.3",
     kind: "local-backup",
     exportAt: new Date().toISOString(),
     priceLists: PRICE_LISTS,
@@ -4646,7 +4646,7 @@ function importLocalBackup(file) {
 // -------------------- 导入 / 导出完整配置 --------------------
 function exportFullData() {
   const data = {
-    version: "11.2",
+    version: "11.3",
     exportAt: new Date().toISOString(),
     priceLists: PRICE_LISTS,
     priceListGroups: PRICE_LIST_GROUPS, // v10.7.0：随配置导出报价表组结构
