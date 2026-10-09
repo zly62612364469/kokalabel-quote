@@ -1,5 +1,5 @@
 // ============================================================
-// 亲成报价系统 v11.0 - 主程序（计算 + 渲染 + 交互 + 初始化）
+// 亲成报价系统 v11.1 - 主程序（计算 + 渲染 + 交互 + 初始化）
 // ============================================================
 "use strict";
 
@@ -983,6 +983,11 @@ const els = {
   historyTable: document.getElementById("historyTable"),
   historyEmpty: document.getElementById("historyEmpty"),
   clearHistoryBtn: document.getElementById("clearHistoryBtn"),
+  // v11.1：报价历史列表浮窗（计算器「查看报价记录」入口，与数据管理-报价历史共用渲染）
+  historyListDialog: document.getElementById("historyListDialog"),
+  dialogHistoryTable: document.getElementById("dialogHistoryTable"),
+  dialogHistoryEmpty: document.getElementById("dialogHistoryEmpty"),
+  dialogClearHistoryBtn: document.getElementById("dialogClearHistoryBtn"),
   quoteCustomerName: document.getElementById("quoteCustomerName"),
   quoteOrderNote: document.getElementById("quoteOrderNote"),
   saveQuoteBtn: document.getElementById("saveQuoteBtn"),
@@ -3730,7 +3735,7 @@ function exportSnapshotSet() {
     showToast("暂无快照可导出");
     return;
   }
-  downloadJson({ version: "11.0", count: list.length, snapshots: list }, "亲成快照_" + formatDateFile() + ".json");
+  downloadJson({ version: "11.1", count: list.length, snapshots: list }, "亲成快照_" + formatDateFile() + ".json");
   showToast("快照已导出");
 }
 
@@ -3845,7 +3850,18 @@ function saveCurrentQuote() {
 
   renderHistory();
   renderStats();
-  showToast(`报价已保存：${record.title}`);
+  // v11.1：保存提示基于当前界面——有临时修改时列出改动项（保存值 = 屏幕显示值），
+  // 无任何修改时明确提示是默认报价
+  const override = collectQuoteOverride();
+  const changes = [];
+  if (override) {
+    if (override.coeff != null) changes.push("毛利系数 ×" + override.coeff);
+    if (override.ropePrice != null) changes.push("吊绳费用 ¥" + formatMoney(override.ropePrice));
+    if (override.shippingPrice != null) changes.push("邮费 ¥" + formatMoney(override.shippingPrice));
+  }
+  showToast(changes.length
+    ? `报价已保存（含临时修改：${changes.join("、")}）`
+    : `报价已保存（当前为默认报价，无临时修改）`);
 }
 
 function getHistoryRecordCost(record) {
@@ -4089,11 +4105,28 @@ function safeExcelText(v) {
 
 function renderHistory() {
   const list = getHistory();
-  if (!els.historyTable || !els.historyEmpty) return;
-  const tbody = els.historyTable.querySelector("tbody");
-  els.historyEmpty.style.display = list.length ? "none" : "block";
-  els.historyTable.style.display = list.length ? "table" : "none";
-  tbody.innerHTML = list.map(h => {
+  // v11.1：渲染逻辑全局化——数据管理页主表与浮窗表（dialogHistoryTable）共用同一份数据与行 HTML，
+  // 任何入口（保存/删除/清空/载入）刷新时两处自动同步
+  const rowsHtml = buildHistoryRowsHtml(list);
+  if (els.historyTable && els.historyEmpty) {
+    const tbody = els.historyTable.querySelector("tbody");
+    els.historyEmpty.style.display = list.length ? "none" : "block";
+    els.historyTable.style.display = list.length ? "table" : "none";
+    tbody.innerHTML = rowsHtml;
+    bindHistoryTableActions(tbody, { closeOnLoad: false });
+  }
+  if (els.dialogHistoryTable && els.dialogHistoryEmpty) {
+    const dialogTbody = els.dialogHistoryTable.querySelector("tbody");
+    els.dialogHistoryEmpty.style.display = list.length ? "none" : "block";
+    els.dialogHistoryTable.style.display = list.length ? "table" : "none";
+    dialogTbody.innerHTML = rowsHtml;
+    bindHistoryTableActions(dialogTbody, { closeOnLoad: true });
+  }
+}
+
+/** v11.1：历史记录行 HTML（renderHistory 的数据-视图映射核心） */
+function buildHistoryRowsHtml(list) {
+  return list.map(h => {
     const title = h.title || h.customerName || h.recordNo || "历史报价";
     const recordNo = h.recordNo || h.id || "旧版记录";
     const tier = getHistoryRecordTier(h);
@@ -4125,9 +4158,10 @@ function renderHistory() {
       </tr>
     `;
   }).join("");
+}
 
-  // v10.7.0（对齐 v9.7）：表格级事件委托（onclick 赋值天然幂等，重建 innerHTML 不会叠加监听），
-  // 替代逐行 addEventListener——历史记录几百条时渲染明显更快；disabled 按钮不触发 click，无需额外过滤
+/** v11.1：历史表操作委托（表格级 onclick 赋值幂等，重建 innerHTML 不叠加监听） */
+function bindHistoryTableActions(tbody, { closeOnLoad }) {
   tbody.onclick = (event) => {
     const btn = event.target.closest("[data-action]");
     if (!btn) return;
@@ -4136,7 +4170,10 @@ function renderHistory() {
     if (action === "view-history") {
       showHistoryDetail(id);
     } else if (action === "load-history") {
-      if (!btn.disabled) loadHistoryParameters(id);
+      if (!btn.disabled) {
+        loadHistoryParameters(id);
+        if (closeOnLoad) closeHistoryListDialog();   // 浮窗入口：载入后收起浮窗
+      }
     } else if (action === "delete-history") {
       const item = getHistory().find(x => x.id === id);
       if (!item) return;
@@ -4391,10 +4428,24 @@ function loadHistoryParameters(recordId) {
   showToast("已载入历史参数，并按当前价格重新计算");
 }
 
+/**
+ * v11.1：「查看报价记录」改为打开报价历史浮窗（不再跳转数据管理页）；
+ * 浮窗与数据管理-报价历史共用 renderHistory 渲染（全局一致）。
+ */
 function openQuoteHistoryPanel() {
-  switchPage("profile");
-  switchTab("history");
-  document.getElementById("panel-history")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  openHistoryDialog();
+}
+
+/** v11.1：打开报价历史列表浮窗（打开时刷新，保证与最新数据一致） */
+function openHistoryDialog() {
+  if (!els.historyListDialog) return;
+  renderHistory();
+  if (typeof els.historyListDialog.showModal === "function") els.historyListDialog.showModal();
+}
+
+/** v11.1：关闭报价历史列表浮窗（载入参数后自动收起） */
+function closeHistoryListDialog() {
+  if (els.historyListDialog && els.historyListDialog.open) els.historyListDialog.close();
 }
 
 function clearHistory() {
@@ -4403,6 +4454,7 @@ function clearHistory() {
   renderHistory();
   renderStats();
   closeHistoryDetail();
+  closeHistoryListDialog();
   showToast("历史已清空");
 }
 
@@ -4424,7 +4476,7 @@ function setLocalBackupStatus(html, isError) {
 
 function exportLocalBackup() {
   const data = {
-    version: "11.0",
+    version: "11.1",
     kind: "local-backup",
     exportAt: new Date().toISOString(),
     priceLists: PRICE_LISTS,
@@ -4580,7 +4632,7 @@ function importLocalBackup(file) {
 // -------------------- 导入 / 导出完整配置 --------------------
 function exportFullData() {
   const data = {
-    version: "11.0",
+    version: "11.1",
     exportAt: new Date().toISOString(),
     priceLists: PRICE_LISTS,
     priceListGroups: PRICE_LIST_GROUPS, // v10.7.0：随配置导出报价表组结构
@@ -5654,6 +5706,16 @@ function switchPage(pageName) {
     renderPriceListSelector();
     renderPriceTable();
     renderTierHeaderEditor();
+  } else if (pageName === "data") {
+    // v11.1：数据管理独立页——报价历史 tab 默认优先显示
+    renderHistory();
+    renderSnapshots();
+    renderStats();
+    switchTab("history");
+  } else if (pageName === "settings") {
+    // v11.1：报价设置独立页
+    renderLevelSettings();
+    loadProfileToUI();
   } else if (pageName === "profile") {
     renderLevelSettings();
     loadProfileToUI();
@@ -5837,6 +5899,8 @@ function bindEvents() {
   if (els.exportSnapshotsBtn) els.exportSnapshotsBtn.addEventListener("click", exportSnapshotSet); // v10.7.0
   if (els.exportStatsBtn) els.exportStatsBtn.addEventListener("click", exportStatsReport); // v10.7.0
   if (els.clearHistoryBtn) els.clearHistoryBtn.addEventListener("click", clearHistory);
+  // v11.1：浮窗内清空按钮与主表共用逻辑
+  if (els.dialogClearHistoryBtn) els.dialogClearHistoryBtn.addEventListener("click", clearHistory);
   if (els.saveQuoteBtn) els.saveQuoteBtn.addEventListener("click", saveCurrentQuote);
   if (els.openQuoteHistoryBtn) els.openQuoteHistoryBtn.addEventListener("click", openQuoteHistoryPanel);
   if (els.historyDetailLoadBtn) {
@@ -5986,6 +6050,10 @@ function initDefaultDataUpload() {
 // -------------------- 启动 --------------------
 // 兜底：任何 init 步骤失败不影响其他步骤，错误会显示在控制台
 (function safeInit() {
+  // v11.1：报价设置/数据管理独立菜单仅 web 端显示——本地 file:// 版无账号体系，保持原个人主页结构
+  if (!window.KOKA) {
+    document.querySelectorAll(".nav-btn.web-only").forEach(btn => { btn.hidden = true; });
+  }
   const steps = [
     ["initOptions", initOptions],
     ["updateDefaultTierOptions", updateDefaultTierOptions],
