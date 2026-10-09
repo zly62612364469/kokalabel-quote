@@ -1,5 +1,5 @@
 // ============================================================
-// 亲成报价系统 v11.4 - 主程序（计算 + 渲染 + 交互 + 初始化）
+// 亲成报价系统 v11.5 - 主程序（计算 + 渲染 + 交互 + 初始化）
 // ============================================================
 "use strict";
 
@@ -467,7 +467,9 @@ function hasExactTier(pricesObj, tier) {
   if (!pricesObj) return false;
   const v = pricesObj[tier];
   // v8.5：空字符串视为无价格（Number("") === 0，会导致空档位被误判为价格 0）
-  return v != null && v !== "" && !isNaN(Number(v));
+  // v11.5 修复（B2）：空白字符串 " " 同理——Number(" ") === 0，Excel 单元格含空格会被当合法 0 价
+  if (v == null || v === "" || (typeof v === "string" && v.trim() === "")) return false;
+  return !isNaN(Number(v));
 }
 
 /**
@@ -478,6 +480,9 @@ function calculate(inputs) {
   const isDirect = mode === "direct";
   // v10.8.0：当前报价表是否出血（默认 true）。为 false 时面积不加 3mm 出血。
   const bleeds = currentPriceListBleeds();
+  // v11.5 优化（A1）：热路径建一次索引——循环内原为 O(纸张数×报价表纸张数) 的 filter+find
+  // （每纸 1 次 + 每客户等级再各 1 次），大配置（45 纸×33 表纸）单次报价上千次扫描。Map 后 O(1)。
+  const paperById = new Map(getPapersByPriceList(CURRENT_PRICE_LIST_ID).map(p => [p.id, p]));
 
   // 直接系数模式不需要 ropeId 和 regionId
   if (!sheetCount || !tier || !sheets) {
@@ -512,7 +517,7 @@ function calculate(inputs) {
     const { width, length, sizeType, paperId, craftIds } = sheet;
     if (!width || !length || width <= 0 || length <= 0) return null;
 
-    const paper = getPapersByPriceList(CURRENT_PRICE_LIST_ID).find(p => p.id === paperId);
+    const paper = paperById.get(paperId);
     if (!paper) return null;
 
     // 单张面积（单张尺寸 / 展开尺寸目前均按输入长宽直接计算）
@@ -729,7 +734,7 @@ function calculate(inputs) {
     // v7.0：批量直接报价纸张不参与系数计算，价格直接累加
     pricesByLevel = DIRECT_COEFF_LEVELS.map((level, li) => {
       const paperDetails = sheetDetails.map(sd => {
-        const paper = getPapersByPriceList(CURRENT_PRICE_LIST_ID).find(p => p.id === sd.paperId);
+        const paper = paperById.get(sd.paperId);
         if (sd.isBatchDirect) {
           // v7.0：批量直接报价纸张 → 不乘系数，不参与系数计算，直接显示固定价格
           // contributedPrice 置 0：价格由 batchDirectTotal 统一累加，避免重复计数
@@ -3751,7 +3756,7 @@ function exportSnapshotSet() {
     showToast("暂无快照可导出");
     return;
   }
-  downloadJson({ version: "11.4", count: list.length, snapshots: list }, "亲成快照_" + formatDateFile() + ".json");
+  downloadJson({ version: "11.5", count: list.length, snapshots: list }, "亲成快照_" + formatDateFile() + ".json");
   showToast("快照已导出");
 }
 
@@ -4492,7 +4497,7 @@ function setLocalBackupStatus(html, isError) {
 
 function exportLocalBackup() {
   const data = {
-    version: "11.4",
+    version: "11.5",
     kind: "local-backup",
     exportAt: new Date().toISOString(),
     priceLists: PRICE_LISTS,
@@ -4649,7 +4654,7 @@ function importLocalBackup(file) {
 // -------------------- 导入 / 导出完整配置 --------------------
 function exportFullData() {
   const data = {
-    version: "11.4",
+    version: "11.5",
     exportAt: new Date().toISOString(),
     priceLists: PRICE_LISTS,
     priceListGroups: PRICE_LIST_GROUPS, // v10.7.0：随配置导出报价表组结构
@@ -4949,8 +4954,8 @@ function downloadPaperTemplate() {
     XLSX.utils.book_append_sheet(wb, ws, sanitizeSheetName(paper.shortName || ("Sheet" + (idx + 1))));
   });
 
-  XLSX.writeFile(wb, "KOKA1号报价表模板_" + formatDateFile() + ".xlsx");
-  showToast("模板已下载（" + DEFAULT_PAPER_CONFIG.length + "张表，含直接系数档位规则行）");
+  XLSX.writeFile(wb, "亲成报价表模板_" + formatDateFile() + ".xlsx");
+  showToast("模板已下载（" + DEFAULT_PAPER_CONFIG.length + "张表，含直接系数档位规则行；同简称纸张导入时自动编号）");
 }
 
 // v10.8.0：报价表模板「备注」行里写的是格式填写说明，不是真备注——导入时按此前缀识别并忽略
@@ -5088,8 +5093,13 @@ function parsePaperExcel(arrayBuffer) {
       return;
     }
     if (shortNames.has(shortName)) {
-      errors.push(`简称「${shortName}」重复，已跳过`);
-      return;
+      // v11.5 修复（模板检查 T1）：全库模板含跨报价表同简称纸张（1楼/3楼 各有 350/400/702铜版纸等
+      // 7 组），原实现直接跳过会丢纸。改为自动编号（简称·2 / ·3 …）并警告，保证纸张不丢。
+      let seq = 2;
+      let renamed = shortName;
+      while (shortNames.has(renamed)) { renamed = shortName + "·" + seq; seq++; }
+      errors.push(`「${sheetName}」简称「${shortName}」与已有纸张重复，已自动改名为「${renamed}」`);
+      shortName = renamed;
     }
     if (isNaN(discount) || discount <= 0 || discount > 10) {
       errors.push(`「${sheetName}」折扣系数无效（应为 0~10 之间），已使用默认值 1`);
@@ -5137,7 +5147,10 @@ function parsePaperExcel(arrayBuffer) {
       }
     }
     if (midGap) {
-      errors.push(`「${sheetName}」档位表头中间存在空列（第 ${firstValidIdx + 3} 列附近），价格可能错位，请检查后重新导入`);
+      // v11.5 修复（模板检查 T3）：价格错位的数据不能入库——原实现仅警告仍继续导入，
+      // 会导致档位价格静默错位。现拒绝该 Sheet，要求修正后重新导入。
+      errors.push(`「${sheetName}」档位表头中间存在空列（第 ${firstValidIdx + 3} 列附近），价格将错位，已跳过该表，请修正后重新导入`);
+      return;
     }
 
     const specs = [];
@@ -5169,8 +5182,12 @@ function parsePaperExcel(arrayBuffer) {
           prices[tier] = null;
         } else {
           const price = Number(val);
+          // v11.5 修复（B1）：负价格拦截——手误负数不能作为合法价格入库
           if (isNaN(price)) {
             errors.push(`「${sheetName}」${code} 的 ${tier} 档价格无效，已按占位处理`);
+            prices[tier] = null;
+          } else if (price < 0) {
+            errors.push(`「${sheetName}」${code} 的 ${tier} 档价格为负数（${price}），已按占位处理，请修正后重新导入`);
             prices[tier] = null;
           } else {
             prices[tier] = price;
@@ -5209,6 +5226,22 @@ function parsePaperExcel(arrayBuffer) {
       }
     }
     if (craftHeaderIndex !== -1) {
+      // v11.5 修复（模板检查 T2）：校验工艺区档位表头与规格区一致——
+      // 工艺价按 row[1+i] 与规格 tierKeys 对齐读取，表头被手改后会静默错位
+      const craftHeaderRow = rows[craftHeaderIndex] || [];
+      const craftHeaderTiers = [];
+      for (let c = 1; c < craftHeaderRow.length; c++) {
+        const v = craftHeaderRow[c];
+        if (v !== "" && v != null && !isNaN(Number(v))) craftHeaderTiers.push(String(Number(v)));
+      }
+      const tiersMatch = craftHeaderTiers.length === tierKeys.length &&
+        craftHeaderTiers.every((t, i) => t === tierKeys[i]);
+      if (!tiersMatch) {
+        errors.push(`「${sheetName}」工艺区档位表头与规格区不一致（规格 ${tierKeys.join("/")} vs 工艺 ${craftHeaderTiers.join("/") || "空"}），工艺价格将错位，已跳过该表的工艺数据，请修正后重新导入`);
+        craftHeaderIndex = -1;
+      }
+    }
+    if (craftHeaderIndex !== -1) {
       for (let r = craftHeaderIndex + 1; r < rows.length; r++) {
         const row = rows[r];
         if (!row || !row.length) continue;
@@ -5230,8 +5263,12 @@ function parsePaperExcel(arrayBuffer) {
             prices[tier] = null;
           } else {
             const price = Number(val);
+            // v11.5 修复（B1）：负价格拦截
             if (isNaN(price)) {
               errors.push(`「${sheetName}」工艺「${craftName}」的 ${tier} 档价格无效，已按占位处理`);
+              prices[tier] = null;
+            } else if (price < 0) {
+              errors.push(`「${sheetName}」工艺「${craftName}」的 ${tier} 档价格为负数（${price}），已按占位处理`);
               prices[tier] = null;
             } else {
               prices[tier] = price;
@@ -5452,6 +5489,11 @@ function parseRopeExcel(arrayBuffer) {
         errors.push(`「${name}」的 ${tier} 档价格无效，已按未设价处理`);
         prices[tier] = null;
         allZero = false;
+      } else if (price < 0) {
+        // v11.5 修复（B1）：负价格拦截
+        errors.push(`「${name}」的 ${tier} 档价格为负数（${price}），已按未设价处理`);
+        prices[tier] = null;
+        allZero = false;
       } else {
         prices[tier] = price;
         hasAnyValue = true;
@@ -5664,9 +5706,12 @@ function downloadShippingTemplate() {
   const tierKeys = sample ? Object.keys(sample.basePrices) : ["500", "1000", "2000", "5000", "10000"];
   const rows = [
     ["地区名称", ...tierKeys.map(String), "大于10000"],
-    ["广东省内", ...tierKeys.map(t => sample ? sample.basePrices[t] : 0), sample ? sample.overTierCoeff : 1],
-    ["江浙沪", ...tierKeys.map(() => 0), 1.2],
-    ["其他省份", ...tierKeys.map(() => 0), 1.3]
+    // v11.5 修复（模板检查 T4）：示例地区给非零占位价——原 0 元示例直接导入会被当成
+    // 「合法 0 元邮费」（hasExactTier 判有价），导致该地区按包邮计算。
+    // 示例价按档位索引取（档位数变化时自适应），导入前请改为实际运费。
+    ["广东省内（示例，请改为实际运费）", ...tierKeys.map(t => (sample && sample.basePrices[t] != null ? sample.basePrices[t] : 0)), sample ? sample.overTierCoeff : 1],
+    ["江浙沪（示例，请改为实际运费）", ...tierKeys.map((t, i) => [8, 12, 15, 20, 30, 50, 80, 100][i] ?? 10), 1.2],
+    ["其他省份（示例，请改为实际运费）", ...tierKeys.map((t, i) => [10, 15, 20, 28, 40, 60, 90, 120][i] ?? 12), 1.3]
   ];
   const ws = XLSX.utils.aoa_to_sheet(rows);
   const wb = XLSX.utils.book_new();
@@ -5711,8 +5756,12 @@ function parseShippingExcel(arrayBuffer) {
       const tier = tierKeys[i];
       const val = row[1 + i];
       const price = val === "" || val == null ? 0 : Number(val);
+      // v11.5 修复（B1）：负价格拦截
       if (isNaN(price)) {
         errors.push(`「${name}」的 ${tier} 档价格无效，已按 0 处理`);
+        basePrices[tier] = 0;
+      } else if (price < 0) {
+        errors.push(`「${name}」的 ${tier} 档价格为负数（${price}），已按 0 处理，请修正后重新导入`);
         basePrices[tier] = 0;
       } else {
         basePrices[tier] = price;
@@ -5848,6 +5897,10 @@ function bindEvents() {
       if (btn) switchTableView(btn.dataset.tview);
     });
   }
+  // v11.5：吊绳/邮费子视图内的「← 返回报价表」按钮（与顶部子导航双路径，杜绝卡在子视图）
+  document.querySelectorAll("#page-table [data-tview-back]").forEach(btn => {
+    btn.addEventListener("click", () => switchTableView(btn.dataset.tviewBack));
+  });
 
   // v11.4：个性化主题色（色块点击即切换并持久化）
   if (els.themeColorGroup) {

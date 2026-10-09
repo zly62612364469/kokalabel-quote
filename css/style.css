@@ -1,4 +1,4 @@
-/* 亲成报价系统 v11.4 - 样式表 */
+/* 亲成报价系统 v11.5 - 样式表 */
 
 /* ===================== 全局变量与重置 ===================== */
     :root {
@@ -3454,7 +3454,7 @@
 .pages { margin-left: 200px; max-width: none; padding-top: 0; }
 .pages > .page { padding: 14px 16px 28px; }
 /* v10.9.0 UI 修复：报价表组查询/个人主页内容占满主区宽度（原 1120px 居中在宽屏下右侧大片空白） */
-#page-table, #page-profile { max-width: none; margin: 0; }
+#page-table, #page-profile, #page-data, #page-settings { max-width: none; margin: 0; }
 
 /* --- 计算器两栏布局 --- */
 .calc-grid { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(340px, 1fr); gap: 14px; align-items: start; }
