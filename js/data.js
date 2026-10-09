@@ -1,5 +1,5 @@
 // ============================================================
-// 亲成报价系统 v11.3 - 数据配置层
+// 亲成报价系统 v11.4 - 数据配置层
 // ============================================================
 "use strict";
 
@@ -68,18 +68,13 @@ const DEFAULT_PRICE_LISTS = [
   { id: "priceList1", name: "1楼", groupId: "group1", bleed: true, note: "" },
   { id: "priceList2", name: "3楼", groupId: "group2", bleed: true, note: "" },
   {
+    // v11.4：织边带（消光带）与电脑机合并为单张「唛头报价表」——
+    // 两张纸（paper_qm_zbd / paper_qm_dnj）同属本报价表，Excel 导出/模板按纸张简称分 Sheet
     id: "priceList3",
-    name: "织边带（消光带）",
+    name: "唛头报价表",
     groupId: "group3",
     bleed: false,
-    note: "唛头-1：织边带（消光带）\n特点：常做黑白色、米色，出货快；印刷清晰、手感柔软、边缘光滑、图案清晰。\n备注：如有专色或按潘通号印刷，另加10元/款。"
-  },
-  {
-    id: "priceList4",
-    name: "电脑机",
-    groupId: "group3",
-    bleed: false,
-    note: "唛头-2：电脑机织唛\n特点：底色可做多种颜色，字可做细密清晰，尺寸不限；面料厚实、表面紧密，纬高图案细腻精美。"
+    note: "唛头-1：织边带（消光带）\n特点：常做黑白色、米色，出货快；印刷清晰、手感柔软、边缘光滑、图案清晰。\n备注：如有专色或按潘通号印刷，另加10元/款。\n\n唛头-2：电脑机织唛\n特点：底色可做多种颜色，字可做细密清晰，尺寸不限；面料厚实、表面紧密，纬高图案细腻精美。"
   }
 ];
 let PRICE_LISTS = loadFromStorage("priceLists", DEFAULT_PRICE_LISTS.map(p => ({ ...p })));
@@ -7991,7 +7986,7 @@ const DEFAULT_PAPER_CONFIG = [
     "id": "paper_qm_dnj",
     "name": "唛头-2：电脑机织唛",
     "shortName": "电脑机",
-    "priceListId": "priceList4",
+    "priceListId": "priceList3",
     "discount": 1,
     "directCoeff": null,
     "batchDirect": null,
@@ -10761,7 +10756,11 @@ const DIRECT_COEFF_LEVELS = DEFAULT_DIRECT_COEFF_LEVELS.map(l => ({ ...l }));
 })();
 
 // v8.0 迁移：重构为 2 个报价表（1楼 34 纸 + 3楼 10 纸），覆盖纸张与邮费数据
+// v11.3 审查修复：补 dataVersion 守卫——原实现仅靠结构特征判断，v10.8+ 用户（报价表 > 2 张）
+// 每次加载都会触发重置，本地改价在刷新后丢失（网页版被云端轮询掩盖）。
 (function migrateV8Restructure() {
+  const dataVersion = loadFromStorage("dataVersion", "");
+  if (verCompare(dataVersion, "8.0") >= 0) return;
   // 旧结构特征：报价表数 > 2，或存在 3/4 号报价表，或报价表名不含"楼"
   const isOld = PRICE_LISTS.length > 2
     || PRICE_LISTS.some(p => p.id === "priceList3" || p.id === "priceList4")
@@ -10932,10 +10931,11 @@ function verCompare(a, b) {
   });
   if (listsChanged) saveToStorage("priceLists", PRICE_LISTS);
 
-  // 3) 补齐两张唛头纸张（深拷贝，避免与 DEFAULT_PAPER_CONFIG 共享引用）
+  // 3) 补齐唛头纸张（深拷贝，避免与 DEFAULT_PAPER_CONFIG 共享引用）
+  //    v11.4：唛头合并后只有一张报价表（priceList3），纸张默认归属 priceList3
   const existIds = new Set(PAPER_CONFIG.map(p => p.id));
   const addPapers = DEFAULT_PAPER_CONFIG
-    .filter(p => p.priceListId === "priceList3" || p.priceListId === "priceList4")
+    .filter(p => p.priceListId === "priceList3")
     .filter(p => !existIds.has(p.id))
     .map(p => JSON.parse(JSON.stringify(p)));
   if (addPapers.length) {
@@ -10944,7 +10944,38 @@ function verCompare(a, b) {
   }
 
   saveToStorage("dataVersion", "10.8.0");
-  console.info("[v10.8.0] 报价表新增「是否出血」字段；唛头报价表（织边带（消光带）/ 电脑机）已并入默认数据");
+  console.info("[v10.8.0] 报价表「是否出血」字段与唛头报价数据已就绪（v11.4 起唛头合并为单张报价表）");
+})();
+
+// v11.4 迁移：合并织边带（priceList3）与电脑机（priceList4）为单张「唛头报价表」——
+// 两张纸（paper_qm_zbd / paper_qm_dnj）同属 priceList3，Excel 导出/模板按纸张简称分 Sheet。
+// 只补缺不覆盖：priceList4 不存在（新装/已合并）时仅推进 dataVersion 基线。
+(function migrateV1140MergeMaitou() {
+  const dataVersion = loadFromStorage("dataVersion", "");
+  if (verCompare(dataVersion, "11.4") >= 0) return;
+
+  const pl3 = PRICE_LISTS.find(p => p.id === "priceList3");
+  const pl4 = PRICE_LISTS.find(p => p.id === "priceList4");
+  if (pl3 && pl4) {
+    // 1) 报价表改名 + 合并备注（织边带在前，空行分隔）
+    pl3.name = "唛头报价表";
+    const notes = [pl3.note, pl4.note].map(s => String(s || "").trim()).filter(Boolean);
+    pl3.note = notes.join("\n\n");
+    pl3.bleed = false; // 两张表均为不出血，合并后保持一致
+    // 2) 电脑机纸张归入唛头报价表（priceListId 重指）
+    let papersChanged = false;
+    PAPER_CONFIG.forEach(p => {
+      if (p.priceListId === "priceList4") { p.priceListId = "priceList3"; papersChanged = true; }
+    });
+    // 3) 移除 priceList4 报价表；当前报价表指向它时切回 priceList3
+    PRICE_LISTS = PRICE_LISTS.filter(p => p.id !== "priceList4");
+    if (CURRENT_PRICE_LIST_ID === "priceList4") CURRENT_PRICE_LIST_ID = "priceList3";
+    saveToStorage("priceLists", PRICE_LISTS);
+    if (papersChanged) saveToStorage("paperConfig", PAPER_CONFIG);
+    saveToStorage("currentPriceListId", CURRENT_PRICE_LIST_ID);
+    console.info("[v11.4] 唛头已合并为单张报价表（织边带（消光带）+ 电脑机 → 唛头报价表，Excel 按纸张简称分 Sheet）");
+  }
+  saveToStorage("dataVersion", "11.4");
 })();
 
 let APP_PROFILE = loadFromStorage("appProfile", {

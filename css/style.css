@@ -1,4 +1,4 @@
-/* 亲成报价系统 v11.3 - 样式表 */
+/* 亲成报价系统 v11.4 - 样式表 */
 
 /* ===================== 全局变量与重置 ===================== */
     :root {
@@ -1276,6 +1276,72 @@
       border-color: var(--brand);
       color: #fff;
       font-weight: 600;
+    }
+
+    /* v11.4：报价表组查询分页子导航（报价表/吊绳价格/邮费价格） */
+    .table-view-tabs {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin: 4px 0 14px;
+      padding-bottom: 10px;
+      border-bottom: 1px dashed var(--border);
+    }
+    .table-view-tab {
+      padding: 6px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .table-view-tab:hover {
+      border-color: var(--brand);
+      color: var(--brand);
+    }
+    .table-view-tab.active {
+      background: var(--brand);
+      border-color: var(--brand);
+      color: #fff;
+    }
+
+    /* v11.4：个性化主题色色块 */
+    .theme-color-group {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin: 6px 0 4px;
+    }
+    .theme-swatch {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      border: 2px solid #fff;
+      box-shadow: 0 0 0 1px var(--border);
+      cursor: pointer;
+      position: relative;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .theme-swatch:hover {
+      transform: scale(1.08);
+    }
+    .theme-swatch.active {
+      box-shadow: 0 0 0 2px var(--brand);
+    }
+    .theme-swatch.active::after {
+      content: "✓";
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 15px;
+      font-weight: 800;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.4);
     }
 
     /* ===================== 报价区分标签 ===================== */

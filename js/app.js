@@ -1,5 +1,5 @@
 // ============================================================
-// 亲成报价系统 v11.3 - 主程序（计算 + 渲染 + 交互 + 初始化）
+// 亲成报价系统 v11.4 - 主程序（计算 + 渲染 + 交互 + 初始化）
 // ============================================================
 "use strict";
 
@@ -916,6 +916,9 @@ const els = {
   ropeFoldSummary: document.getElementById("ropeFoldSummary"),
   // v11.2：快速切换档位折叠面板
   tierQuickHead: document.getElementById("tierQuickHead"),
+  // v11.4：报价表组查询分页 + 个性化主题色
+  tableViewTabs: document.getElementById("tableViewTabs"),
+  themeColorGroup: document.getElementById("themeColorGroup"),
   // v11.2：个人主页功能入口（移动端顶部菜单 3 项时由此进入数据管理/报价设置）
   gotoDataMgrBtn: document.getElementById("gotoDataMgrBtn"),
   gotoSettingsBtn: document.getElementById("gotoSettingsBtn"),
@@ -3748,7 +3751,7 @@ function exportSnapshotSet() {
     showToast("暂无快照可导出");
     return;
   }
-  downloadJson({ version: "11.3", count: list.length, snapshots: list }, "亲成快照_" + formatDateFile() + ".json");
+  downloadJson({ version: "11.4", count: list.length, snapshots: list }, "亲成快照_" + formatDateFile() + ".json");
   showToast("快照已导出");
 }
 
@@ -4489,7 +4492,7 @@ function setLocalBackupStatus(html, isError) {
 
 function exportLocalBackup() {
   const data = {
-    version: "11.3",
+    version: "11.4",
     kind: "local-backup",
     exportAt: new Date().toISOString(),
     priceLists: PRICE_LISTS,
@@ -4646,7 +4649,7 @@ function importLocalBackup(file) {
 // -------------------- 导入 / 导出完整配置 --------------------
 function exportFullData() {
   const data = {
-    version: "11.3",
+    version: "11.4",
     exportAt: new Date().toISOString(),
     priceLists: PRICE_LISTS,
     priceListGroups: PRICE_LIST_GROUPS, // v10.7.0：随配置导出报价表组结构
@@ -5552,6 +5555,55 @@ function toggleTierQuickFold() {
   els.tierQuickHead.setAttribute("aria-expanded", open ? "true" : "false");
 }
 
+// -------------------- v11.4：报价表组查询分页（报价表/吊绳价格/邮费价格） --------------------
+/**
+ * 切换查询页子视图：按 [data-tview] 分组控制显隐（tview-quote 包装主体 + 分页/备注、
+ * ropePriceWrap、shippingPriceWrap），子导航按钮 active 同步。默认"报价表"视图。
+ */
+function switchTableView(view) {
+  if (!["quote", "rope", "shipping"].includes(view)) view = "quote";
+  document.querySelectorAll("#page-table [data-tview]").forEach(el => {
+    el.hidden = el.dataset.tview !== view;
+  });
+  if (els.tableViewTabs) {
+    els.tableViewTabs.querySelectorAll(".table-view-tab").forEach(b => {
+      b.classList.toggle("active", b.dataset.tview === view);
+    });
+  }
+}
+
+// -------------------- v11.4：个性化主题色（常见配色，仅本机生效） --------------------
+const THEME_COLORS = {
+  classic: { brand: "#0f6fc4", dark: "#0a4f8a", light: "#e8f2fb" },
+  ocean:   { brand: "#2563eb", dark: "#1e40af", light: "#dbeafe" },
+  emerald: { brand: "#059669", dark: "#047857", light: "#d1fae5" },
+  violet:  { brand: "#7c3aed", dark: "#5b21b6", light: "#ede9fe" },
+  coral:   { brand: "#dc2626", dark: "#991b1b", light: "#fee2e2" },
+  sunset:  { brand: "#ea580c", dark: "#c2410c", light: "#ffedd5" },
+  teal:    { brand: "#0891b2", dark: "#0e7490", light: "#cffafe" }
+};
+
+/** 应用主题色：覆盖 :root 的 --brand/--brand-dark/--brand-light（侧栏渐变等自动跟随），持久化到 localStorage */
+function applyThemeColor(name) {
+  const key = THEME_COLORS[name] ? name : "classic";
+  const t = THEME_COLORS[key];
+  const root = document.documentElement;
+  root.style.setProperty("--brand", t.brand);
+  root.style.setProperty("--brand-dark", t.dark);
+  root.style.setProperty("--brand-light", t.light);
+  try { localStorage.setItem("themeColor", key); } catch (e) { /* 忽略 */ }
+  document.querySelectorAll("#themeColorGroup .theme-swatch").forEach(b => {
+    b.classList.toggle("active", b.dataset.theme === key);
+  });
+}
+
+/** 读取并应用已保存的主题色（启动时调用） */
+function initThemeColor() {
+  let saved = "classic";
+  try { saved = localStorage.getItem("themeColor") || "classic"; } catch (e) { /* 忽略 */ }
+  applyThemeColor(saved);
+}
+
 /**
  * v11.3 审查修复：清空吊绳/邮费临时价缓存。
  * 导入吊绳/邮费 Excel 或恢复备份/重置后，rope/region 的 id 会重排（rope0..n / region1..n），
@@ -5786,6 +5838,22 @@ function bindEvents() {
     els.tierQuickHead.addEventListener("click", toggleTierQuickFold);
     els.tierQuickHead.addEventListener("keydown", e => {
       if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleTierQuickFold(); }
+    });
+  }
+
+  // v11.4：报价表组查询分页（子视图切换）
+  if (els.tableViewTabs) {
+    els.tableViewTabs.addEventListener("click", e => {
+      const btn = e.target.closest(".table-view-tab");
+      if (btn) switchTableView(btn.dataset.tview);
+    });
+  }
+
+  // v11.4：个性化主题色（色块点击即切换并持久化）
+  if (els.themeColorGroup) {
+    els.themeColorGroup.addEventListener("click", e => {
+      const sw = e.target.closest(".theme-swatch");
+      if (sw) applyThemeColor(sw.dataset.theme);
     });
   }
 
@@ -6133,6 +6201,10 @@ function initDefaultDataUpload() {
   // 应用 UI 架构模式（v9.8：移动端自动垂直纵深式，桌面/iPad 扁平化宽泛式）
   try { applyUiLayoutMode(); }
   catch (e) { console.error("[init] UI 架构模式失败:", e); }
+
+  // v11.4：应用已保存的主题色（默认经典蓝）
+  try { initThemeColor(); }
+  catch (e) { console.error("[init] 主题色失败:", e); }
 
   // 应用个性化字号（v10.1）+ 吊绳折叠摘要
   try { applyFontScale(); updateRopeFoldSummary(); }
