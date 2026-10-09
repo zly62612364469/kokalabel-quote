@@ -7,15 +7,15 @@
   <!-- P0 安全：CSP 策略（v7.9：SheetJS 已本地化，script-src 仅允许 'self'，离线双击打开亦可用） -->
   <!-- v10.6.0：default-src/connect-src 放行 blob:，修复网页端 XLSX.writeFile 导出 Excel 被拦 -->
   <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob:; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' blob:;">
-  <title>亲成报价系统 v10.9.0</title>
+  <title>亲成报价系统 v11.0</title>
   <!-- v10.7.1：品牌与图标换回「亲成」（沿用 v10.5 全套亲成图标），版本号 10.7.0 → 10.7.1 -->
-  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg?v=10.9.0">
-  <link rel="icon" type="image/x-icon" href="assets/favicon.ico?v=10.9.0">
-  <link rel="icon" type="image/png" href="assets/favicon.png?v=10.9.0">
-  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png?v=10.9.0">
-  <link rel="stylesheet" href="css/style.css?v=10.9.0">
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg?v=11.0">
+  <link rel="icon" type="image/x-icon" href="assets/favicon.ico?v=11.0">
+  <link rel="icon" type="image/png" href="assets/favicon.png?v=11.0">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png?v=11.0">
+  <link rel="stylesheet" href="css/style.css?v=11.0">
   <!-- v9.3 账号访问控制：http 部署时强制登录（file:// 本地离线不启用） -->
-  <script src="js/auth.js?v=10.9.0"></script>
+  <script src="js/auth.js?v=11.0"></script>
 </head>
 <body>
   <!-- v10.6.0：app-shell 包裹 = 左侧导航 + 主区（扁平化宽泛式架构） -->
@@ -414,6 +414,11 @@
           </div>
           <div id="resWarnings" class="result-warnings" style="display:none;"></div>
 
+          <!-- v11.0：吊绳/邮费临时修改重置（仅存在覆盖时显示） -->
+          <div class="result-reset-row" id="resultResetRow" style="display:none;">
+            <button type="button" id="resetRopeShipBtn" class="result-reset-btn" title="恢复吊绳费用与邮费的默认计算值">↺ 重置临时修改</button>
+          </div>
+
           <!-- 面积系数提示（超 10000 时显示） -->
           <div id="areaCoefficientRow" class="area-coeff-row" style="display:none;">
             <div>
@@ -433,11 +438,10 @@
           <div class="price-section-label" id="defaultPriceLabel">默认报价（原邮费）</div>
           <div id="priceCards" class="price-cards"></div>
 
-          <!-- 临时毛利系数快速设置 -->
+          <!-- 临时毛利系数快速设置（v11.0：提示与标题同行显示） -->
           <div id="customCoeffBar" class="custom-coeff-bar" style="display:none;">
-            <span class="custom-coeff-label">临时毛利系数：</span>
+            <span class="custom-coeff-label">临时毛利系数：<span class="custom-coeff-hint">（临时显示，不影响默认设置）</span></span>
             <input type="number" id="customCoeffInput" class="custom-coeff-input" min="1" max="10" step="0.01" placeholder="如 1.18" />
-            <span class="custom-coeff-hint">（临时显示，不影响默认设置）</span>
           </div>
           <div id="customPriceCard" class="price-cards" style="display:none;"></div>
 
@@ -449,19 +453,7 @@
           </div>
           <div id="tempCoeffResults" class="price-cards" style="display:none;"></div>
 
-          <!-- 邮费快速修改 -->
-          <div id="shippingOverrideBar" class="shipping-override-bar" style="display:none;">
-            <span class="shipping-override-label">邮费快速修改：</span>
-            <input type="number" id="shippingOverrideInput" class="shipping-override-input" min="0" step="0.01" placeholder="输入修改后的邮费" />
-            <button class="btn sm" id="shippingOverrideClear">清除</button>
-            <span class="shipping-override-hint">（修改后下方显示基于新邮费的报价）</span>
-          </div>
-          <div id="shippingOverrideLabel" class="price-section-label" style="display:none;">修改邮费后报价</div>
-          <div id="shippingOverrideCost" class="shipping-override-cost-row" style="display:none;">
-            <span class="shipping-override-cost-label">修改后成本</span>
-            <span class="shipping-override-cost-value" id="shippingOverrideCostValue">-</span>
-          </div>
-          <div id="shippingOverrideCards" class="price-cards shipping-override-cards" style="display:none;"></div>
+          <!-- v11.0：邮费快速修改并入结果区邮费行就地点击编辑（原独立输入栏已移除） -->
 
           <!-- 报价记录保存 -->
           <section class="quote-save-panel" aria-labelledby="quoteSaveTitle">
@@ -1034,7 +1026,7 @@
           <div class="setting-row">
             <div class="setting-info">
               <div class="setting-label">当前版本</div>
-              <div class="setting-desc">亲成报价系统 v10.9.0</div>
+              <div class="setting-desc">亲成报价系统 v11.0</div>
             </div>
             <div class="setting-control">
               <span class="placeholder-badge">正式版</span>
@@ -1143,7 +1135,7 @@
   <div class="toast" id="toast"></div>
 
   <!-- v7.9: SheetJS 本地化（离线双击打开亦可导出/导入 Excel），先于业务脚本加载，XLSX 全局可用 -->
-  <script src="js/vendor/xlsx.full.min.js?v=10.9.0"></script>
-  <script src="js/data.js?v=10.9.0"></script>
-  <script src="js/app.js?v=10.9.0"></script>
+  <script src="js/vendor/xlsx.full.min.js?v=11.0"></script>
+  <script src="js/data.js?v=11.0"></script>
+  <script src="js/app.js?v=11.0"></script>
 </body></html>

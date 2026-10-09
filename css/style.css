@@ -1,4 +1,4 @@
-/* 亲成报价系统 v10.9.0 - 样式表 */
+/* 亲成报价系统 v11.0 - 样式表 */
 
 /* ===================== 全局变量与重置 ===================== */
     :root {
@@ -758,18 +758,21 @@
       color: var(--brand);
     }
 
-    /* v10.9.0：吊绳费用就地点击修改——可点击态 + 临时覆盖高亮 */
-    .rope-result-price[data-rope-edit] {
+    /* v10.9.0/v11.0：吊绳与邮费费用就地点击修改——可点击态 + 临时覆盖高亮 */
+    .rope-result-price[data-rope-edit],
+    .ship-result-price[data-ship-edit] {
       cursor: pointer;
       border-bottom: 1px dashed currentColor;
       padding: 0 2px;
       transition: background-color .15s;
     }
-    .rope-result-price[data-rope-edit]:hover {
+    .rope-result-price[data-rope-edit]:hover,
+    .ship-result-price[data-ship-edit]:hover {
       background: rgba(15, 111, 196, 0.10);
       border-radius: 4px;
     }
-    .rope-result-price.rope-price-overridden {
+    .rope-result-price.rope-price-overridden,
+    .ship-result-price.ship-price-overridden {
       color: var(--danger, #dc2626);
       background: rgba(220, 38, 38, 0.08);
       border-radius: 4px;
@@ -788,6 +791,34 @@
     }
     .rope-price-input:focus {
       box-shadow: 0 0 0 2px rgba(15, 111, 196, 0.15);
+    }
+
+    /* v11.0：吊绳/邮费临时修改一键重置（结果框末端，仅覆盖时显示） */
+    .result-reset-row {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px dashed var(--border, #e2e8f0);
+    }
+    .result-reset-btn {
+      padding: 4px 12px;
+      font-size: 12px;
+      color: var(--danger, #dc2626);
+      background: #fff;
+      border: 1px solid currentColor;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: background-color .15s;
+    }
+    .result-reset-btn:hover {
+      background: rgba(220, 38, 38, 0.08);
+    }
+
+    /* v11.0：临时毛利系数标题与提示同行（hint 嵌在 label 内，禁止换行分离） */
+    .custom-coeff-label .custom-coeff-hint {
+      display: inline;
+      white-space: nowrap;
     }
 
     .rope-result-formula {

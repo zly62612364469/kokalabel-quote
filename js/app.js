@@ -1,5 +1,5 @@
 // ============================================================
-// 亲成报价系统 v10.9.0 - 主程序（计算 + 渲染 + 交互 + 初始化）
+// 亲成报价系统 v11.0 - 主程序（计算 + 渲染 + 交互 + 初始化）
 // ============================================================
 "use strict";
 
@@ -663,6 +663,7 @@ function calculate(inputs) {
   let shippingPrice = null;
   let shippingMode = null;        // "fixed" | "weight" | "manual"
   let shippingWeightUsed = null;  // 用于展示的重量值
+  let shippingPriceOverridden = false;  // v11.0：邮费是否被临时修改（高亮提示）
   if (!isDirect) {
     if (hasExactTier(region.basePrices, tier)) {
       // A：固定档直接查价
@@ -690,6 +691,15 @@ function calculate(inputs) {
         shippingMode = "manual";
         hasMissingTier = true;
         warnings.push(`地区「${region.name}」无 ${tier} 张批量定价，请手动填写邮费`);
+      }
+    }
+
+    // v11.0：邮费临时修改（结果区就地点击编辑）——覆盖当前档位显示价并联动成本/报价
+    if (shippingPrice != null) {
+      const shipOv = shippingPriceCache[region.id + "_" + tier];
+      if (typeof shipOv === "number" && Number.isFinite(shipOv) && shipOv >= 0) {
+        shippingPrice = shipOv;
+        shippingPriceOverridden = true;
       }
     }
   }
@@ -809,6 +819,7 @@ function calculate(inputs) {
     shippingPrice,
     shippingMode,
     shippingWeightUsed,
+    shippingPriceOverridden,
     cost,
     costIncomplete,
     hasMissingTier,
@@ -849,6 +860,9 @@ const els = {
   resShippingPrice: document.getElementById("resShippingPrice"),
   resCost: document.getElementById("resCost"),
   resWarnings: document.getElementById("resWarnings"),
+  // v11.0：吊绳/邮费临时修改重置按钮
+  resultResetRow: document.getElementById("resultResetRow"),
+  resetRopeShipBtn: document.getElementById("resetRopeShipBtn"),
   // 临时毛利系数 & 邮费快速修改
   customCoeffBar: document.getElementById("customCoeffBar"),
   customCoeffInput: document.getElementById("customCoeffInput"),
@@ -857,13 +871,7 @@ const els = {
   tempCoeffBar: document.getElementById("tempCoeffBar"),
   tempCoeffInputs: document.getElementById("tempCoeffInputs"),
   tempCoeffResults: document.getElementById("tempCoeffResults"),
-  shippingOverrideBar: document.getElementById("shippingOverrideBar"),
-  shippingOverrideInput: document.getElementById("shippingOverrideInput"),
-  shippingOverrideClear: document.getElementById("shippingOverrideClear"),
-  shippingOverrideLabel: document.getElementById("shippingOverrideLabel"),
-  shippingOverrideCost: document.getElementById("shippingOverrideCost"),
-  shippingOverrideCostValue: document.getElementById("shippingOverrideCostValue"),
-  shippingOverrideCards: document.getElementById("shippingOverrideCards"),
+  // v11.0：邮费快速修改独立输入栏已移除（并入结果区邮费行就地编辑），原 shippingOverride* 引用删除
   searchInput: document.getElementById("searchInput"),
   priceTable: document.getElementById("priceTable"),
   craftTable: document.getElementById("craftTable"),
@@ -1017,15 +1025,15 @@ let manualShippingCache = {};   // regionId_tier -> 手动邮费金额(元)
 // v10.9.0：吊绳费用临时修改缓存（会话级，不持久化）—— key: `${ropeId}_${tier}` -> 金额(元)。
 // 仅影响显示与本次计算（成本合计/客户等级报价联动），不写入任何报价配置。
 let ropePriceCache = {};        // ropeId_tier -> 临时吊绳费用(元)
+// v11.0：邮费临时修改缓存（会话级）—— key: `${regionId}_${tier}` -> 金额(元)。
+// 原「邮费快速修改」独立输入栏改为结果区邮费行就地点击编辑，行为与吊绳就地修改一致。
+let shippingPriceCache = {};    // regionId_tier -> 临时邮费(元)
 
 function applyDefaultQuoteVisibility() {
   const showCards = shouldShowDefaultQuoteCards(calcMode, defaultQuoteVisible);
   if (els.defaultPriceLabel) els.defaultPriceLabel.classList.toggle("default-quote-hidden", !showCards);
   if (els.priceCards) els.priceCards.classList.toggle("default-quote-hidden", !showCards);
-  // 邮费快速修改的标签和客户等级卡片受默认报价开关隐藏（v8.3 原始设计）
-  if (els.shippingOverrideLabel) els.shippingOverrideLabel.classList.toggle("default-quote-hidden", !showCards);
-  if (els.shippingOverrideCards) els.shippingOverrideCards.classList.toggle("default-quote-hidden", !showCards);
-  // 注意：shippingOverrideCost（修改后成本红字）始终可见，不受默认报价开关控制（v8.8）
+  // v11.0：原「修改邮费后报价」标签/卡片已随独立面板移除；吊绳/邮费覆盖由结果区就地高亮表达
   if (els.defaultQuoteToggle) {
     els.defaultQuoteToggle.setAttribute("aria-checked", String(defaultQuoteVisible));
     els.defaultQuoteToggle.classList.toggle("is-off", !defaultQuoteVisible);
@@ -1817,15 +1825,19 @@ function onCalculate() {
       </span>
     `;
     // v8.0：邮费按三种情况展示明细
+    // v11.0：金额可就地点击修改（临时覆盖，联动成本/报价）；被覆盖时红字高亮。
+    // 原「邮费快速修改」独立输入栏已并入此处（title 沿用吊绳就地编辑交互）。
     if (result.shippingPrice != null) {
+      const ovCls = result.shippingPriceOverridden ? " ship-price-overridden" : "";
+      const shipEditable = inner => `<span class="ship-result-price${ovCls}" data-ship-edit="1" title="点击修改邮费（临时生效；清空确认可恢复默认）">${inner}</span>`;
       if (result.shippingMode === "weight") {
         const shipRegion = SHIPPING_CONFIG.find(s => s.id === regionId);
         const coeff = shipRegion ? shipRegion.overTierCoeff : "";
-        els.resShippingPrice.innerHTML = `重量 ${result.shippingWeightUsed}kg × ${coeff} = <span style="color:var(--brand);font-weight:600;">¥ ${formatMoney(result.shippingPrice)}</span>`;
+        els.resShippingPrice.innerHTML = `重量 ${result.shippingWeightUsed}kg × ${coeff} = ${shipEditable(`<span style="color:var(--brand);font-weight:600;">¥ ${formatMoney(result.shippingPrice)}</span>`)}`;
       } else if (result.shippingMode === "manual") {
-        els.resShippingPrice.innerHTML = `<span style="color:var(--brand);font-weight:600;">¥ ${formatMoney(result.shippingPrice)}</span>（手动输入）`;
+        els.resShippingPrice.innerHTML = `${shipEditable(`<span style="color:var(--brand);font-weight:600;">¥ ${formatMoney(result.shippingPrice)}</span>`)}（手动输入）`;
       } else {
-        els.resShippingPrice.innerHTML = "¥ " + formatMoney(result.shippingPrice);
+        els.resShippingPrice.innerHTML = shipEditable("¥ " + formatMoney(result.shippingPrice));
       }
     } else {
       els.resShippingPrice.innerHTML = '<span class="price-missing">待输入</span>';
@@ -1839,6 +1851,12 @@ function onCalculate() {
     els.resTagCost.innerHTML = result.costIncomplete
       ? '<span class="price-missing">部分缺价</span>'
       : "¥ " + formatMoney(result.cost - (result.shippingPrice || 0));
+  }
+
+  // v11.0：吊绳/邮费临时修改重置按钮——仅存在覆盖时显示
+  if (els.resultResetRow) {
+    const hasOv = !!(result.ropePriceOverridden || result.shippingPriceOverridden);
+    els.resultResetRow.style.display = hasOv ? "flex" : "none";
   }
 
   // 渲染档位缺失警告
@@ -1967,24 +1985,13 @@ function onCalculate() {
     if (els.tempCoeffResults) { els.tempCoeffResults.style.display = "none"; els.tempCoeffResults.innerHTML = ""; }
     if (els.customCoeffBar) {
       els.customCoeffBar.style.display = "flex";
-      const labelEl = els.customCoeffBar.querySelector(".custom-coeff-label");
-      if (labelEl) labelEl.textContent = "临时毛利系数：";
+      // v11.0：不再重写 label.textContent——提示文字已嵌套在 label 内（同行显示），
+      // 重写 textContent 会把嵌套的 hint span 一起抹掉
       renderCustomCoeffCard();
     }
   }
 
-  // 邮费快速修改栏：直接系数模式隐藏
-  if (els.shippingOverrideBar) {
-    if (calcMode === "direct") {
-      els.shippingOverrideBar.style.display = "none";
-      if (els.shippingOverrideInput) els.shippingOverrideInput.value = "";
-      if (els.shippingOverrideCards) { els.shippingOverrideCards.style.display = "none"; els.shippingOverrideCards.innerHTML = ""; }
-      if (els.shippingOverrideLabel) els.shippingOverrideLabel.style.display = "none";
-    } else {
-      els.shippingOverrideBar.style.display = "flex";
-      renderShippingOverrideCards();
-    }
-  }
+  // v11.0：原「邮费快速修改」输入栏显隐逻辑已随独立面板移除，就地编辑由渲染层直接处理
 
   // 默认报价标签：直接系数模式改为"直接系数报价"
   if (els.defaultPriceLabel) {
@@ -2134,20 +2141,81 @@ function startRopePriceEdit(span) {
   input.addEventListener("click", e => e.stopPropagation());   // 防止点击 input 再次触发编辑
 }
 
+// -------------------- v11.0：邮费就地点击修改 --------------------
+// 与吊绳就地修改同一交互：结果区「邮费」金额点击 → 内联 input → 确认后写入
+// shippingPriceCache（会话级）并 onCalculate 联动；清空确认 = 恢复默认。
+
+/** 当前邮费临时价缓存 key（与 calculate 中的取法保持一致） */
+function getShippingPriceCacheKey() {
+  const regionId = els.region ? els.region.value : "";
+  const tier = Number(els.tier ? els.tier.value : NaN);
+  if (!regionId || !Number.isFinite(tier) || tier <= 0) return null;
+  return regionId + "_" + tier;
+}
+
+/** 点击邮费金额 → 原位展开 input 编辑 */
+function startShippingPriceEdit(span) {
+  if (!_lastResult || _lastResult.shippingPrice == null || span.dataset.editing === "1") return;
+  const key = getShippingPriceCacheKey();
+  if (!key) return;
+  span.dataset.editing = "1";
+  const current = _lastResult.shippingPrice;
+  span.innerHTML = `<input type="number" class="rope-price-input ship-price-input" step="0.01" min="0" placeholder="留空恢复默认" value="${current}">`;
+  const input = span.querySelector("input");
+  input.focus();
+  input.select();
+  let done = false;
+  const finish = (commit) => {
+    if (done) return;
+    done = true;
+    if (!commit) { onCalculate(); return; }
+    const raw = input.value.trim();
+    if (raw === "") {
+      delete shippingPriceCache[key];
+      showToast("邮费已恢复默认计算值");
+      onCalculate();
+      return;
+    }
+    const v = parseFloat(raw);
+    if (!isNaN(v) && v >= 0 && Number.isFinite(v)) {
+      shippingPriceCache[key] = Math.round(v * 100) / 100;
+      showToast(`邮费已临时修改为 ¥${formatMoney(shippingPriceCache[key])}`);
+    }
+    onCalculate();
+  };
+  input.addEventListener("keydown", e => {
+    if (e.key === "Enter") { e.preventDefault(); finish(true); }
+    else if (e.key === "Escape") { e.preventDefault(); finish(false); }
+  });
+  input.addEventListener("blur", () => finish(true));
+  input.addEventListener("click", e => e.stopPropagation());
+}
+
+/**
+ * v11.0：吊绳/邮费临时修改一键重置（结果框末端按钮）
+ */
+function resetRopeShipOverrides() {
+  const hadRope = Object.keys(ropePriceCache).length > 0;
+  const hadShip = Object.keys(shippingPriceCache).length > 0;
+  ropePriceCache = {};
+  shippingPriceCache = {};
+  onCalculate();
+  showToast(hadRope || hadShip ? "已恢复吊绳费用与邮费的默认计算值" : "当前没有临时修改");
+}
+
 /**
  * 渲染临时毛利系数报价卡片
  */
 /**
- * v8.1：读取临时毛利系数与邮费快速修改的当前输入值。
+ * v8.1：读取临时毛利系数输入值。
+ * v11.0：邮费快速修改输入栏已移除（改为结果区就地编辑），本函数只保留毛利系数部分；
+ * computeStandardOverridePrice 的 hasShipOverride 分支成为不可达路径（保留不动以兼容历史数据结构）。
  */
 function getOverrideValues() {
   const coeffRaw = els.customCoeffInput ? els.customCoeffInput.value.trim() : "";
   const coeff = parseFloat(coeffRaw);
   const hasCoeff = !!coeffRaw && !isNaN(coeff) && coeff >= 1;
-  const shipRaw = els.shippingOverrideInput ? els.shippingOverrideInput.value.trim() : "";
-  const newShipping = parseFloat(shipRaw);
-  const hasShipOverride = !!shipRaw && !isNaN(newShipping) && newShipping >= 0;
-  return { coeff, newShipping, hasCoeff, hasShipOverride };
+  return { coeff, newShipping: null, hasCoeff, hasShipOverride: false };
 }
 
 function renderCustomCoeffCard() {
@@ -2345,66 +2413,9 @@ function renderTempCoeffResults() {
   els.tempCoeffResults.style.display = "flex";
 }
 
-/**
- * 渲染邮费修改后的报价卡片（3 个默认等级，基于修改后的邮费重算）
- */
-function renderShippingOverrideCards() {
-  if (!els.shippingOverrideCards || !_lastResult) return;
-  const { newShipping, hasCoeff, hasShipOverride } = getOverrideValues();
-  // 没输入/无效值时整体隐藏
-  if (!hasShipOverride) {
-    els.shippingOverrideCards.style.display = "none";
-    els.shippingOverrideLabel.style.display = "none";
-    if (els.shippingOverrideCost) els.shippingOverrideCost.style.display = "none";
-    els.shippingOverrideCards.innerHTML = "";
-    return;
-  }
-  // v8.7：同时填了临时毛利系数时，邮费修改的 label 和 3 个客户等级卡片仍隐藏（合并结果在临时系数卡片），
-  // 但「修改后成本」红字保持显示，让用户知道新成本是多少（再被临时系数相乘得到最终价）
-  if (hasCoeff) {
-    const origShippingForCost = _lastResult.shippingPrice || 0;
-    const newCostForCoeff = _lastResult.cost - origShippingForCost + newShipping;
-    if (els.shippingOverrideCost) {
-      if (els.shippingOverrideCostValue) {
-        els.shippingOverrideCostValue.textContent = _lastResult.costIncomplete
-          ? "部分缺价"
-          : "¥ " + formatMoney(newCostForCoeff);
-      }
-      els.shippingOverrideCost.style.display = "flex";
-    }
-    els.shippingOverrideCards.style.display = "none";
-    els.shippingOverrideLabel.style.display = "none";
-    els.shippingOverrideCards.innerHTML = "";
-    return;
-  }
-  // 用修改后的邮费重算成本
-  const origShipping = _lastResult.shippingPrice || 0;
-  const newCost = _lastResult.cost - origShipping + newShipping;
-  const costIncomplete = _lastResult.costIncomplete;
-  // v8.3：显示修改后成本（高亮红字）
-  if (els.shippingOverrideCost) {
-    if (els.shippingOverrideCostValue) {
-      els.shippingOverrideCostValue.textContent = costIncomplete
-        ? "部分缺价"
-        : "¥ " + formatMoney(newCost);
-    }
-    els.shippingOverrideCost.style.display = "flex";
-  }
-  // 渲染 3 个默认等级报价卡片
-  els.shippingOverrideCards.innerHTML = _lastResult.pricesByLevel.map((item, idx) => {
-    const newPrice = newCost * item.coefficient;
-    return `
-      <div class="price-card${idx === 0 ? " highlight" : ""}">
-        <div class="level-name">${escapeHtml(item.levelName)}</div>
-        <div class="level-price">${costIncomplete
-          ? '<span class="price-missing">部分缺价</span>'
-          : formatMoney(newPrice) + '<span class="unit">元</span>'}</div>
-      </div>
-    `;
-  }).join("");
-  els.shippingOverrideLabel.style.display = "block";
-  els.shippingOverrideCards.style.display = "flex";
-}
+// v11.0：renderShippingOverrideCards 已删除——「邮费快速修改」独立输入栏与
+// 「修改邮费后报价」卡片并入结果区邮费行就地点击编辑（startShippingPriceEdit），
+// 覆盖价直接参与 calculate 联动，不再需要独立重算卡片。
 
 function clearResult() {
   if (els.resSheetTable) {
@@ -2446,13 +2457,11 @@ function clearResult() {
   _lastResult = null;
   if (els.saveQuoteBtn) els.saveQuoteBtn.disabled = true;
   if (els.customCoeffBar) els.customCoeffBar.style.display = "none";
+  // v11.0：吊绳/邮费临时修改重置按钮随结果清空隐藏
+  if (els.resultResetRow) els.resultResetRow.style.display = "none";
   if (els.customPriceCard) { els.customPriceCard.style.display = "none"; els.customPriceCard.innerHTML = ""; }
   if (els.tempCoeffBar) els.tempCoeffBar.style.display = "none";
   if (els.tempCoeffResults) { els.tempCoeffResults.style.display = "none"; els.tempCoeffResults.innerHTML = ""; }
-  if (els.shippingOverrideBar) els.shippingOverrideBar.style.display = "none";
-  if (els.shippingOverrideInput) els.shippingOverrideInput.value = "";
-  if (els.shippingOverrideLabel) els.shippingOverrideLabel.style.display = "none";
-  if (els.shippingOverrideCards) { els.shippingOverrideCards.style.display = "none"; els.shippingOverrideCards.innerHTML = ""; }
 }
 
 // -------------------- 报价表渲染 --------------------
@@ -3721,7 +3730,7 @@ function exportSnapshotSet() {
     showToast("暂无快照可导出");
     return;
   }
-  downloadJson({ version: "10.9.0", count: list.length, snapshots: list }, "亲成快照_" + formatDateFile() + ".json");
+  downloadJson({ version: "11.0", count: list.length, snapshots: list }, "亲成快照_" + formatDateFile() + ".json");
   showToast("快照已导出");
 }
 
@@ -3745,7 +3754,9 @@ function collectCurrentQuoteInputs() {
     ropeId: els.rope?.querySelector('input[name="rope"]:checked')?.value || "",
     regionId: els.region?.value || "",
     customCoefficient: els.customCoeffInput?.value.trim() || "",
-    shippingOverride: els.shippingOverrideInput?.value.trim() || "",
+    // v11.0：shippingOverride 输入栏字段保留为空串（兼容旧历史记录结构）；
+    // 邮费临时修改改为 shippingPriceCache 会话覆盖，随计算结果直接入 snapshot
+    shippingOverride: "",
     tempCoefficients: els.tempCoeffInputs
       ? Array.from(els.tempCoeffInputs.querySelectorAll(".temp-coeff-input")).map(input => input.value)
       : []
@@ -3772,6 +3783,12 @@ function collectStandardOverride() {
     const ropeOv = { ropePrice: _lastResult.ropePrice, ropeBase: _lastResult.ropeBase, ropeMult: _lastResult.ropeMult };
     if (o) return Object.assign(o, ropeOv);
     return Object.assign({ kind: "standard", incomplete: !!_lastResult.costIncomplete }, ropeOv);
+  }
+  // v11.0：邮费临时修改并入 override（覆盖价已参与 calculate 的 cost/pricesByLevel）
+  if (_lastResult && _lastResult.shippingPriceOverridden) {
+    const shipOv = { shippingPrice: _lastResult.shippingPrice };
+    if (o) return Object.assign(o, shipOv);
+    return Object.assign({ kind: "standard", incomplete: !!_lastResult.costIncomplete }, shipOv);
   }
   return o;
 }
@@ -4347,7 +4364,13 @@ function loadHistoryParameters(recordId) {
   if (ropeInput) ropeInput.checked = true;
   if (els.region && inputs.regionId) els.region.value = inputs.regionId;
   if (els.customCoeffInput) els.customCoeffInput.value = inputs.customCoefficient || "";
-  if (els.shippingOverrideInput) els.shippingOverrideInput.value = inputs.shippingOverride || "";
+  // v11.0：历史记录的「邮费快速修改」还原为就地覆盖缓存（输入栏已移除，override.newShipping 语义不变）
+  {
+    const ovShipping = Number(record?.snapshot?.override?.newShipping);
+    if (Number.isFinite(ovShipping) && ovShipping >= 0 && inputs.regionId && inputs.tier) {
+      shippingPriceCache[inputs.regionId + "_" + Number(inputs.tier)] = ovShipping;
+    }
+  }
 
   onCalculate();
 
@@ -4401,7 +4424,7 @@ function setLocalBackupStatus(html, isError) {
 
 function exportLocalBackup() {
   const data = {
-    version: "10.9.0",
+    version: "11.0",
     kind: "local-backup",
     exportAt: new Date().toISOString(),
     priceLists: PRICE_LISTS,
@@ -4557,7 +4580,7 @@ function importLocalBackup(file) {
 // -------------------- 导入 / 导出完整配置 --------------------
 function exportFullData() {
   const data = {
-    version: "10.9.0",
+    version: "11.0",
     exportAt: new Date().toISOString(),
     priceLists: PRICE_LISTS,
     priceListGroups: PRICE_LIST_GROUPS, // v10.7.0：随配置导出报价表组结构
@@ -5876,28 +5899,29 @@ function bindEvents() {
   }
 
   // 临时毛利系数：输入时实时渲染报价卡片（不触发 onCalculate）
-  // v8.1：两个输入联动，任一变化都同时刷新临时系数卡片与邮费修改卡片
+  // v11.0：原「邮费修改卡片」联动已随独立面板移除，只刷新临时系数卡片
   if (els.customCoeffInput) {
     els.customCoeffInput.addEventListener("input", () => {
       renderCustomCoeffCard();
-      renderShippingOverrideCards();
     });
   }
 
-  // 邮费快速修改：输入时实时渲染修改后报价卡片
-  if (els.shippingOverrideInput) {
-    els.shippingOverrideInput.addEventListener("input", () => {
-      renderCustomCoeffCard();
-      renderShippingOverrideCards();
+  // v11.0：吊绳/邮费就地点击修改（事件委托绑定在持久容器上，innerHTML 重写不影响）
+  if (els.resRopePrice) {
+    els.resRopePrice.addEventListener("click", e => {
+      const span = e.target.closest(".rope-result-price");
+      if (span) { e.stopPropagation(); startRopePriceEdit(span); }
     });
   }
-  // 清除邮费修改
-  if (els.shippingOverrideClear) {
-    els.shippingOverrideClear.addEventListener("click", () => {
-      if (els.shippingOverrideInput) els.shippingOverrideInput.value = "";
-      renderCustomCoeffCard();
-      renderShippingOverrideCards();
+  if (els.resShippingPrice) {
+    els.resShippingPrice.addEventListener("click", e => {
+      const span = e.target.closest(".ship-result-price");
+      if (span) { e.stopPropagation(); startShippingPriceEdit(span); }
     });
+  }
+  // v11.0：吊绳/邮费临时修改一键重置
+  if (els.resetRopeShipBtn) {
+    els.resetRopeShipBtn.addEventListener("click", resetRopeShipOverrides);
   }
 
   // 禁用所有 number 类型输入框的鼠标滚轮调整，防止误操作
