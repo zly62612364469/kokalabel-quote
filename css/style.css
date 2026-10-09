@@ -1,4 +1,4 @@
-/* 亲成报价系统 v11.6 - 样式表 */
+/* 亲成报价系统 v11.7 - 样式表 */
 
 /* ===================== 全局变量与重置 ===================== */
     :root {
@@ -3999,3 +3999,59 @@ body.ui-vertical .personalize-panel { left: 12px; top: 120px; bottom: auto; }
   .sidenav-brand { padding: 8px 12px 4px; }
   .sidenav-brand-title, .sidenav-brand-name { font-size: 15px; }
 }
+
+    /* ===================== v11.7：四页一屏化布局（≥1101px 宽屏；窄屏回退单列） ===================== */
+    /* 数据管理页：数据管理卡（左）+ 快照与统计报表卡（右）同框并排 */
+    @media (min-width: 1101px) {
+      #page-data.active {
+        display: grid;
+        grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+        gap: 14px;
+        align-items: start;
+      }
+      /* 历史报价记录固定约 5 条，区域内滚动（新建的在上；每条含标题+编号两行文本） */
+      #page-data .history-table-wrap {
+        max-height: 300px;
+        overflow-y: auto;
+      }
+      #page-data .history-table {
+        margin-top: 0;
+      }
+
+      /* 报价设置页：报价设置卡（左，设置行两列压缩高度）+ 计算规则说明卡（右） */
+      #page-settings.active {
+        display: grid;
+        grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+        gap: 14px;
+        align-items: start;
+      }
+      #page-settings .profile-section {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0 28px;
+        align-content: start;
+      }
+      #page-settings .profile-section > .section-title,
+      #page-settings .profile-section > .btn-group,
+      #page-settings #levelSettings {
+        grid-column: 1 / -1;
+      }
+      #page-settings .setting-row { padding: 9px 0; }
+      #page-settings .setting-row + .setting-row { border-top: none; }
+
+      /* 报价表组查询：表格行距压缩 + 区块间距收紧，一屏容纳矩阵/工艺/系数/批量直接 */
+      #page-table .data-table th,
+      #page-table .data-table td { padding: 7px 10px; }
+      #page-table .data-table { margin-top: 8px; }
+      #page-table .table-wrap[style*="margin-top:20px"],
+      #page-table .table-wrap[style*="margin-top: 20px"] { margin-top: 14px !important; }
+
+      /* 个人主页：双列网格（账号/hero 全宽，其余两两并排） */
+      #page-profile.active {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+        align-items: start;
+      }
+      #page-profile > .profile-hero { grid-column: 1 / -1; }
+    }
