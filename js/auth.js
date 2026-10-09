@@ -1,5 +1,5 @@
 // ============================================================
-// 亲成 报价系统 · 账号访问控制（v10.8.0，账号体系同步自 v10.5）
+// 亲成 报价系统 · 账号访问控制（v10.8.1，账号体系同步自 v10.5）
 // - http/https 部署强制登录；file:// 本地/exe 不启用
 // - 角色：superadmin 超级管理员 / admin 管理员 / sales 业务员 / visitor 访客
 // - 访客仅计算器；业务员全页只读；超级管理员可编辑并发布默认报价数据(云端共享)
@@ -75,6 +75,9 @@
       const p = btn.dataset.page;
       btn.style.display = (role === 'visitor' && p !== 'calculator') ? 'none' : '';
     });
+    // v10.8.1 安全修复：删除当前报价表仅超管可用（与 onDeletePriceList 入口拦截一致）
+    const delBtn = document.getElementById('deletePriceListBtn');
+    if (delBtn && roleRank(KOKA.user.role) < 3) delBtn.style.display = 'none';
     if (role === 'visitor') {
       const cur = document.querySelector('.page.active');
       if (cur && cur.id !== 'page-calculator' && window.switchPage) switchPage('calculator');

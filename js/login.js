@@ -5,7 +5,10 @@
   const $u = document.getElementById('username'), $p = document.getElementById('password'),
     $m = document.getElementById('msg'), $b = document.getElementById('loginBtn');
   const $sk = document.getElementById('setupKey'), $sf = document.getElementById('setupField');
-  const returnTo = new URLSearchParams(location.search).get('return') || '/';
+  // v10.8.1 安全修复：return 参数只放行站内相对路径（以 / 开头且非 // 或 \ 开头），
+  // 防止 login.html?return=https://evil.com 开放重定向钓鱼
+  let returnTo = new URLSearchParams(location.search).get('return') || '/';
+  if (!/^\/(?!\/)/.test(returnTo) || returnTo.includes('\\')) returnTo = '/';
 
   function setMsg(t, ok) { $m.textContent = t || ''; $m.className = 'msg ' + (ok ? 'ok' : 'err'); }
 

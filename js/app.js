@@ -1,5 +1,5 @@
 // ============================================================
-// 亲成报价系统 v10.8.0 - 主程序（计算 + 渲染 + 交互 + 初始化）
+// 亲成报价系统 v10.8.1 - 主程序（计算 + 渲染 + 交互 + 初始化）
 // ============================================================
 "use strict";
 
@@ -2986,6 +2986,11 @@ function onPriceListChange() {
 }
 
 function onDeletePriceList() {
+  // v10.8.1 安全修复：与就地编辑/在线修改区对齐——网页端仅超管可删报价表（本地 file:// 无 KOKA 不受限）
+  if (window.KOKA && KOKA.canEditQuote && !KOKA.canEditQuote()) {
+    if (KOKA.toast) KOKA.toast("报价数据为只读，仅超级管理员可删除报价表", true);
+    return;
+  }
   if (PRICE_LISTS.length <= 1) {
     showToast("至少保留一个报价表，无法删除");
     return;
@@ -3652,7 +3657,7 @@ function exportSnapshotSet() {
     showToast("暂无快照可导出");
     return;
   }
-  downloadJson({ version: "10.8.0", count: list.length, snapshots: list }, "亲成快照_" + formatDateFile() + ".json");
+  downloadJson({ version: "10.8.1", count: list.length, snapshots: list }, "亲成快照_" + formatDateFile() + ".json");
   showToast("快照已导出");
 }
 
@@ -4305,10 +4310,13 @@ function clearHistory() {
   showToast("历史已清空");
 }
 
+// v10.8.1 安全修复：原实现经 div.textContent→innerHTML 序列化，只转义 & < >，
+// 不转义引号——用于 data-code="..."/title="..." 等双引号属性插值时可被属性逃逸注入。
+// 改为正则替换（对齐 auth.js 的 KOKA.esc），textContent 序列化实现禁用于属性场景。
 function escapeHtml(text) {
-  const div = document.createElement("div");
-  div.textContent = text;
-  return div.innerHTML;
+  return String(text == null ? "" : text).replace(/[&<>"']/g, c => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  }[c]));
 }
 
 // -------------------- 本地备份 / 恢复 --------------------
@@ -4320,7 +4328,7 @@ function setLocalBackupStatus(html, isError) {
 
 function exportLocalBackup() {
   const data = {
-    version: "10.8.0",
+    version: "10.8.1",
     kind: "local-backup",
     exportAt: new Date().toISOString(),
     priceLists: PRICE_LISTS,
@@ -4476,7 +4484,7 @@ function importLocalBackup(file) {
 // -------------------- 导入 / 导出完整配置 --------------------
 function exportFullData() {
   const data = {
-    version: "10.8.0",
+    version: "10.8.1",
     exportAt: new Date().toISOString(),
     priceLists: PRICE_LISTS,
     priceListGroups: PRICE_LIST_GROUPS, // v10.7.0：随配置导出报价表组结构
@@ -5141,9 +5149,11 @@ function importPaperExcel(file) {
       renderPriceListSelector();
       renderPriceTable();
       onCalculate();
+      // v10.8.1 安全修复：errors/successMsg 含 Excel 外部文件内容（sheet 名/简称等），
+      // 此处经 innerHTML 渲染，必须转义，防止恶意 Excel 注入 HTML
       const craftCount = Object.values(crafts).reduce((sum, arr) => sum + arr.length, 0);
-      const successMsg = `成功导入报价表「${plName}」（${papers.length} 张纸张${craftCount ? `，含 ${craftCount} 条工艺` : ""}）：${papers.map(p => p.shortName).join("、")}`;
-      const errMsg = errors.length ? `<br><span style="color:var(--danger)">警告：${errors.join("；")}</span>` : "";
+      const successMsg = `成功导入报价表「${escapeHtml(plName)}」（${papers.length} 张纸张${craftCount ? `，含 ${craftCount} 条工艺` : ""}）：${papers.map(p => escapeHtml(p.shortName)).join("、")}`;
+      const errMsg = errors.length ? `<br><span style="color:var(--danger)">警告：${errors.map(escapeHtml).join("；")}</span>` : "";
       setExcelStatus(successMsg + errMsg, false);
       showToast(`已导入报价表「${plName}」`);
     } catch (err) {
@@ -5321,8 +5331,9 @@ function importRopeExcel(file) {
       saveToStorage("ropeConfig", ROPE_CONFIG);
       rebuildRopeUI();
       onCalculate();
-      const successMsg = `成功导入 ${ropes.length} 种吊绳：${ropes.map(r => r.name).join("、")}`;
-      const errMsg = errors.length ? `<br><span style="color:var(--danger)">警告：${errors.join("；")}</span>` : "";
+      // v10.8.1 安全修复：同 importPaperExcel，errors 含 Excel 外部内容，innerHTML 渲染前必须转义
+      const successMsg = `成功导入 ${ropes.length} 种吊绳：${ropes.map(r => escapeHtml(r.name)).join("、")}`;
+      const errMsg = errors.length ? `<br><span style="color:var(--danger)">警告：${errors.map(escapeHtml).join("；")}</span>` : "";
       setRopeExcelStatus(successMsg + errMsg, false);
       showToast("吊绳 Excel 导入成功");
     } catch (err) {
@@ -5513,8 +5524,9 @@ function importShippingExcel(file) {
         if (SHIPPING_CONFIG.length > 0) els.region.value = SHIPPING_CONFIG[0].id;
       }
       onCalculate();
-      const successMsg = `成功导入 ${regions.length} 个地区的邮费：${regions.map(r => r.name).join("、")}`;
-      const errMsg = errors.length ? `<br><span style="color:var(--danger)">警告：${errors.join("；")}</span>` : "";
+      // v10.8.1 安全修复：同 importPaperExcel，errors 含 Excel 外部内容，innerHTML 渲染前必须转义
+      const successMsg = `成功导入 ${regions.length} 个地区的邮费：${regions.map(r => escapeHtml(r.name)).join("、")}`;
+      const errMsg = errors.length ? `<br><span style="color:var(--danger)">警告：${errors.map(escapeHtml).join("；")}</span>` : "";
       setShippingExcelStatus(successMsg + errMsg, false);
       showToast("邮费 Excel 导入成功");
     } catch (err) {
