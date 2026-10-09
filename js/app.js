@@ -1,5 +1,5 @@
 // ============================================================
-// 亲成报价系统 v10.8.1 - 主程序（计算 + 渲染 + 交互 + 初始化）
+// 亲成报价系统 v10.9.0 - 主程序（计算 + 渲染 + 交互 + 初始化）
 // ============================================================
 "use strict";
 
@@ -637,6 +637,7 @@ function calculate(inputs) {
   let ropePrice = null;
   let ropeBase = null;    // 1000 张基准价
   let ropeMult = 1;       // 当前档位倍数
+  let ropePriceOverridden = false;  // v10.9.0：吊绳费是否被临时修改（用于高亮提示）
   if (!isDirect) {
     ropeBase = getRopeBasePrice(rope.prices);
     // v10.8.0：全 0 价的「不加吊绳」视为合法免费选项，基准价补 0，不再误报缺价
@@ -644,6 +645,13 @@ function calculate(inputs) {
     if (ropeBase != null) {
       ropeMult = tier <= 1000 ? 1 : tier / 1000;
       ropePrice = Math.round(ropeBase * ropeMult * 100) / 100;
+      // v10.9.0：吊绳费用临时修改（结果区就地点击编辑）——覆盖当前档位显示价并联动成本/报价；
+      // 覆盖后前面的「¥基准/千张 × 倍数」公式照旧展示原计算过程
+      const ropeOv = ropePriceCache[rope.id + "_" + tier];
+      if (typeof ropeOv === "number" && Number.isFinite(ropeOv) && ropeOv >= 0) {
+        ropePrice = ropeOv;
+        ropePriceOverridden = true;
+      }
     } else {
       hasMissingTier = true;
       warnings.push(`吊绳「${rope.name}」未设置 1000 张基准价`);
@@ -797,6 +805,7 @@ function calculate(inputs) {
     ropePrice,
     ropeBase,
     ropeMult,
+    ropePriceOverridden,
     shippingPrice,
     shippingMode,
     shippingWeightUsed,
@@ -1005,6 +1014,9 @@ let defaultQuoteVisible = loadFromStorage("defaultQuoteVisible", true) !== false
 // v8.0：邮费输入缓存（会话级，不持久化，刷新后重新询问）
 let shippingWeightCache = {};   // regionId -> 吊牌重量(kg)
 let manualShippingCache = {};   // regionId_tier -> 手动邮费金额(元)
+// v10.9.0：吊绳费用临时修改缓存（会话级，不持久化）—— key: `${ropeId}_${tier}` -> 金额(元)。
+// 仅影响显示与本次计算（成本合计/客户等级报价联动），不写入任何报价配置。
+let ropePriceCache = {};        // ropeId_tier -> 临时吊绳费用(元)
 
 function applyDefaultQuoteVisibility() {
   const showCards = shouldShowDefaultQuoteCards(calcMode, defaultQuoteVisible);
@@ -1789,8 +1801,9 @@ function onCalculate() {
     const selectedRope = ROPE_CONFIG.find(item => item.id === ropeId);
     const ropeName = selectedRope ? selectedRope.name : "未选择吊绳";
     // v9.9：倍数制展示——档位>1000 时显示计算过程 ¥基准 × 倍数 = ¥结果，否则沿用原格式
+    // v10.9.0：金额可就地点击修改（临时覆盖，联动成本/报价）；被覆盖时红字高亮 + hover 提示
     const ropePrice = result.ropePrice != null
-      ? `<span class="rope-result-price">¥ ${formatMoney(result.ropePrice)}</span>`
+      ? `<span class="rope-result-price${result.ropePriceOverridden ? " rope-price-overridden" : ""}" data-rope-edit="1" title="点击修改吊绳费用（临时生效；清空确认可恢复默认）">¥ ${formatMoney(result.ropePrice)}</span>`
       : '<span class="price-missing">无该批量定价</span>';
     const ropeFormula = (result.ropeBase != null && result.tier > 1000)
       ? `<span class="rope-result-formula">（¥ ${formatMoney(result.ropeBase)}/千张 × ${formatPriceRaw(result.ropeMult)} = </span>`
@@ -2068,6 +2081,57 @@ function confirmManualShipping() {
     delete manualShippingCache[manualKey];
     closeShippingDialog(els.manualShippingDialog);
   }
+}
+
+// -------------------- v10.9.0：吊绳费用就地点击修改 --------------------
+// 结果区「吊绳费用」金额点击 → 内联 input → 确认后写入 ropePriceCache（会话级）并 onCalculate
+// 联动：成本合计 / 吊牌成本 / 各客户等级报价（calculate 中以覆盖值参与计算）；清空确认 = 恢复默认。
+
+/** 当前吊绳临时价缓存 key（与 calculate 中的取法保持一致） */
+function getRopePriceCacheKey() {
+  const checked = els.rope ? els.rope.querySelector('input[name="rope"]:checked') : null;
+  const tier = Number(els.tier ? els.tier.value : NaN);
+  if (!checked || !Number.isFinite(tier) || tier <= 0) return null;
+  return checked.value + "_" + tier;
+}
+
+/** 点击金额 → 原位展开 input 编辑 */
+function startRopePriceEdit(span) {
+  if (!_lastResult || _lastResult.ropePrice == null || span.dataset.editing === "1") return;
+  const key = getRopePriceCacheKey();
+  if (!key) return;
+  span.dataset.editing = "1";
+  const current = _lastResult.ropePrice;
+  span.innerHTML = `<input type="number" class="rope-price-input" step="0.01" min="0" placeholder="留空恢复默认" value="${current}">`;
+  const input = span.querySelector("input");
+  input.focus();
+  input.select();
+  let done = false;
+  const finish = (commit) => {
+    if (done) return;
+    done = true;
+    if (!commit) { onCalculate(); return; }   // Esc：原样重渲染还原
+    const raw = input.value.trim();
+    if (raw === "") {
+      delete ropePriceCache[key];             // 清空 = 恢复默认
+      onCalculate();
+      return;
+    }
+    const v = parseFloat(raw);
+    if (!isNaN(v) && v >= 0 && Number.isFinite(v)) {
+      ropePriceCache[key] = Math.round(v * 100) / 100;
+      showToast(raw === String(ropePriceCache[key])
+        ? `吊绳费用已临时修改为 ¥${formatMoney(ropePriceCache[key])}`
+        : `吊绳费用已临时修改为 ¥${formatMoney(ropePriceCache[key])}（已按 2 位小数取整）`);
+    }
+    onCalculate();                            // 无效输入也重渲染还原
+  };
+  input.addEventListener("keydown", e => {
+    if (e.key === "Enter") { e.preventDefault(); finish(true); }
+    else if (e.key === "Escape") { e.preventDefault(); finish(false); }
+  });
+  input.addEventListener("blur", () => finish(true));
+  input.addEventListener("click", e => e.stopPropagation());   // 防止点击 input 再次触发编辑
 }
 
 /**
@@ -3657,7 +3721,7 @@ function exportSnapshotSet() {
     showToast("暂无快照可导出");
     return;
   }
-  downloadJson({ version: "10.8.1", count: list.length, snapshots: list }, "亲成快照_" + formatDateFile() + ".json");
+  downloadJson({ version: "10.9.0", count: list.length, snapshots: list }, "亲成快照_" + formatDateFile() + ".json");
   showToast("快照已导出");
 }
 
@@ -3699,8 +3763,17 @@ function collectQuoteOverride() {
 }
 
 // 标准模式：临时毛利系数 + 邮费快速修改（v9.7 起与渲染卡片共用 computeStandardOverridePrice）
+// v10.9.0：吊绳费用临时修改并入 override——覆盖价已参与 calculate 的 cost/pricesByLevel，
+// 此处仅记录 { ropePrice, ropeBase, ropeMult } 供历史明细还原展示；仅有吊绳覆盖时
+// primary price 自动落到 snapshot.pricesByLevel（含覆盖价），无需改取值逻辑。
 function collectStandardOverride() {
-  return computeStandardOverridePrice(_lastResult, getOverrideValues());
+  const o = computeStandardOverridePrice(_lastResult, getOverrideValues());
+  if (_lastResult && _lastResult.ropePriceOverridden) {
+    const ropeOv = { ropePrice: _lastResult.ropePrice, ropeBase: _lastResult.ropeBase, ropeMult: _lastResult.ropeMult };
+    if (o) return Object.assign(o, ropeOv);
+    return Object.assign({ kind: "standard", incomplete: !!_lastResult.costIncomplete }, ropeOv);
+  }
+  return o;
 }
 
 // 直接系数模式：每纸临时直接系数（v9.7 起与渲染结果共用 computeDirectTempTotals）
@@ -4328,7 +4401,7 @@ function setLocalBackupStatus(html, isError) {
 
 function exportLocalBackup() {
   const data = {
-    version: "10.8.1",
+    version: "10.9.0",
     kind: "local-backup",
     exportAt: new Date().toISOString(),
     priceLists: PRICE_LISTS,
@@ -4484,7 +4557,7 @@ function importLocalBackup(file) {
 // -------------------- 导入 / 导出完整配置 --------------------
 function exportFullData() {
   const data = {
-    version: "10.8.1",
+    version: "10.9.0",
     exportAt: new Date().toISOString(),
     priceLists: PRICE_LISTS,
     priceListGroups: PRICE_LIST_GROUPS, // v10.7.0：随配置导出报价表组结构
@@ -5793,6 +5866,14 @@ function bindEvents() {
       showToast(msg);
     });
   });
+
+  // v10.9.0：吊绳费用就地点击修改（事件委托绑定在持久容器上，innerHTML 重写不影响）
+  if (els.resRopePrice) {
+    els.resRopePrice.addEventListener("click", e => {
+      const span = e.target.closest(".rope-result-price");
+      if (span) { e.stopPropagation(); startRopePriceEdit(span); }
+    });
+  }
 
   // 临时毛利系数：输入时实时渲染报价卡片（不触发 onCalculate）
   // v8.1：两个输入联动，任一变化都同时刷新临时系数卡片与邮费修改卡片
