@@ -1,4 +1,4 @@
-/* 亲成报价系统 v12.6 - 样式表 */
+/* 亲成报价系统 v12.7 - 样式表 */
 
 /* ===================== 全局变量与重置 ===================== */
     :root {
@@ -4408,4 +4408,72 @@ body.ui-vertical .personalize-panel { left: 12px; top: 120px; bottom: auto; }
     .tier-quick-btn.manual-shipping.active {
       background: var(--danger);
       color: #fff;
+    }
+
+    /* v12.7：修复——paginationBar 等元素带 inline display（renderPagination 设 display:flex），
+       会覆盖 hidden 属性，导致切到吊绳/邮费视图时仍显示纸张分页条（"第 2/33 张"）。
+       用 !important 让 hidden 属性优先于 inline display，保证子视图切换时正确隐藏。 */
+    #page-table [data-tview][hidden] { display: none !important; }
+
+    /* ===================== v12.7：在线制作纸张报价表（在线模板） ===================== */
+    .online-paper-editor {
+      margin-top: 10px;
+      padding: 14px;
+      border: 1px solid var(--border);
+      border-radius: var(--ant-radius);
+      background: #fff;
+    }
+    .online-paper-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+    .online-paper-toolbar select {
+      min-width: 220px;
+      max-width: 100%;
+      padding: 6px 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 13px;
+    }
+    .online-field-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 10px 16px;
+    }
+    .online-field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 12px;
+      color: var(--text-secondary);
+      min-width: 0;
+    }
+    .online-field input,
+    .online-field select {
+      padding: 6px 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 13px;
+      color: var(--text);
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .online-field-note { justify-content: flex-end; }
+    .online-field-note em { font-style: normal; color: var(--text-secondary); font-size: 12px; }
+    .online-sub-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--brand-dark);
+      margin: 0 0 8px;
+    }
+    .online-sub-title span { font-size: 12px; font-weight: 400; color: var(--text-secondary); }
+    .online-craft-name { position: relative; padding-right: 26px !important; }
+    .online-craft-name .row-del {
+      position: absolute;
+      right: 6px;
+      top: 50%;
+      transform: translateY(-50%);
     }
