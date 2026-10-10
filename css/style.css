@@ -1,4 +1,4 @@
-/* 亲成报价系统 v11.8 - 样式表 */
+/* 亲成报价系统 v11.9 - 样式表 */
 
 /* ===================== 全局变量与重置 ===================== */
     :root {
@@ -4212,3 +4212,55 @@ body.ui-vertical .personalize-panel { left: 12px; top: 120px; bottom: auto; }
       color: var(--brand);
     }
     .hero-account-line .koka-role { margin-left: 4px; }
+
+    /* ===================== v11.9：布局根修复（.pages 撑满）+ 一屏适配 =====================
+       根因（真实浏览器实测）：.app-shell 为 flex 容器、.sidenav 为 fixed（脱离文档流），
+       .pages 作为唯一 flex 子项且 width:auto → 按内容固有宽收缩适应（shrink-to-fit）：
+       1920 视口下吊绳/邮费视图仅 575px（可用 1720px），右侧大面积空白。
+       此前反复调 max-width 均未触及。行业标准解法：flex 子项显式 flex:1 1 auto + min-width:0。 */
+    .app-shell > .pages,
+    .pages {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    @media (min-width: 1101px) {
+      /* 数据管理：历史报价固定 9 条（表头 40 + 9×52），超出区域内部滚动；双栏等高 */
+      #page-data .history-table-wrap { max-height: 508px; }
+      #page-data.active { align-items: stretch; }
+
+      /* 个人主页：双列等高（消除参差错落） */
+      #page-profile.active { align-items: stretch; }
+    }
+
+    /* v11.9：查询页长内容视图限高——页面保持一屏，表格区域内部滚动（不缩小字体）；
+       sticky 表头在滚动容器内继续生效；分页条/备注保持常驻可见（在视图容器之外）。
+       注：rope/shipping 视图容器即 #ropePriceWrap/#shippingPriceWrap（无 tview-* id）。 */
+    @media (min-width: 1101px) {
+      #tview-quote,
+      #ropePriceWrap,
+      #shippingPriceWrap {
+        max-height: calc(100vh - 350px);
+        overflow-y: auto;
+        overflow-x: auto;
+      }
+    }
+
+    /* v11.9：报价设置页一屏化——分组折叠（渐进披露）+ 间距压缩。
+       注：曾试三列布局，实测列窄导致 label 换行反而更高且字挤，已回退两列。 */
+    @media (min-width: 1101px) {
+      #page-settings .profile-section { padding: 12px 0 0; }
+      #page-settings .card-desc { margin: -4px 0 10px; }
+      /* 可折叠分组（仅带 data-foldable 的分组生效）：标题行加箭头，收起后隐藏组内设置行 */
+      #page-settings .profile-section[data-foldable] > .setting-row { display: none; }
+      #page-settings .profile-section[data-foldable].open > .setting-row { display: flex; }
+      #page-settings .foldable-title {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        cursor: pointer;
+        user-select: none;
+      }
+      #page-settings .foldable-title .fold-arrow { transition: transform 0.2s; font-size: 12px; color: var(--text-secondary); }
+      #page-settings .profile-section.open .foldable-title .fold-arrow { transform: rotate(180deg); }
+    }

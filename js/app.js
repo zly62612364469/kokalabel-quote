@@ -1,5 +1,5 @@
 // ============================================================
-// 亲成报价系统 v11.8 - 主程序（计算 + 渲染 + 交互 + 初始化）
+// 亲成报价系统 v11.9 - 主程序（计算 + 渲染 + 交互 + 初始化）
 // ============================================================
 "use strict";
 
@@ -3781,7 +3781,7 @@ function exportSnapshotSet() {
     showToast("暂无快照可导出");
     return;
   }
-  downloadJson({ version: "11.8", count: list.length, snapshots: list }, "亲成快照_" + formatDateFile() + ".json");
+  downloadJson({ version: "11.9", count: list.length, snapshots: list }, "亲成快照_" + formatDateFile() + ".json");
   showToast("快照已导出");
 }
 
@@ -4522,7 +4522,7 @@ function setLocalBackupStatus(html, isError) {
 
 function exportLocalBackup() {
   const data = {
-    version: "11.8",
+    version: "11.9",
     kind: "local-backup",
     exportAt: new Date().toISOString(),
     priceLists: PRICE_LISTS,
@@ -4679,7 +4679,7 @@ function importLocalBackup(file) {
 // -------------------- 导入 / 导出完整配置 --------------------
 function exportFullData() {
   const data = {
-    version: "11.8",
+    version: "11.9",
     exportAt: new Date().toISOString(),
     priceLists: PRICE_LISTS,
     priceListGroups: PRICE_LIST_GROUPS, // v10.7.0：随配置导出报价表组结构
@@ -5960,6 +5960,14 @@ function bindEvents() {
       if (sw) applyThemeColor(sw.dataset.theme);
     });
   }
+
+  // v11.5（P-A1）/v11.9：报价设置页可折叠分组（公司信息/默认选项，渐进披露保一屏）
+  document.querySelectorAll('#page-settings .foldable-title').forEach(title => {
+    title.addEventListener('click', () => {
+      const sec = title.closest('.profile-section');
+      if (sec) sec.classList.toggle('open');
+    });
+  });
 
   // v11.5（G2）：表格密度切换
   if (els.densityGroup) {

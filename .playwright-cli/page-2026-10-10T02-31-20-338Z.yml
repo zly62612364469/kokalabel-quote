@@ -1,0 +1,317 @@
+- generic [active] [ref=f1e1]:
+  - generic [ref=f1e2]:
+    - navigation [ref=f1e3]:
+      - generic [ref=f1e4]:
+        - text: 亲成
+        - generic [ref=f1e5]: 报价系统
+      - generic [ref=f1e6]:
+        - button "智能报价计算器" [ref=f1e7] [cursor=pointer]
+        - button "数据管理" [ref=f1e8] [cursor=pointer]
+        - button "报价设置" [ref=f1e9] [cursor=pointer]
+        - button "报价表组查询" [ref=f1e10] [cursor=pointer]
+        - button "个人主页" [ref=f1e11] [cursor=pointer]
+      - button "Aa 个性化" [ref=f1e12] [cursor=pointer]
+    - text: ✓
+    - main [ref=f1e13]:
+      - generic [ref=f1e15]:
+        - generic [ref=f1e16]:
+          - generic [ref=f1e17]:
+            - generic [ref=f1e18]:
+              - button "标准报价" [ref=f1e19] [cursor=pointer]
+              - button "直接系数计算" [ref=f1e20] [cursor=pointer]
+            - generic "快捷切换当前报价表" [ref=f1e21]:
+              - generic [ref=f1e22]: 报价表
+              - combobox [ref=f1e23] [cursor=pointer]:
+                - option "1楼" [selected]
+                - option "3楼"
+                - option "唛头报价表"
+            - switch "默认报价 显示" [checked] [ref=f1e24] [cursor=pointer]:
+              - generic [ref=f1e25]: 默认报价
+              - generic [ref=f1e28]: 显示
+          - generic [ref=f1e29]:
+            - generic [ref=f1e30]: 报价条件
+            - generic [ref=f1e31]:
+              - generic [ref=f1e32]:
+                - generic [ref=f1e33]: 批量档位
+                - combobox "批量档位" [ref=f1e34]:
+                  - option "请选择批量档位"
+                  - option "500 张"
+                  - option "1000 张" [selected]
+                  - option "2000 张"
+                  - option "2500 张"
+                  - option "3000 张"
+                  - option "4000 张"
+                  - option "5000 张"
+                  - option "7500 张"
+                  - option "10000 张"
+                  - option "20000 张"
+                  - option "30000 张"
+                  - option "50000 张"
+                  - option "100000 张"
+              - generic [ref=f1e35]:
+                - generic [ref=f1e36]: 纸张数量（张）
+                - spinbutton "纸张数量（张）" [ref=f1e37]: "2"
+              - generic [ref=f1e38]:
+                - generic [ref=f1e39]: 收货地区
+                - combobox "收货地区" [ref=f1e40]:
+                  - option "请选择地区"
+                  - option "广东省内" [selected]
+                  - option "福建、浙江、上海、江苏、湖南、安徽"
+                  - option "湖北、江西、广西"
+                  - option "河南、河北、天津、山东、山西、陕西"
+                  - option "云南、贵州、重庆、四川"
+                  - option "海南、北京"
+                  - option "内蒙古、吉林、辽宁、甘肃、宁夏"
+                  - option "黑龙江、青海"
+                  - option "新疆、西藏"
+          - generic [ref=f1e41]:
+            - generic [ref=f1e42]:
+              - text: 纸张设置
+              - generic [ref=f1e43]: 每张纸可设置不同展开尺寸
+            - generic [ref=f1e44]:
+              - generic [ref=f1e45]:
+                - generic [ref=f1e46]: 纸张 1
+                - generic [ref=f1e47]:
+                  - generic [ref=f1e48]: 纸张材质 点击芯片直选
+                  - generic [ref=f1e49]:
+                    - generic "1楼小组-1：米兰纹 700克 双面过光油" [ref=f1e50] [cursor=pointer]: 700米兰纹
+                    - generic "1楼小组-2：400克 A级铜版纸 双面过哑胶" [ref=f1e52] [cursor=pointer]: 400铜版纸
+                    - generic "1楼小组-3：702克 A级铜版纸 双面过哑胶（厚度0.85mm）" [ref=f1e54] [cursor=pointer]: 702铜版纸
+                    - generic "1楼小组-4：700克 A级布纹纸 双面过光油" [ref=f1e56] [cursor=pointer]: 700布纹纸KOKA报价
+                    - generic "1楼小组-5：160克半透卡/200克合成纸" [ref=f1e58] [cursor=pointer]: 160半透卡/200克合成纸
+                    - generic "1楼小组-6：米白卡 606克" [ref=f1e60] [cursor=pointer]: 606米白卡
+                    - generic "1楼小组-7：500克 白卡纸 正面过哑胶" [ref=f1e62] [cursor=pointer]: 500白卡纸
+                    - generic "1楼小组-8：素棉纸 700克" [ref=f1e64] [cursor=pointer]: 700素棉纸
+                    - generic "1楼小组-9：800克 艺术棉卡 含四色彩印" [ref=f1e66] [cursor=pointer]: 800艺术棉卡
+                    - generic "1楼小组-10：白纹卡600/黑卡纸600/牛皮纸600" [ref=f1e68] [cursor=pointer]: 600白纹/600黑卡/600牛皮
+                    - generic "1楼小组-33：纹棉纸800" [ref=f1e70] [cursor=pointer]: 800纹棉
+                    - generic "1楼小组-11：米白卡400/牛皮纸350/大地纸200/木香纸400/牛油纸160/磨砂片25C" [ref=f1e72] [cursor=pointer]: 400米白/350牛皮/200大地/400木香/160牛油/25c磨砂片
+                    - generic "1楼小组-29：木香纸400/牛油纸160/磨砂片25C" [ref=f1e74] [cursor=pointer]: 400木香/160牛油/25c磨砂片
+                    - generic "1楼小组-12：棉麻布 40C 米白色" [ref=f1e76] [cursor=pointer]: 40C棉麻布
+                    - generic "1楼小组-13：木香纸 800克 含4色彩印" [ref=f1e78] [cursor=pointer]: 800木香纸
+                    - generic "1楼小组-14：雅莲纹 900克 含4色彩印 双面过光油" [ref=f1e80] [cursor=pointer]: 900雅莲纹
+                    - generic "1楼小组-15：手柔皮200/米兰卡200" [ref=f1e82] [cursor=pointer]: 200手柔皮/200米兰
+                    - generic "1楼小组-32：闪银卡180" [ref=f1e84] [cursor=pointer]: 180闪银
+                    - generic "1楼小组-31：云彩纸200" [ref=f1e86] [cursor=pointer]: 200云彩
+                    - generic "1楼小组-16：亮黑卡800/墨绿卡700" [ref=f1e88] [cursor=pointer]: 800亮黑卡/700墨绿卡
+                    - generic "1楼小组-17：350克 A级铜版纸 双面过哑胶（厚度0.38mm）" [ref=f1e90] [cursor=pointer]: 350铜版纸
+                    - generic "1楼小组-18：700克 A级铜版纸 双面过哑胶（厚度0.88mm）" [ref=f1e92] [cursor=pointer]: 700铜版纸
+                    - generic "1楼小组-19：白纹卡600/黑卡纸600/牛皮纸600/米白卡600" [ref=f1e94] [cursor=pointer]: 600白纹/600黑卡/600牛皮/600米白
+                    - generic "1楼小组-34：木香纸800" [ref=f1e96] [cursor=pointer]: 800木香
+                    - generic "1楼小组-20：700克 A级布纹纸 双面过光油（厚度0.85mm）" [ref=f1e98] [cursor=pointer]: 700布纹纸海洋厂报价
+                    - generic "1楼小组-21：200克 合成纸 撕不烂" [ref=f1e100] [cursor=pointer]: 200合成纸
+                    - generic "1楼小组-22：900克 A级铜版纸 双面过哑胶（厚度1.05mm）" [ref=f1e102] [cursor=pointer]: 900铜版纸
+                    - generic "1楼小组-23：600克 A级牛皮纸 双面过哑胶（厚度0.80mm）" [ref=f1e104] [cursor=pointer]: 600牛皮纸
+                    - generic "1楼小组-24：85C A级白卡纸 双面过光胶（厚度0.95mm）" [ref=f1e106] [cursor=pointer]: 85C白卡纸
+                    - generic "1楼小组-25：双铜纸 200克（厚度0.22mm）" [ref=f1e108] [cursor=pointer]: 200双铜纸
+                    - generic "1楼小组-26：厚胶带 200克（厚度0.20mm）含正面4色彩印 背面黑油墨" [ref=f1e110] [cursor=pointer]: 200厚胶带
+                    - generic "1楼小组-27：巴黎白300/160克彩透卡" [ref=f1e112] [cursor=pointer]: 巴黎白彩透卡
+                    - generic "1楼小组-28：900克 白金卡（独家款）" [ref=f1e114] [cursor=pointer]: 900白金卡
+                - generic [ref=f1e116]:
+                  - generic [ref=f1e117]: 吊牌展开尺寸 自动加 3mm 出血
+                  - generic [ref=f1e118]:
+                    - generic [ref=f1e119]:
+                      - generic [ref=f1e120]: 宽 (mm)
+                      - spinbutton "55" [ref=f1e121]
+                    - generic [ref=f1e122]:
+                      - generic [ref=f1e123]: 长 (mm)
+                      - spinbutton "30" [ref=f1e124]
+                - generic [ref=f1e125]:
+                  - generic [ref=f1e126]: 附加工艺
+                  - generic [ref=f1e127]:
+                    - generic [ref=f1e128] [cursor=pointer]:
+                      - checkbox "无色压凹（单面） 1000档初始价 30" [ref=f1e129]
+                      - generic [ref=f1e130]: 无色压凹（单面）
+                      - superscript [ref=f1e131]: "30"
+                    - generic [ref=f1e132] [cursor=pointer]:
+                      - checkbox "套字压凹（单面） 1000档初始价 80" [ref=f1e133]
+                      - generic [ref=f1e134]: 套字压凹（单面）
+                      - superscript [ref=f1e135]: "80"
+                    - generic [ref=f1e136] [cursor=pointer]:
+                      - checkbox "烫金 小面积（单面） 1000档初始价 50" [ref=f1e137]
+                      - generic [ref=f1e138]: 烫金 小面积（单面）
+                      - superscript [ref=f1e139]: "50"
+                    - generic [ref=f1e140] [cursor=pointer]:
+                      - checkbox "烫金 小面积（双面） 1000档初始价 70" [ref=f1e141]
+                      - generic [ref=f1e142]: 烫金 小面积（双面）
+                      - superscript [ref=f1e143]: "70"
+                    - generic [ref=f1e144] [cursor=pointer]:
+                      - checkbox "击凸（单面） 1000档初始价 80" [ref=f1e145]
+                      - generic [ref=f1e146]: 击凸（单面）
+                      - superscript [ref=f1e147]: "80"
+              - generic [ref=f1e148]:
+                - generic [ref=f1e149]: 纸张 2
+                - generic [ref=f1e150]:
+                  - generic [ref=f1e151]: 纸张材质 点击芯片直选
+                  - generic [ref=f1e152]:
+                    - generic "1楼小组-1：米兰纹 700克 双面过光油" [ref=f1e153] [cursor=pointer]: 700米兰纹
+                    - generic "1楼小组-2：400克 A级铜版纸 双面过哑胶" [ref=f1e155] [cursor=pointer]: 400铜版纸
+                    - generic "1楼小组-3：702克 A级铜版纸 双面过哑胶（厚度0.85mm）" [ref=f1e157] [cursor=pointer]: 702铜版纸
+                    - generic "1楼小组-4：700克 A级布纹纸 双面过光油" [ref=f1e159] [cursor=pointer]: 700布纹纸KOKA报价
+                    - generic "1楼小组-5：160克半透卡/200克合成纸" [ref=f1e161] [cursor=pointer]: 160半透卡/200克合成纸
+                    - generic "1楼小组-6：米白卡 606克" [ref=f1e163] [cursor=pointer]: 606米白卡
+                    - generic "1楼小组-7：500克 白卡纸 正面过哑胶" [ref=f1e165] [cursor=pointer]: 500白卡纸
+                    - generic "1楼小组-8：素棉纸 700克" [ref=f1e167] [cursor=pointer]: 700素棉纸
+                    - generic "1楼小组-9：800克 艺术棉卡 含四色彩印" [ref=f1e169] [cursor=pointer]: 800艺术棉卡
+                    - generic "1楼小组-10：白纹卡600/黑卡纸600/牛皮纸600" [ref=f1e171] [cursor=pointer]: 600白纹/600黑卡/600牛皮
+                    - generic "1楼小组-33：纹棉纸800" [ref=f1e173] [cursor=pointer]: 800纹棉
+                    - generic "1楼小组-11：米白卡400/牛皮纸350/大地纸200/木香纸400/牛油纸160/磨砂片25C" [ref=f1e175] [cursor=pointer]: 400米白/350牛皮/200大地/400木香/160牛油/25c磨砂片
+                    - generic "1楼小组-29：木香纸400/牛油纸160/磨砂片25C" [ref=f1e177] [cursor=pointer]: 400木香/160牛油/25c磨砂片
+                    - generic "1楼小组-12：棉麻布 40C 米白色" [ref=f1e179] [cursor=pointer]: 40C棉麻布
+                    - generic "1楼小组-13：木香纸 800克 含4色彩印" [ref=f1e181] [cursor=pointer]: 800木香纸
+                    - generic "1楼小组-14：雅莲纹 900克 含4色彩印 双面过光油" [ref=f1e183] [cursor=pointer]: 900雅莲纹
+                    - generic "1楼小组-15：手柔皮200/米兰卡200" [ref=f1e185] [cursor=pointer]: 200手柔皮/200米兰
+                    - generic "1楼小组-32：闪银卡180" [ref=f1e187] [cursor=pointer]: 180闪银
+                    - generic "1楼小组-31：云彩纸200" [ref=f1e189] [cursor=pointer]: 200云彩
+                    - generic "1楼小组-16：亮黑卡800/墨绿卡700" [ref=f1e191] [cursor=pointer]: 800亮黑卡/700墨绿卡
+                    - generic "1楼小组-17：350克 A级铜版纸 双面过哑胶（厚度0.38mm）" [ref=f1e193] [cursor=pointer]: 350铜版纸
+                    - generic "1楼小组-18：700克 A级铜版纸 双面过哑胶（厚度0.88mm）" [ref=f1e195] [cursor=pointer]: 700铜版纸
+                    - generic "1楼小组-19：白纹卡600/黑卡纸600/牛皮纸600/米白卡600" [ref=f1e197] [cursor=pointer]: 600白纹/600黑卡/600牛皮/600米白
+                    - generic "1楼小组-34：木香纸800" [ref=f1e199] [cursor=pointer]: 800木香
+                    - generic "1楼小组-20：700克 A级布纹纸 双面过光油（厚度0.85mm）" [ref=f1e201] [cursor=pointer]: 700布纹纸海洋厂报价
+                    - generic "1楼小组-21：200克 合成纸 撕不烂" [ref=f1e203] [cursor=pointer]: 200合成纸
+                    - generic "1楼小组-22：900克 A级铜版纸 双面过哑胶（厚度1.05mm）" [ref=f1e205] [cursor=pointer]: 900铜版纸
+                    - generic "1楼小组-23：600克 A级牛皮纸 双面过哑胶（厚度0.80mm）" [ref=f1e207] [cursor=pointer]: 600牛皮纸
+                    - generic "1楼小组-24：85C A级白卡纸 双面过光胶（厚度0.95mm）" [ref=f1e209] [cursor=pointer]: 85C白卡纸
+                    - generic "1楼小组-25：双铜纸 200克（厚度0.22mm）" [ref=f1e211] [cursor=pointer]: 200双铜纸
+                    - generic "1楼小组-26：厚胶带 200克（厚度0.20mm）含正面4色彩印 背面黑油墨" [ref=f1e213] [cursor=pointer]: 200厚胶带
+                    - generic "1楼小组-27：巴黎白300/160克彩透卡" [ref=f1e215] [cursor=pointer]: 巴黎白彩透卡
+                    - generic "1楼小组-28：900克 白金卡（独家款）" [ref=f1e217] [cursor=pointer]: 900白金卡
+                - generic [ref=f1e219]:
+                  - generic [ref=f1e220]: 吊牌展开尺寸 自动加 3mm 出血
+                  - generic [ref=f1e221]:
+                    - generic [ref=f1e222]:
+                      - generic [ref=f1e223]: 宽 (mm)
+                      - spinbutton "55" [ref=f1e224]
+                    - generic [ref=f1e225]:
+                      - generic [ref=f1e226]: 长 (mm)
+                      - spinbutton "30" [ref=f1e227]
+                - generic [ref=f1e228]:
+                  - generic [ref=f1e229]: 附加工艺
+                  - generic [ref=f1e230]:
+                    - generic [ref=f1e231] [cursor=pointer]:
+                      - checkbox "无色压凹（单面） 1000档初始价 30" [ref=f1e232]
+                      - generic [ref=f1e233]: 无色压凹（单面）
+                      - superscript [ref=f1e234]: "30"
+                    - generic [ref=f1e235] [cursor=pointer]:
+                      - checkbox "套字压凹（单面） 1000档初始价 80" [ref=f1e236]
+                      - generic [ref=f1e237]: 套字压凹（单面）
+                      - superscript [ref=f1e238]: "80"
+                    - generic [ref=f1e239] [cursor=pointer]:
+                      - checkbox "烫金 小面积（单面） 1000档初始价 50" [ref=f1e240]
+                      - generic [ref=f1e241]: 烫金 小面积（单面）
+                      - superscript [ref=f1e242]: "50"
+                    - generic [ref=f1e243] [cursor=pointer]:
+                      - checkbox "烫金 小面积（双面） 1000档初始价 70" [ref=f1e244]
+                      - generic [ref=f1e245]: 烫金 小面积（双面）
+                      - superscript [ref=f1e246]: "70"
+                    - generic [ref=f1e247] [cursor=pointer]:
+                      - checkbox "击凸（单面） 1000档初始价 80" [ref=f1e248]
+                      - generic [ref=f1e249]: 击凸（单面）
+                      - superscript [ref=f1e250]: "80"
+          - button "▸ 吊绳类型 当前：普通吊绳（¥10/千张）" [ref=f1e252] [cursor=pointer]:
+            - generic [ref=f1e253]: ▸
+            - text: 吊绳类型
+            - generic [ref=f1e254]: 当前：普通吊绳（¥10/千张）
+        - generic [ref=f1e256]:
+          - heading "报价结果" [level=2] [ref=f1e257]
+          - generic [ref=f1e258]:
+            - generic [ref=f1e259]:
+              - generic [ref=f1e260]: 各纸张尺寸 / 面积 / 代码
+              - table [ref=f1e262]:
+                - rowgroup [ref=f1e263]:
+                  - row [ref=f1e264]:
+                    - columnheader "纸张" [ref=f1e265]
+                    - columnheader "尺寸 (mm)" [ref=f1e266]
+                    - columnheader "面积 (mm²)" [ref=f1e267]
+                    - columnheader "代码" [ref=f1e268]
+                    - columnheader "单价" [ref=f1e269]
+                - rowgroup [ref=f1e270]:
+                  - row [ref=f1e271]:
+                    - cell "700米兰纹" [ref=f1e272]
+                    - cell "55 × 30" [ref=f1e273]
+                    - cell "1914 mm²" [ref=f1e274]
+                    - cell "002 ▲ ▼" [ref=f1e275]:
+                      - generic [ref=f1e276]:
+                        - generic [ref=f1e277]: "002"
+                        - generic [ref=f1e278]:
+                          - button "▲" [disabled] [ref=f1e279]
+                          - button "▼" [ref=f1e280] [cursor=pointer]
+                    - cell "¥ 35.00" [ref=f1e281]
+                  - row [ref=f1e282]:
+                    - cell "700米兰纹" [ref=f1e283]
+                    - cell "55 × 30" [ref=f1e284]
+                    - cell "1914 mm²" [ref=f1e285]
+                    - cell "002 ▲ ▼" [ref=f1e286]:
+                      - generic [ref=f1e287]:
+                        - generic [ref=f1e288]: "002"
+                        - generic [ref=f1e289]:
+                          - button "▲" [disabled] [ref=f1e290]
+                          - button "▼" [ref=f1e291] [cursor=pointer]
+                    - cell "¥ 35.00" [ref=f1e292]
+            - generic [ref=f1e293]:
+              - generic [ref=f1e294]: 匹配批量档位
+              - generic [ref=f1e295]: 1000 张
+            - generic [ref=f1e296]:
+              - generic [ref=f1e297]: 纸张价合计（折扣前）
+              - generic [ref=f1e298]: ¥ 35.00 + ¥ 35.00 = ¥ 70.00
+            - generic [ref=f1e299]:
+              - generic [ref=f1e300]: 纸张折后价合计
+              - generic [ref=f1e301]: ¥ 35.00 + ¥ 35.00 = ¥ 70.00
+            - generic [ref=f1e302]:
+              - generic [ref=f1e303]: 工艺总费用合计
+              - generic [ref=f1e304]: 无该批量定价
+            - generic [ref=f1e306]:
+              - generic [ref=f1e307]: 吊绳费用
+              - generic [ref=f1e309]:
+                - generic [ref=f1e310]: 普通吊绳
+                - generic [ref=f1e311]: × 1000个 =
+                - generic "点击修改吊绳费用（临时生效；清空确认可恢复默认）" [ref=f1e312] [cursor=pointer]: ¥ 10.00
+            - generic [ref=f1e313]:
+              - generic [ref=f1e314]: 吊牌成本合计
+              - generic [ref=f1e315]: ¥ 80.00
+            - generic [ref=f1e316]:
+              - generic [ref=f1e317]: 邮费
+              - generic [ref=f1e318]: ¥ 8.00
+            - generic [ref=f1e319]:
+              - generic [ref=f1e320]: 成本合计
+              - generic [ref=f1e321]: ¥ 88.00
+            - button "快速切换档位" [ref=f1e323] [cursor=pointer]:
+              - generic [aria-hidden] [ref=f1e325]: ▾
+            - generic [ref=f1e326]: 默认报价（原邮费）
+            - generic [ref=f1e327]:
+              - generic [ref=f1e328]:
+                - generic [ref=f1e329]: ×1.2
+                - generic [ref=f1e330]: 普通客户
+                - generic [ref=f1e331]: 105.60元
+              - generic [ref=f1e332]:
+                - generic [ref=f1e333]: ×1.15
+                - generic [ref=f1e334]: 优质客户
+                - generic [ref=f1e335]: 101.20元
+              - generic [ref=f1e336]:
+                - generic [ref=f1e337]: ×1.1
+                - generic [ref=f1e338]: 大客户
+                - generic [ref=f1e339]: 96.80元
+            - generic [ref=f1e340]:
+              - generic [ref=f1e341]: 临时毛利系数：（临时显示，不影响默认设置）
+              - spinbutton "如 1.18" [ref=f1e342]
+            - region [ref=f1e343]:
+              - generic [ref=f1e344]:
+                - generic [ref=f1e345]:
+                  - generic [ref=f1e346]: 报价归档
+                  - heading "保存本次报价" [level=3] [ref=f1e347]
+                - generic [ref=f1e348]: 客户名称留空时自动使用编号和时间
+              - generic [ref=f1e349]:
+                - generic [ref=f1e350]:
+                  - generic [ref=f1e351]: 客户名称 选填
+                  - textbox "客户名称 选填" [ref=f1e352]:
+                    - /placeholder: 例如：海成服饰
+                - generic [ref=f1e353]:
+                  - generic [ref=f1e354]: 订单备注 选填，最多 500 字
+                  - textbox "订单备注 选填，最多 500 字" [ref=f1e355]:
+                    - /placeholder: 例如：秋季吊牌订单、交期要求、特殊说明
+              - generic [ref=f1e356]:
+                - button "保存报价" [ref=f1e357] [cursor=pointer]
+                - button "查看报价记录" [ref=f1e358] [cursor=pointer]
+      - text: 📭 📭
+  - text: 📭
