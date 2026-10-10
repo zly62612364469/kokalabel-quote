@@ -1,6 +1,7 @@
 # DEPLOYMENT.md · 构建与部署说明
 
-> 当前版本 v11.2 ｜ 更新 2026-10-09 ｜ 线上 https://kokalabel-quote.pages.dev
+> 当前版本 **v12.8** ｜ 更新 2026-10-10 ｜ 线上 https://kokalabel-quote.pages.dev
+> 版本真相源 = 仓库 `index.html` 的 `<title>`。
 
 ---
 
