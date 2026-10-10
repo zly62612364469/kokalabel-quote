@@ -1,4 +1,4 @@
-/* 亲成报价系统 v12.7 - 样式表 */
+/* 亲成报价系统 v12.8 - 样式表 */
 
 /* ===================== 全局变量与重置 ===================== */
     :root {
@@ -4476,4 +4476,23 @@ body.ui-vertical .personalize-panel { left: 12px; top: 120px; bottom: auto; }
       right: 6px;
       top: 50%;
       transform: translateY(-50%);
+    }
+
+    /* ===================== v12.8：档位缺价/手动邮费红字高亮 + 账号管理卡铺满 ===================== */
+    .tier-quick-btn.manual-shipping,
+    .tier-quick-btn.missing-pricing {
+      color: var(--danger) !important;
+      border-color: var(--danger) !important;
+      font-weight: 700;
+    }
+    .tier-quick-btn.manual-shipping.active,
+    .tier-quick-btn.missing-pricing.active {
+      background: var(--danger);
+      color: #fff !important;
+    }
+    /* 批量档位下拉中：无定价 / 手动邮费档位红字（option color 在 Chrome/Edge 生效） */
+    #tier option.tier-flag { color: #dc2626; font-weight: 600; }
+    /* 账号管理（超级管理员）卡片：个人主页双列下向右铺满整行 */
+    @media (min-width: 1101px) {
+      #page-profile > #accountAdminBox { grid-column: 1 / -1; }
     }

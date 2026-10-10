@@ -1,5 +1,5 @@
 // ============================================================
-// 亲成报价系统 v12.7 - 主程序（计算 + 渲染 + 交互 + 初始化）
+// 亲成报价系统 v12.8 - 主程序（计算 + 渲染 + 交互 + 初始化）
 // ============================================================
 "use strict";
 
@@ -1163,6 +1163,25 @@ function initOptions() {
  * 更新批量档位下拉选项。
  * @param {boolean} isInit 是否为初始化，若是则默认选中第一项。
  */
+/** v12.8：该档位在当前纸张下是否「无批量定价」（规格全部无价；读取到空值 null/""/空白 同样算） */
+function isTierMissingPricing(tier) {
+  const tierNum = Number(tier);
+  if (!tierNum) return false;
+  const papers = getPapersByPriceList(CURRENT_PRICE_LIST_ID);
+  const paper = papers[currentPaperIndex];
+  if (!paper || !paper.specs.length) return false;
+  const hasAny = paper.specs.some(sp => {
+    const v = sp.prices[tierNum];
+    return !(v == null || v === "" || (typeof v === "string" && v.trim() === ""));
+  });
+  return !hasAny;
+}
+/** v12.8：该档位是否使用了「手动填写的邮费」（当前地区） */
+function isTierManualShipping(tier) {
+  const rid = els.region ? els.region.value : "";
+  return !!(rid && manualShippingCache[rid + "_" + Number(tier)] != null);
+}
+
 function updateTierOptions(isInit) {
   // 批量档位取当前报价表所有规格的价格档位并集，避免切换纸张时档位缺失
   const tierSet = new Set();
@@ -1174,8 +1193,12 @@ function updateTierOptions(isInit) {
   const tiers = Array.from(tierSet).sort((a, b) => a - b);
 
   const currentTier = els.tier.value;
+  // v12.8：无批量定价 / 手动邮费的档位在下拉中红字标记（option 支持 color 的浏览器生效）
   els.tier.innerHTML = '<option value="">请选择批量档位</option>' +
-    tiers.map(t => `<option value="${t}">${t} 张</option>`).join("");
+    tiers.map(t => {
+      const flag = isTierMissingPricing(t) || isTierManualShipping(t);
+      return `<option value="${t}"${flag ? ' class="tier-flag"' : ""}>${t} 张</option>`;
+    }).join("");
 
   if (isInit) {
     if (tiers.includes(1000)) {
@@ -2069,12 +2092,19 @@ function onCalculate() {
       }
     }
     const allTiers = Array.from(tierSet).sort((a, b) => a - b);
-    // v12.6：当前地区在该档位存在「手动输入的邮费」时，按钮红框高亮（提示该档邮费为手填值）
-    const curRegionId = els.region ? els.region.value : "";
+    // v12.6/v12.8：手动邮费与「无批量定价」档位均红字高亮（含读取到空值的情况）
     els.tierQuickBtns.innerHTML = allTiers.map(t => {
-      const isManual = curRegionId && manualShippingCache[curRegionId + "_" + t] != null;
-      return `<button class="tier-quick-btn${t === result.tier ? " active" : ""}${isManual ? " manual-shipping" : ""}" data-tier="${t}"${isManual ? ' title="该地区在此档位的邮费为手动输入值"' : ""}>${t}</button>`;
+      const isManual = isTierManualShipping(t);
+      const isMissing = isTierMissingPricing(t);
+      const cls = `${t === result.tier ? " active" : ""}${isManual ? " manual-shipping" : ""}${isMissing ? " missing-pricing" : ""}`;
+      const tip = isMissing ? "该档位无批量定价（缺价）" : (isManual ? "该地区在此档位的邮费为手动输入值" : "");
+      return `<button class="tier-quick-btn${cls}" data-tier="${t}"${tip ? ` title="${tip}"` : ""}>${t}</button>`;
     }).join("");
+    // v12.8：档位标记变化时同步刷新下拉（避免每次计算都重建造成闪烁）
+    try {
+      const sig = allTiers.map(t => (isTierManualShipping(t) ? "m" : "") + (isTierMissingPricing(t) ? "x" : "")).join("");
+      if (sig !== _lastTierFlagSig) { _lastTierFlagSig = sig; updateTierOptions(false); }
+    } catch (e) { /* 忽略 */ }
     els.tierQuickBtns.querySelectorAll(".tier-quick-btn").forEach(btn => {
       btn.addEventListener("click", function() {
         els.tier.value = this.dataset.tier;
@@ -3784,6 +3814,8 @@ function renderOnlineManager() {
 /** 在线修改区：组卡片内按钮（事件委托，容器自身不随 innerHTML 重建而失效） */
 // ==================== v12.7：在线制作纸张报价表（在线模板，全字段在线编辑） ====================
 let onlinePaperId = "";
+// v12.8：档位标记签名（手动邮费/无定价）——变化时才重建档位下拉，避免闪烁
+let _lastTierFlagSig = "";
 
 /** 渲染在线纸张编辑器：属性表单 + 规格价格矩阵 + 工艺价格矩阵（单元格复用全局就地编辑链路） */
 function renderOnlinePaperEditor() {
@@ -4217,7 +4249,7 @@ function exportSnapshotSet() {
     showToast("暂无快照可导出");
     return;
   }
-  downloadJson({ version: "12.7", count: list.length, snapshots: list }, "亲成快照_" + formatDateFile() + ".json");
+  downloadJson({ version: "12.8", count: list.length, snapshots: list }, "亲成快照_" + formatDateFile() + ".json");
   showToast("快照已导出");
 }
 
@@ -5022,7 +5054,7 @@ function setLocalBackupStatus(html, isError) {
 
 function exportLocalBackup() {
   const data = {
-    version: "12.7",
+    version: "12.8",
     kind: "local-backup",
     exportAt: new Date().toISOString(),
     priceLists: PRICE_LISTS,
@@ -5175,7 +5207,7 @@ function importLocalBackup(file) {
 // -------------------- 导入 / 导出完整配置 --------------------
 function exportFullData() {
   const data = {
-    version: "12.7",
+    version: "12.8",
     exportAt: new Date().toISOString(),
     priceLists: PRICE_LISTS,
     priceListGroups: PRICE_LIST_GROUPS, // v10.7.0：随配置导出报价表组结构
