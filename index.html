@@ -7,15 +7,15 @@
   <!-- P0 安全：CSP 策略（v7.9：SheetJS 已本地化，script-src 仅允许 'self'，离线双击打开亦可用） -->
   <!-- v10.6.0：default-src/connect-src 放行 blob:，修复网页端 XLSX.writeFile 导出 Excel 被拦 -->
   <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob:; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' blob:;">
-  <title>亲成报价系统 v11.7</title>
+  <title>亲成报价系统 v11.8</title>
   <!-- v10.7.1：品牌与图标换回「亲成」（沿用 v10.5 全套亲成图标），版本号 10.7.0 → 10.7.1 -->
-  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg?v=11.7">
-  <link rel="icon" type="image/x-icon" href="assets/favicon.ico?v=11.7">
-  <link rel="icon" type="image/png" href="assets/favicon.png?v=11.7">
-  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png?v=11.7">
-  <link rel="stylesheet" href="css/style.css?v=11.7">
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg?v=11.8">
+  <link rel="icon" type="image/x-icon" href="assets/favicon.ico?v=11.8">
+  <link rel="icon" type="image/png" href="assets/favicon.png?v=11.8">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png?v=11.8">
+  <link rel="stylesheet" href="css/style.css?v=11.8">
   <!-- v9.3 账号访问控制：http 部署时强制登录（file:// 本地离线不启用） -->
-  <script src="js/auth.js?v=11.7"></script>
+  <script src="js/auth.js?v=11.8"></script>
 </head>
 <body>
   <!-- v10.6.0：app-shell 包裹 = 左侧导航 + 主区（扁平化宽泛式架构） -->
@@ -54,6 +54,13 @@
       </div>
       <div class="personalize-current" id="fontScaleCurrent">当前字号：16px（100%）</div>
       <div class="personalize-defaults" id="fontScaleDefaults">系统默认字号：16px（100%）</div>
+      <!-- v11.5（G2）：表格密度三档（紧凑/标准/宽松，本机生效） -->
+      <div class="personalize-label">表格密度</div>
+      <div class="density-group" id="densityGroup">
+        <button type="button" class="density-btn" data-density="compact">紧凑</button>
+        <button type="button" class="density-btn active" data-density="regular">标准</button>
+        <button type="button" class="density-btn" data-density="relaxed">宽松</button>
+      </div>
       <!-- v11.4：主题色（常见配色，本机生效） -->
       <div class="personalize-label">主题色</div>
       <div class="theme-color-group" id="themeColorGroup">
@@ -579,9 +586,13 @@
           </table>
         </div>
 
-        <!-- v6.7：直接系数档位表（单独框体表格显示，位于吊牌特殊工艺价格表下方） -->
-        <div class="table-wrap" id="directCoeffWrap" style="margin-top:20px;">
-          <h3 style="font-size:14px;color:var(--brand-dark);margin-bottom:10px;">直接系数档位表</h3>
+        <!-- v11.5（T-A2）：直接系数档位表——渐进披露，默认收起 -->
+        <div class="table-wrap fold-box" id="directCoeffWrap" style="margin-top:14px;">
+          <button type="button" class="fold-head" id="directCoeffHead" aria-expanded="false">
+            <span>直接系数档位表</span>
+            <span class="fold-arrow" aria-hidden="true">▾</span>
+          </button>
+          <div class="fold-body">
           <table id="directCoeffTable">
             <thead>
               <tr>
@@ -593,11 +604,16 @@
               <!-- 动态行 -->
             </tbody>
           </table>
+          </div>
         </div>
 
-        <!-- v7.0：批量直接报价表（仅部分 Sheet 有配置，无配置时显示占位提示） -->
-        <div class="table-wrap" id="batchDirectWrap" style="margin-top:20px;">
-          <h3 style="font-size:14px;color:var(--brand-dark);margin-bottom:10px;">批量直接报价表</h3>
+        <!-- v11.5（T-A2）：批量直接报价表——渐进披露，默认收起 -->
+        <div class="table-wrap fold-box" id="batchDirectWrap" style="margin-top:14px;">
+          <button type="button" class="fold-head" id="batchDirectHead" aria-expanded="false">
+            <span>批量直接报价表</span>
+            <span class="fold-arrow" aria-hidden="true">▾</span>
+          </button>
+          <div class="fold-body">
           <table id="batchDirectTable">
             <thead>
               <tr>
@@ -609,6 +625,7 @@
               <!-- 动态行 -->
             </tbody>
           </table>
+          </div>
         </div>
 
         </div><!-- /tview-quote -->
@@ -694,7 +711,7 @@
           <div class="setting-row">
             <div class="setting-info">
               <div class="setting-label">当前版本</div>
-              <div class="setting-desc">亲成报价系统 v11.7</div>
+              <div class="setting-desc">亲成报价系统 v11.8</div>
             </div>
             <div class="setting-control">
               <span class="placeholder-badge">正式版</span>
@@ -1185,7 +1202,7 @@
   <div class="toast" id="toast"></div>
 
   <!-- v7.9: SheetJS 本地化（离线双击打开亦可导出/导入 Excel），先于业务脚本加载，XLSX 全局可用 -->
-  <script src="js/vendor/xlsx.full.min.js?v=11.7"></script>
-  <script src="js/data.js?v=11.7"></script>
-  <script src="js/app.js?v=11.7"></script>
+  <script src="js/vendor/xlsx.full.min.js?v=11.8"></script>
+  <script src="js/data.js?v=11.8"></script>
+  <script src="js/app.js?v=11.8"></script>
 </body></html>

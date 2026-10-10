@@ -1,4 +1,4 @@
-/* 亲成报价系统 v11.7 - 样式表 */
+/* 亲成报价系统 v11.8 - 样式表 */
 
 /* ===================== 全局变量与重置 ===================== */
     :root {
@@ -4055,3 +4055,160 @@ body.ui-vertical .personalize-panel { left: 12px; top: 120px; bottom: auto; }
       }
       #page-profile > .profile-hero { grid-column: 1 / -1; }
     }
+
+    /* ===================== v11.8：Ant Design 风格设计 token 层 + 组件视觉对齐 =====================
+       说明：项目铁律为「无框架、无构建、双击可用」，故不引入 antd/React 依赖，
+       而是对齐 antd 5 的设计 token 语义（colorPrimary/状态色/圆角/表格规范）用原生 CSS 变量实现。 */
+    :root {
+      /* 主色三态（默认跟随经典蓝；主题色切换由 applyThemeColor 动态接管） */
+      --ant-primary: var(--brand);
+      --ant-primary-hover: var(--brand-dark);
+      --ant-primary-active: var(--brand-dark);
+      --ant-primary-bg: var(--brand-light);
+      /* 状态色（antd 语义） */
+      --ant-success: #52c41a;
+      --ant-warning: #faad14;
+      --ant-error: #ff4d4f;
+      --ant-info: var(--brand);
+      /* 组件规范 */
+      --ant-radius: 8px;
+      --ant-table-header-bg: #fafafa;
+      --ant-row-hover: #fafafa;
+      --ant-split: #f0f0f0;
+      /* 表格密度（G2：三档，body class 控制，默认 regular） */
+      --density-pad-y: 10px;
+      --density-pad-x: 12px;
+    }
+    body.table-density-compact { --density-pad-y: 5px; --density-pad-x: 8px; }
+    body.table-density-relaxed { --density-pad-y: 14px; --density-pad-x: 14px; }
+
+    /* —— G3 sticky 表头 + 表格规范（antd：表头 #fafafa、行 hover、分割线 #f0f0f0）—— */
+    .table-wrap thead th,
+    #page-data .data-table thead th {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      background: var(--ant-table-header-bg);
+      border-bottom: 2px solid var(--ant-split);
+    }
+    .table-wrap tbody tr:hover td,
+    #page-data .data-table tbody tr:hover td {
+      background: var(--ant-row-hover);
+    }
+    .data-table th,
+    .data-table td {
+      padding: var(--density-pad-y) var(--density-pad-x);
+    }
+
+    /* —— G4 数字右对齐 + 等宽数字（价格/数量列）—— */
+    #priceTable td:not(:first-child):not(:nth-child(2)),
+    #craftTable td:not(:first-child),
+    #directCoeffTable td:not(:first-child),
+    #batchDirectTable td:not(:first-child),
+    #ropePriceTable td:not(:first-child),
+    #shippingPriceTable td:not(:first-child),
+    #historyTable td:nth-child(5),
+    #historyTable td:nth-child(6) {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+    #priceTable th:not(:first-child):not(:nth-child(2)),
+    #craftTable th:not(:first-child),
+    #directCoeffTable th:not(:first-child),
+    #batchDirectTable th:not(:first-child),
+    #ropePriceTable th:not(:first-child),
+    #shippingPriceTable th:not(:first-child) {
+      text-align: right;
+    }
+
+    /* —— G5 统一空状态（antd Empty 风格）—— */
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      padding: 32px 20px;
+      color: var(--text-secondary);
+      font-size: 13px;
+    }
+    .empty-state::before {
+      content: "📭";
+      font-size: 28px;
+      opacity: 0.55;
+    }
+
+    /* —— T-A4 就地编辑态高亮（antd 聚焦描边）—— */
+    td.cell-editing {
+      outline: 2px solid var(--ant-primary);
+      outline-offset: -2px;
+      background: #fff;
+      border-radius: 4px;
+    }
+
+    /* —— T-A2 渐进披露：系数/批量直接表折叠（默认收起）—— */
+    .fold-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      padding: 8px 12px;
+      margin: 0;
+      background: var(--ant-primary-bg);
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--brand-dark);
+      font-family: inherit;
+    }
+    .fold-head:hover { filter: brightness(0.98); }
+    .fold-head .fold-arrow { transition: transform 0.2s; font-size: 12px; }
+    .fold-box.open .fold-head .fold-arrow { transform: rotate(180deg); }
+    .fold-box .fold-body { display: none; }
+    .fold-box.open .fold-body { display: block; }
+    .fold-box.open { margin-top: 14px; }
+
+    /* —— D-A3 在线修改宽内容横向滚动适配 —— */
+    #onlineManagerRoot { overflow-x: auto; }
+
+    /* —— N6 子导航移动端缩放 —— */
+    @media (max-width: 720px) {
+      .table-view-tab { padding: 5px 12px; font-size: 12px; }
+      .table-view-tabs { gap: 5px; }
+    }
+
+    /* —— S-A3 规则卡在双栏右栏内的紧凑化 —— */
+    #page-settings .rule-block { padding: 10px 12px; }
+
+    /* —— v11.5（P-A1）：hero 内账号行（账号信息并入品牌头，去重复层次）—— */
+    .hero-account-line {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      width: 100%;
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px dashed var(--border);
+      font-size: 13px;
+      color: var(--text);
+    }
+    .hero-account-ops {
+      margin-left: auto;
+      display: inline-flex;
+      gap: 8px;
+    }
+    .hero-account-ops button {
+      padding: 5px 12px;
+      border: 1px solid #cbd5e1;
+      background: #fff;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .hero-account-ops button:hover {
+      border-color: var(--brand);
+      color: var(--brand);
+    }
+    .hero-account-line .koka-role { margin-left: 4px; }

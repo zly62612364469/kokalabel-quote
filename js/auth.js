@@ -1,5 +1,5 @@
 // ============================================================
-// 亲成 报价系统 · 账号访问控制（v11.7，账号体系同步自 v10.5）
+// 亲成 报价系统 · 账号访问控制（v11.8，账号体系同步自 v10.5）
 // - http/https 部署强制登录；file:// 本地/exe 不启用
 // - 角色：superadmin 超级管理员 / admin 管理员 / sales 业务员 / visitor 访客
 // - 访客仅计算器；业务员全页只读；超级管理员可编辑并发布默认报价数据(云端共享)
@@ -148,19 +148,37 @@
     const page = document.getElementById('page-profile');
     if (!page) return;
     const u = KOKA.user;
-    const info = document.createElement('div');
-    info.className = 'card'; info.style.marginBottom = '16px';
     const expText = u.exp ? '授权至 ' + KOKA.fmt(u.exp) : '长期使用';
-    info.innerHTML = `
-      <h2 class="card-title">当前账号：<span id="kokaAccName">${KOKA.esc(u.nickname || u.username)}</span>
-        <span class="koka-role ${KOKA.esc(u.role)}">${ROLE_LABEL[u.role] || u.role}</span>
-        <span style="font-size:13px;color:#64748b;font-weight:500;margin-left:6px">${KOKA.esc(u.username)} · ${KOKA.esc(expText)}</span>
-        <span style="float:right">
-          <button id="kokaMyNick" style="margin-right:6px;padding:6px 12px;border:1px solid #cbd5e1;background:#fff;border-radius:8px;cursor:pointer">修改昵称</button>
-          <button id="kokaMyPwd" style="padding:6px 12px;border:1px solid #cbd5e1;background:#fff;border-radius:8px;cursor:pointer">修改密码</button>
-        </span>
-      </h2>`;
-    page.insertBefore(info, page.firstChild);
+    // v11.5（P-A1）：账号信息并入品牌 hero 的 meta 区（原独立卡片与 hero 层次重复）；
+    // kokaAccName/kokaMyNick/kokaMyPwd 的 id 保持不变（昵称更新回写依赖 id）。
+    // 找不到 hero（异常结构）时回退为独立卡片。
+    const meta = page.querySelector('.profile-hero .profile-meta');
+    if (meta) {
+      const line = document.createElement('div');
+      line.className = 'hero-account-line';
+      line.innerHTML = `
+        <span class="hero-account-main">当前账号：<b id="kokaAccName">${KOKA.esc(u.nickname || u.username)}</b>
+          <span class="koka-role ${KOKA.esc(u.role)}">${ROLE_LABEL[u.role] || u.role}</span>
+          <span style="font-size:12px;color:#64748b">${KOKA.esc(u.username)} · ${KOKA.esc(expText)}</span></span>
+        <span class="hero-account-ops">
+          <button id="kokaMyNick">修改昵称</button>
+          <button id="kokaMyPwd">修改密码</button>
+        </span>`;
+      meta.appendChild(line);
+    } else {
+      const info = document.createElement('div');
+      info.className = 'card'; info.style.marginBottom = '16px';
+      info.innerHTML = `
+        <h2 class="card-title">当前账号：<span id="kokaAccName">${KOKA.esc(u.nickname || u.username)}</span>
+          <span class="koka-role ${KOKA.esc(u.role)}">${ROLE_LABEL[u.role] || u.role}</span>
+          <span style="font-size:13px;color:#64748b;font-weight:500;margin-left:6px">${KOKA.esc(u.username)} · ${KOKA.esc(expText)}</span>
+          <span style="float:right">
+            <button id="kokaMyNick" style="margin-right:6px;padding:6px 12px;border:1px solid #cbd5e1;background:#fff;border-radius:8px;cursor:pointer">修改昵称</button>
+            <button id="kokaMyPwd" style="padding:6px 12px;border:1px solid #cbd5e1;background:#fff;border-radius:8px;cursor:pointer">修改密码</button>
+          </span>
+        </h2>`;
+      page.insertBefore(info, page.firstChild);
+    }
     document.getElementById('kokaMyNick').addEventListener('click', async () => {
       const v = prompt('修改昵称（当前：' + (u.nickname || '') + '）：', u.nickname || '');
       if (v === null) return;

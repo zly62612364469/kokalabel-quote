@@ -1,5 +1,5 @@
 // ============================================================
-// 亲成报价系统 v11.7 - 主程序（计算 + 渲染 + 交互 + 初始化）
+// 亲成报价系统 v11.8 - 主程序（计算 + 渲染 + 交互 + 初始化）
 // ============================================================
 "use strict";
 
@@ -924,6 +924,8 @@ const els = {
   // v11.4：报价表组查询分页 + 个性化主题色
   tableViewTabs: document.getElementById("tableViewTabs"),
   themeColorGroup: document.getElementById("themeColorGroup"),
+  // v11.5（G2）：表格密度
+  densityGroup: document.getElementById("densityGroup"),
   // v11.2：个人主页功能入口（移动端顶部菜单 3 项时由此进入数据管理/报价设置）
   gotoDataMgrBtn: document.getElementById("gotoDataMgrBtn"),
   gotoSettingsBtn: document.getElementById("gotoSettingsBtn"),
@@ -2823,6 +2825,7 @@ function startCellEdit(cell) {
   });
   cell.textContent = "";
   cell.appendChild(input);
+  cell.classList.add("cell-editing"); // v11.5（T-A4）：编辑态高亮描边
   _editingCell = { cell, input, type };
   input.focus();
   if (!isEmpty) input.select();
@@ -2918,6 +2921,7 @@ function applyPriceEdit(type, data, value) {
 
 function commitCellEdit() {
   if (!_editingCell) return;
+  try { _editingCell.cell.classList.remove("cell-editing"); } catch (e) { /* 忽略 */ } // v11.5（T-A4）
   const { input, type } = _editingCell;
   _editingCell = null;
   const valueStr = input.value.trim();
@@ -3003,6 +3007,7 @@ function commitCellEdit() {
 
 function cancelCellEdit(silent) {
   if (!_editingCell) return;
+  try { _editingCell.cell.classList.remove("cell-editing"); } catch (e) { /* 忽略 */ } // v11.5（T-A4）
   _editingCell = null;
   renderPriceTable();
   if (!silent) showToast("已取消编辑");
@@ -3058,15 +3063,21 @@ function renderPriceListNote() {
   els.priceListNote.hidden = false;
 }
 
-function onPriceListChange() {
-  // 兼容两个下拉框触发：以发起事件的元素取值
-  const active = document.activeElement;
+function onPriceListChange(event) {
+  // 兼容两个下拉框触发：v11.5 修复（N1）——原实现依赖 document.activeElement 判断来源
+  // （jsdom/键盘/程序化触发时 activeElement 不可靠），改为优先取事件 target。
   let newId = "";
-  if (active && (active === els.priceListSelector || active === els.quickPriceListSelector)) {
-    newId = active.value;
+  const fromSelector = event && event.target;
+  if (fromSelector && (fromSelector === els.priceListSelector || fromSelector === els.quickPriceListSelector)) {
+    newId = fromSelector.value;
   } else {
-    newId = (els.quickPriceListSelector && els.quickPriceListSelector.value) ||
-            (els.priceListSelector && els.priceListSelector.value);
+    const active = document.activeElement;
+    if (active && (active === els.priceListSelector || active === els.quickPriceListSelector)) {
+      newId = active.value;
+    } else {
+      newId = (els.quickPriceListSelector && els.quickPriceListSelector.value) ||
+              (els.priceListSelector && els.priceListSelector.value);
+    }
   }
   if (newId && newId !== CURRENT_PRICE_LIST_ID) {
     setCurrentPriceList(newId);
@@ -3076,6 +3087,7 @@ function onPriceListChange() {
     renderPriceTable();
     onCalculate();
     renderPriceListSelector(); // 同步两个下拉框选中态
+    switchTableView("quote"); // v11.5（T-A1）：切表后自动回到「当前报价表」子视图，避免停留在吊绳/邮费视图看不到变化
     showToast(`已切换到「${getCurrentPriceList().name}」`);
   } else if (newId) {
     // 值未变化时也同步选中态（例如通过另一处已切换）
@@ -3280,6 +3292,9 @@ function resetToDefaults() {
 function resetAllLocalSettings() {
   const confirmMsg = "⚠️ 确定要恢复全局默认设置吗？\n\n将清除以下本地配置：\n• 报价表组（恢复为默认 1楼/3楼 报价表）\n• 纸张配置（44 张）\n• 工艺配置（含 烫金/UV/鸡眼/凹凸 等）\n• 吊绳配置\n• 邮费配置\n• 客户等级与毛利系数\n• 公司信息与个人偏好\n\n报价历史与本地快照不受影响。\n\n此操作不可撤销，恢复后页面将自动刷新。";
   if (!confirm(confirmMsg)) return;
+  // v11.5（P-A2）：二次输入确认——破坏性操作防误触重于二次 confirm
+  const answer = prompt('即将清除全部本地配置且不可撤销。\n输入「恢复」以确认执行（输入其他内容或留空 = 取消）：');
+  if (answer !== "恢复") { showToast("已取消：未输入「恢复」"); return; }
 
   // 清除所有本地配置 key（保留 history 和 snapshots）
   const keysToWipe = ["paperConfig", "craftConfig", "ropeConfig", "shippingConfig", "customerLevels", "appProfile", "priceLists", "priceListGroups", "currentPriceListId"];
@@ -3370,6 +3385,16 @@ function saveProfile() {
   const newSelectMode = APP_PROFILE.paperSelectMode === "dropdown" ? "dropdown" : "grid";
   if (newSelectMode !== prevPaperSelectMode) renderSheets();
   showToast("设置已保存");
+  // v11.5（S-A2）：保存按钮反馈增强——短暂变为「已保存 ✓」
+  if (els.saveProfileBtn) {
+    const btn = els.saveProfileBtn;
+    if (!btn.dataset.feedback) {
+      btn.dataset.feedback = "1";
+      const orig = btn.textContent;
+      btn.textContent = "已保存 ✓";
+      setTimeout(() => { btn.textContent = orig; delete btn.dataset.feedback; }, 1500);
+    }
+  }
   onCalculate();
 }
 
@@ -3756,7 +3781,7 @@ function exportSnapshotSet() {
     showToast("暂无快照可导出");
     return;
   }
-  downloadJson({ version: "11.7", count: list.length, snapshots: list }, "亲成快照_" + formatDateFile() + ".json");
+  downloadJson({ version: "11.8", count: list.length, snapshots: list }, "亲成快照_" + formatDateFile() + ".json");
   showToast("快照已导出");
 }
 
@@ -4497,7 +4522,7 @@ function setLocalBackupStatus(html, isError) {
 
 function exportLocalBackup() {
   const data = {
-    version: "11.7",
+    version: "11.8",
     kind: "local-backup",
     exportAt: new Date().toISOString(),
     priceLists: PRICE_LISTS,
@@ -4654,7 +4679,7 @@ function importLocalBackup(file) {
 // -------------------- 导入 / 导出完整配置 --------------------
 function exportFullData() {
   const data = {
-    version: "11.7",
+    version: "11.8",
     exportAt: new Date().toISOString(),
     priceLists: PRICE_LISTS,
     priceListGroups: PRICE_LIST_GROUPS, // v10.7.0：随配置导出报价表组结构
@@ -5628,7 +5653,8 @@ const THEME_COLORS = {
   teal:    { brand: "#0891b2", dark: "#0e7490", light: "#cffafe" }
 };
 
-/** 应用主题色：覆盖 :root 的 --brand/--brand-dark/--brand-light（侧栏渐变等自动跟随），持久化到 localStorage */
+/** 应用主题色：覆盖 :root 的 --brand/--brand-dark/--brand-light（侧栏渐变等自动跟随），持久化到 localStorage
+ *  v11.5（N5）：key 前缀化为 tagPricing_themeColor（与项目存储体系一致），兼容读取旧键 themeColor */
 function applyThemeColor(name) {
   const key = THEME_COLORS[name] ? name : "classic";
   const t = THEME_COLORS[key];
@@ -5636,7 +5662,10 @@ function applyThemeColor(name) {
   root.style.setProperty("--brand", t.brand);
   root.style.setProperty("--brand-dark", t.dark);
   root.style.setProperty("--brand-light", t.light);
-  try { localStorage.setItem("themeColor", key); } catch (e) { /* 忽略 */ }
+  try {
+    localStorage.setItem("tagPricing_themeColor", key);
+    localStorage.removeItem("themeColor"); // 迁移清理旧键
+  } catch (e) { /* 忽略 */ }
   document.querySelectorAll("#themeColorGroup .theme-swatch").forEach(b => {
     b.classList.toggle("active", b.dataset.theme === key);
   });
@@ -5645,8 +5674,27 @@ function applyThemeColor(name) {
 /** 读取并应用已保存的主题色（启动时调用） */
 function initThemeColor() {
   let saved = "classic";
-  try { saved = localStorage.getItem("themeColor") || "classic"; } catch (e) { /* 忽略 */ }
+  try {
+    saved = localStorage.getItem("tagPricing_themeColor") || localStorage.getItem("themeColor") || "classic";
+  } catch (e) { /* 忽略 */ }
   applyThemeColor(saved);
+}
+
+// -------------------- v11.5（G2）：表格密度三档（紧凑/标准/宽松，body class + localStorage） --------------------
+const TABLE_DENSITY = ["compact", "regular", "relaxed"];
+function applyTableDensity(d) {
+  const key = TABLE_DENSITY.includes(d) ? d : "regular";
+  document.body.classList.remove("table-density-compact", "table-density-relaxed");
+  if (key !== "regular") document.body.classList.add("table-density-" + key);
+  try { localStorage.setItem("tagPricing_tableDensity", key); } catch (e) { /* 忽略 */ }
+  document.querySelectorAll("#densityGroup .density-btn").forEach(b => {
+    b.classList.toggle("active", b.dataset.density === key);
+  });
+}
+function initTableDensity() {
+  let d = "regular";
+  try { d = localStorage.getItem("tagPricing_tableDensity") || "regular"; } catch (e) { /* 忽略 */ }
+  applyTableDensity(d);
 }
 
 /**
@@ -5912,6 +5960,26 @@ function bindEvents() {
       if (sw) applyThemeColor(sw.dataset.theme);
     });
   }
+
+  // v11.5（G2）：表格密度切换
+  if (els.densityGroup) {
+    els.densityGroup.addEventListener("click", e => {
+      const btn = e.target.closest(".density-btn");
+      if (btn) applyTableDensity(btn.dataset.density);
+    });
+  }
+
+  // v11.5（T-A2）：系数/批量直接表渐进披露折叠
+  ["directCoeffHead", "batchDirectHead"].forEach(id => {
+    const head = document.getElementById(id);
+    if (head) {
+      head.addEventListener("click", () => {
+        const box = head.closest(".fold-box");
+        const open = box.classList.toggle("open");
+        head.setAttribute("aria-expanded", open ? "true" : "false");
+      });
+    }
+  });
 
   // v11.2：个人主页功能入口（数据管理/报价设置）
   if (els.gotoDataMgrBtn) els.gotoDataMgrBtn.addEventListener("click", () => switchPage("data"));
@@ -6261,6 +6329,10 @@ function initDefaultDataUpload() {
   // v11.4：应用已保存的主题色（默认经典蓝）
   try { initThemeColor(); }
   catch (e) { console.error("[init] 主题色失败:", e); }
+
+  // v11.5（G2）：应用已保存的表格密度（默认标准）
+  try { initTableDensity(); }
+  catch (e) { console.error("[init] 表格密度失败:", e); }
 
   // 应用个性化字号（v10.1）+ 吊绳折叠摘要
   try { applyFontScale(); updateRopeFoldSummary(); }

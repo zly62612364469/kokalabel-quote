@@ -1,5 +1,53 @@
 # 亲成报价系统 变更日志
 
+## v11.8（2026-10-09，UI 优化方案全量落地：antd 风格 token 化 + 全部交互/体验项）
+
+> 基线 v11.7。将《UI-OPTIMIZATION-PLAN.md》方案**全量实施**（T-A3 冻结列除外，需 JS 列宽计算延后）。
+> 架构说明：项目铁律「无框架、无构建、双击可用」，故**不引入 antd/React 依赖**，
+> 而是对齐 **antd 5 的设计 token 语义与组件视觉规范**（colorPrimary 三态/状态色/表格规范/密度体系），
+> 以原生 CSS 变量实现——主题色切换通过 CSS 变量引用链自动接管全部 token。
+
+### G1 设计 token 化（antd 风格）
+- `:root` 新增语义 token：`--ant-primary(-hover/-active/-bg)`、状态四色（success/warning/error/info）、
+  `--ant-radius`、表格规范色（表头 #fafafa / 行 hover / 分割线 #f0f0f0）。
+- 主题色切换经 CSS 变量引用链（`--ant-primary: var(--brand)`）自动级联，无需 JS 写第二份。
+
+### G2 表格密度三档
+- 个性化面板新增「表格密度」：紧凑 / 标准 / 宽松（body class + localStorage 持久化，
+  全部 .data-table 生效）。
+
+### G3 sticky 表头
+- 所有 `.table-wrap` 内表格表头吸顶（滚动时表头恒可见），表头底色 #fafafa。
+
+### G4 数字右对齐 + tabular-nums
+- 矩阵/工艺/系数/批量直接/吊绳/邮费表的价格列、历史表成本/建议价列
+  右对齐 + `font-variant-numeric: tabular-nums`（纵向比对对齐）。
+
+### G5 统一空状态
+- `.empty-state` 统一为图标 + 文案的 antd Empty 风格。
+
+### 交互修复与增强
+- **T-A1（N1）**：切换报价表后自动回到「当前报价表」子视图；**顺带修复 N1 根因**——
+  `onPriceListChange` 原依赖 `document.activeElement` 判断来源（自动化/程序化触发不可靠），
+  改为优先取事件 `event.target`。
+- **T-A2**：直接系数档位表 / 批量直接报价表改为**折叠面板**（默认收起，点击头展开），
+  查询页矩阵+工艺一屏更聚焦。
+- **T-A4**：就地编辑态高亮（`td.cell-editing` 聚焦描边）。
+- **S-A2**：报价设置保存后按钮短暂变为「已保存 ✓」。
+- **P-A2**：全局恢复在 confirm 后再要求**输入「恢复」**确认（破坏性操作防误触）。
+- **D-A3**：在线修改宽内容横向滚动适配；**D-A4**：统计卡内容限高滚动。
+- **N5**：主题色键前缀化为 `tagPricing_themeColor`（兼容迁移读旧键）。
+- **N6**：子导航移动端缩放规则。
+- **P-A1**：个人主页账号信息**并入品牌 hero**（独立账号卡移除；hero 异常时回退旧卡结构）；
+  kokaAccName/kokaMyNick/kokaMyPwd 的 id 不变（回写逻辑兼容）。
+
+### 延后项
+- T-A3 冻结代码/面积列：需 JS 动态列宽计算，收益场景少（宽屏下矩阵少有横向滚动），延后观察。
+
+### 验证
+- `node --check` 全通过；jsdom **16 项全绿**（sticky/右对齐/tabular/token 级联/密度三档与持久化/
+  T-A1 切表回视图（不再依赖 focus hack）/T-A2 折叠/S-A2 反馈/P-A2 确认分支/P-A1 代码级/回归抽查）。
+
 ## v11.7（2026-10-09，四页一屏化布局：双栏网格 + 历史滚动 + 表格紧凑）
 
 > 基线 v11.6。用户反馈四页内容过长需翻滚——宽屏（≥1101px）改为双栏网格一屏化布局，窄屏回退原单列。
