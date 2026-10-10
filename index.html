@@ -7,15 +7,15 @@
   <!-- P0 安全：CSP 策略（v7.9：SheetJS 已本地化，script-src 仅允许 'self'，离线双击打开亦可用） -->
   <!-- v10.6.0：default-src/connect-src 放行 blob:，修复网页端 XLSX.writeFile 导出 Excel 被拦 -->
   <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob:; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' blob:;">
-  <title>亲成报价系统 v12.0</title>
+  <title>亲成报价系统 v12.1</title>
   <!-- v10.7.1：品牌与图标换回「亲成」（沿用 v10.5 全套亲成图标），版本号 10.7.0 → 10.7.1 -->
-  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg?v=12.0">
-  <link rel="icon" type="image/x-icon" href="assets/favicon.ico?v=12.0">
-  <link rel="icon" type="image/png" href="assets/favicon.png?v=12.0">
-  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png?v=12.0">
-  <link rel="stylesheet" href="css/style.css?v=12.0">
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg?v=12.1">
+  <link rel="icon" type="image/x-icon" href="assets/favicon.ico?v=12.1">
+  <link rel="icon" type="image/png" href="assets/favicon.png?v=12.1">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png?v=12.1">
+  <link rel="stylesheet" href="css/style.css?v=12.1">
   <!-- v9.3 账号访问控制：http 部署时强制登录（file:// 本地离线不启用） -->
-  <script src="js/auth.js?v=12.0"></script>
+  <script src="js/auth.js?v=12.1"></script>
 </head>
 <body>
   <!-- v10.6.0：app-shell 包裹 = 左侧导航 + 主区（扁平化宽泛式架构） -->
@@ -711,7 +711,7 @@
           <div class="setting-row">
             <div class="setting-info">
               <div class="setting-label">当前版本</div>
-              <div class="setting-desc">亲成报价系统 v12.0</div>
+              <div class="setting-desc">亲成报价系统 v12.1</div>
             </div>
             <div class="setting-control">
               <span class="placeholder-badge">正式版</span>
@@ -747,6 +747,16 @@
           </div>
           <div class="setting-control">
             <button class="btn danger sm" id="resetAllSettingsBtn">一键恢复全局默认</button>
+          </div>
+        </div>
+        <!-- v12.1：新增（不覆盖上面的全局恢复）——彻底恢复出厂，含记录与缓存 -->
+        <div class="setting-row">
+          <div class="setting-info">
+            <div class="setting-label" style="color: var(--danger);">彻底恢复出厂并清除缓存</div>
+            <div class="setting-desc">在「全局恢复」基础上，<b>同时清除报价历史、本地快照与本机偏好</b>（主题色 / 表格密度 / 字体大小），并清空内存缓存（临时价 / 会话缓存）。<b>登录状态保留</b>。操作不可撤销。</div>
+          </div>
+          <div class="setting-control">
+            <button class="btn danger sm" id="resetEverythingBtn">彻底恢复出厂并清除缓存</button>
           </div>
         </div>
       </div>
@@ -1203,7 +1213,7 @@
   <div class="toast" id="toast"></div>
 
   <!-- v7.9: SheetJS 本地化（离线双击打开亦可导出/导入 Excel），先于业务脚本加载，XLSX 全局可用 -->
-  <script src="js/vendor/xlsx.full.min.js?v=12.0"></script>
-  <script src="js/data.js?v=12.0"></script>
-  <script src="js/app.js?v=12.0"></script>
+  <script src="js/vendor/xlsx.full.min.js?v=12.1"></script>
+  <script src="js/data.js?v=12.1"></script>
+  <script src="js/app.js?v=12.1"></script>
 </body></html>

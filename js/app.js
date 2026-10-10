@@ -1,5 +1,5 @@
 // ============================================================
-// 亲成报价系统 v12.0 - 主程序（计算 + 渲染 + 交互 + 初始化）
+// 亲成报价系统 v12.1 - 主程序（计算 + 渲染 + 交互 + 初始化）
 // ============================================================
 "use strict";
 
@@ -3306,6 +3306,40 @@ function resetAllLocalSettings() {
   setTimeout(() => location.reload(), 600);
 }
 
+/**
+ * v12.1：彻底恢复出厂并清除缓存（新增功能，不覆盖上面的 resetAllLocalSettings）。
+ * 在「全局恢复」基础上额外清除：报价历史、本地快照、本机偏好（主题色/表格密度/字体）、
+ * 以及全部 tagPricing_ 前缀键与内存缓存。**登录状态（sessionStorage token）保留**。
+ * 双重确认：confirm + 手输「彻底恢复」。
+ */
+function resetEverything() {
+  const confirmMsg = "⚠️⚠️ 彻底恢复出厂（含记录与缓存）\n\n将清除：\n• 全部本地配置（纸张 / 工艺 / 吊绳 / 邮费 / 客户等级 / 公司信息 / 个人偏好）\n• 报价历史记录（全部）\n• 本地快照（全部）\n• 本机偏好（主题色 / 表格密度 / 字体大小）\n• 内存缓存（临时价 / 会话缓存）\n\n登录状态保留（不会退出账号）。\n\n此操作不可撤销，恢复后页面将自动刷新。";
+  if (!confirm(confirmMsg)) return;
+  const answer = prompt('此操作将清空全部数据且不可撤销。\n输入「彻底恢复」以确认执行（输入其他内容或留空 = 取消）：');
+  if (answer !== "彻底恢复") { showToast("已取消：未输入「彻底恢复」"); return; }
+
+  // 遍历清空：全部 tagPricing_ 前缀键 + 旧主题键（不遗漏任何数据键）
+  try {
+    const toRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && (k.indexOf("tagPricing_") === 0 || k === "themeColor")) toRemove.push(k);
+    }
+    toRemove.forEach(k => { try { localStorage.removeItem(k); } catch (e) { /* 忽略 */ } });
+  } catch (e) { /* 忽略 */ }
+
+  // 内存缓存主动清空（reload 后本会重置，此处保证提示期间行为一致）
+  try {
+    ropePriceCache = {};
+    shippingPriceCache = {};
+    shippingWeightCache = {};
+    manualShippingCache = {};
+  } catch (e) { /* 忽略 */ }
+
+  showToast("已彻底恢复出厂设置（含历史与快照），正在刷新…");
+  setTimeout(() => location.reload(), 600);
+}
+
 function loadProfileToUI() {
   if (els.companyName) els.companyName.value = APP_PROFILE.companyName || "";
   if (els.companyPhone) els.companyPhone.value = APP_PROFILE.companyPhone || "";
@@ -3781,7 +3815,7 @@ function exportSnapshotSet() {
     showToast("暂无快照可导出");
     return;
   }
-  downloadJson({ version: "12.0", count: list.length, snapshots: list }, "亲成快照_" + formatDateFile() + ".json");
+  downloadJson({ version: "12.1", count: list.length, snapshots: list }, "亲成快照_" + formatDateFile() + ".json");
   showToast("快照已导出");
 }
 
@@ -4522,7 +4556,7 @@ function setLocalBackupStatus(html, isError) {
 
 function exportLocalBackup() {
   const data = {
-    version: "12.0",
+    version: "12.1",
     kind: "local-backup",
     exportAt: new Date().toISOString(),
     priceLists: PRICE_LISTS,
@@ -4679,7 +4713,7 @@ function importLocalBackup(file) {
 // -------------------- 导入 / 导出完整配置 --------------------
 function exportFullData() {
   const data = {
-    version: "12.0",
+    version: "12.1",
     exportAt: new Date().toISOString(),
     priceLists: PRICE_LISTS,
     priceListGroups: PRICE_LIST_GROUPS, // v10.7.0：随配置导出报价表组结构
@@ -6127,6 +6161,9 @@ function bindEvents() {
   if (els.resetToDefaultsBtn) els.resetToDefaultsBtn.addEventListener("click", resetToDefaults);
   const resetAllBtn = document.getElementById("resetAllSettingsBtn");
   if (resetAllBtn) resetAllBtn.addEventListener("click", resetAllLocalSettings);
+  // v12.1：彻底恢复出厂（含历史/快照/本机偏好/内存缓存），与上面的全局恢复并存
+  const resetEverythingBtn = document.getElementById("resetEverythingBtn");
+  if (resetEverythingBtn) resetEverythingBtn.addEventListener("click", resetEverything);
   if (els.exportLocalBackupBtn) els.exportLocalBackupBtn.addEventListener("click", exportLocalBackup);
   if (els.importLocalBackupBtn) els.importLocalBackupBtn.addEventListener("click", () => els.importLocalBackupFile.click());
   if (els.importLocalBackupFile) els.importLocalBackupFile.addEventListener("change", e => importLocalBackup(e.target.files[0]));

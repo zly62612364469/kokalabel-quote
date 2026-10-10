@@ -1,4 +1,4 @@
-/* 亲成报价系统 v12.0 - 样式表 */
+/* 亲成报价系统 v12.1 - 样式表 */
 
 /* ===================== 全局变量与重置 ===================== */
     :root {
@@ -4272,4 +4272,16 @@ body.ui-vertical .personalize-panel { left: 12px; top: 120px; bottom: auto; }
     @media (min-width: 1101px) {
       #page-data.active { grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); }
       #page-data .history-table-wrap { height: 566px; max-height: none; overflow-y: auto; }
+    }
+
+    /* v12.1：恢复类长文案按钮防溢出/换行（说明文字长时会挤压按钮容器导致换行） */
+    #resetAllSettingsBtn,
+    #resetEverythingBtn {
+      white-space: nowrap;
+    }
+    #page-profile .setting-control { flex-shrink: 0; }
+    @media (max-width: 1400px) {
+      /* 中窄屏：说明控件排列改为上下两行，避免按钮被挤压 */
+      #page-profile .setting-row { flex-wrap: wrap; gap: 8px; }
+      #page-profile .setting-control { width: 100%; justify-content: flex-start; }
     }
