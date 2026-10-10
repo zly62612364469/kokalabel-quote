@@ -1,5 +1,5 @@
 // ============================================================
-// 亲成报价系统 v12.3 - 主程序（计算 + 渲染 + 交互 + 初始化）
+// 亲成报价系统 v12.4 - 主程序（计算 + 渲染 + 交互 + 初始化）
 // ============================================================
 "use strict";
 
@@ -542,8 +542,8 @@ function calculate(inputs) {
     // 纸张配置了 batchDirect 且面积（出血后）在最大面积范围内 → 直接按批量报价
     // 价格固定：不打折、不乘直接系数、不乘面积系数；工艺费用直接叠加
     const bd = paper.batchDirect;
-    // v12.3：支持会话级关闭批量直接报价（关闭后该纸按标准计算）
-    const isBatchDirect = !!(bd && bd.maxArea > 0 && singleArea <= bd.maxArea) && !batchDirectOffCache[paper.id];
+    // v12.4：批量直接报价默认关闭——仅当本次会话明确启用（batchDirectOnCache）时才走批量直接价
+    const isBatchDirect = !!(bd && bd.maxArea > 0 && singleArea <= bd.maxArea) && !!batchDirectOnCache[paper.id];
     let batchDirectPrice = null;
     if (isBatchDirect && hasExactTier(bd.prices, tier)) {
       batchDirectPrice = Number(bd.prices[tier]);
@@ -586,6 +586,9 @@ function calculate(inputs) {
     // v7.0：批量直接报价 → 直接用批量报价价格（不打折、不乘系数）
     // v10.2：标准报价模式工艺费并入纸张价：(纸张价 + 工艺费) 后再乘折扣/面积系数，不再单独列出计算
     //        直接系数模式维持 v7.2 逻辑（baseUnitPrice 不含工艺，报价卡按 (纸张+工艺)×系数）
+    // v12.4：工艺费合计临时覆盖（对非批量直接报价纸张生效）
+    const craftKey = paper.id + "_" + tier;
+    if (!isBatchDirect && craftPriceCache[craftKey] != null) sheetCraftTotal = craftPriceCache[craftKey];
     const craftOfSheet = isBatchDirect ? 0 : sheetCraftTotal;
     const baseOriginalPrice = isBatchDirect
       ? batchDirectPrice
@@ -628,6 +631,9 @@ function calculate(inputs) {
       areaCoefficient: areaCoeff,
       discount: getEffectiveDiscount(paper),
       paperId: paper.id,
+      // v12.4：配置折扣≠1 时折扣编辑入口常驻（即便临时改成 1 也可点回）
+      discountEditable: paper.discount != null && paper.discount !== 1,
+      craftTotal: sheetCraftTotal,
       missing: paperUnitPrice == null,
       // v7.0：批量直接报价标记
       isBatchDirect,
@@ -1053,8 +1059,11 @@ let shippingPriceCache = {};    // regionId_tier -> 临时邮费(元)
 // v12.3：纸张折扣临时修改缓存（会话级）—— paperId -> 折扣系数（如 0.91）。
 // 结果区「折后价合计」中的折扣数字可就地点击修改，仅影响本次计算与显示，不写入纸张配置。
 let discountCache = {};         // paperId -> 临时折扣
-// v12.3：批量直接报价会话级关闭 —— paperId -> true 时该纸按标准计算（不走批量直接价）
-let batchDirectOffCache = {};   // paperId -> true
+// v12.3/v12.4：批量直接报价会话级开关 —— **默认关闭**（白名单：仅明确启用过的纸张走批量直接价）。
+// paperId -> true 表示该纸本次会话启用批量直接报价；未启用者一律按标准计算。
+let batchDirectOnCache = {};    // paperId -> true（启用批量直接报价）
+// v12.4：工艺费合计临时覆盖缓存（会话级）—— `${paperId}_${tier}` -> 覆盖后的工艺费合计(元)
+let craftPriceCache = {};
 
 /** v12.3：取纸张当前生效折扣（临时覆盖优先，其次配置折扣） */
 function getEffectiveDiscount(paper) {
@@ -1348,8 +1357,10 @@ function renderSheets() {
 
     // v6.14：无直接系数的纸张提示只在直接系数模式下显示（标准报价模式隐藏）
     // v7.0：有批量直接报价的纸张（如 40C棉麻布）不显示"请切换为标准报价"提示，改为显示批量直接报价提示
-    const hasBatchDirect = !!(currentPaper && currentPaper.batchDirect && currentPaper.batchDirect.maxArea > 0) && !batchDirectOffCache[currentPaper.id];
-    const batchDirectOff = !!(currentPaper && currentPaper.batchDirect && currentPaper.batchDirect.maxArea > 0) && !!batchDirectOffCache[currentPaper.id];
+    // v12.4：批量直接报价默认关闭——available=该纸支持；batchDirectOn=本次会话已启用
+    const batchDirectAvailable = !!(currentPaper && currentPaper.batchDirect && currentPaper.batchDirect.maxArea > 0);
+    const hasBatchDirect = batchDirectAvailable && !!batchDirectOnCache[currentPaper.id];
+    const batchDirectOff = batchDirectAvailable && !batchDirectOnCache[currentPaper.id];
     const noDirectCoeff = calcMode === "direct" && !paperHasDirectCoeff(currentPaper) && !hasBatchDirect;
 
     card.innerHTML = `
@@ -1386,12 +1397,12 @@ function renderSheets() {
         ${hasBatchDirect ? `
         <div class="sheet-batchdirect-hint">
           <span>批量直接报价：面积 ≤ ${currentPaper.batchDirect.maxArea} mm²（出血后）时按固定批量价报价，工艺费用直接叠加</span>
-          <button type="button" class="bd-toggle-btn" data-bd-toggle="${escapeHtml(currentPaper.id)}" title="关闭后该纸张按标准计算（本次会话生效，刷新页面恢复）">关闭批量直接报价</button>
+          <button type="button" class="bd-toggle-btn" data-bd-toggle="${escapeHtml(currentPaper.id)}" title="关闭后该纸张按标准计算（本次会话生效）">关闭批量直接报价</button>
         </div>` : ""}
         ${batchDirectOff ? `
         <div class="sheet-batchdirect-hint is-off">
-          <span>已关闭批量直接报价，该纸张按标准计算（本次会话生效）</span>
-          <button type="button" class="bd-toggle-btn is-on" data-bd-toggle="${escapeHtml(currentPaper.id)}" title="重新启用批量直接报价">重新启用</button>
+          <span>该纸张支持批量直接报价（当前已关闭，按标准计算）</span>
+          <button type="button" class="bd-toggle-btn is-on" data-bd-toggle="${escapeHtml(currentPaper.id)}" title="启用后面积在范围内按固定批量价报价">启用批量直接报价</button>
         </div>` : ""}
       </div>
       <div class="form-group" style="margin-bottom: 0;">
@@ -1805,7 +1816,7 @@ function onCalculate() {
         return '¥ ' + formatMoney(bp) + ' × ' + coeff + ' = <span style="color:var(--brand);font-weight:600;">¥ ' + formatMoney(p) + '</span>';
       }
       // v7.0：批量直接报价纸张不显示折扣计算过程（价格固定，不打折）
-      if (showDiscountCalc && details[0].discount && details[0].discount !== 1 && !details[0].isBatchDirect) {
+      if (showDiscountCalc && !details[0].isBatchDirect && (details[0].discount !== 1 || details[0].discountEditable)) {
         return '¥ ' + formatPriceRaw(details[0].baseOriginalUnitPrice) + ' × ' + renderDiscountEditSpan(details[0]) + ' = <span style="color:var(--brand);font-weight:600;">¥ ' + formatMoney(p) + '</span>';
       }
       return "¥ " + formatMoney(p);
@@ -1819,7 +1830,7 @@ function onCalculate() {
         return '¥ ' + formatMoney(bp) + ' × ' + s.areaCoefficient;
       }
       // v6.14：有折扣的纸张显示计算过程（原价 × 折扣）；v7.0：批量直接报价纸张不显示折扣过程
-      if (showDiscountCalc && s.discount && s.discount !== 1 && !s.isBatchDirect) {
+      if (showDiscountCalc && !s.isBatchDirect && (s.discount !== 1 || s.discountEditable)) {
         return '¥ ' + formatPriceRaw(s.baseOriginalUnitPrice) + ' × ' + renderDiscountEditSpan(s);
       }
       return "¥ " + formatMoney(p);
@@ -1830,6 +1841,25 @@ function onCalculate() {
       : '<span class="price-missing">部分缺价</span>';
     return parts.join(' + ') + ' = ' + totalStr;
   }
+  // v12.4：工艺费合计就地编辑（多纸时逐纸片段，与折后价合计同风格）
+  function renderCraftTotalEditable(details) {
+    const parts = details
+      .filter(s => !s.isBatchDirect && (s.craftTotal || 0) > 0)
+      .map(s => '¥ ' + renderCraftEditSpan(s));
+    const batchPart = (result.batchDirectCraftTotal || 0) > 0 ? '¥ ' + formatMoney(result.batchDirectCraftTotal) : "";
+    const all = parts.concat(batchPart ? [batchPart] : []);
+    return all.length ? all.join(' + ') : "¥ " + formatMoney(0);
+  }
+
+  /** v12.4：工艺费数字就地编辑 span（key: paperId_tier） */
+  function renderCraftEditSpan(detail) {
+    const pid = detail.paperId || "";
+    if (!pid) return formatMoney(detail.craftTotal || 0);
+    const key = pid + "_" + tier;
+    const overridden = craftPriceCache[key] != null;
+    return `<span class="discount-edit craft-edit${overridden ? " discount-overridden" : ""}" data-craft-edit="1" data-paper-id="${escapeHtml(pid)}" title="点击修改该纸张工艺费合计（临时，仅本机本次计算）">${formatMoney(detail.craftTotal || 0)}</span>`;
+  }
+
   // v12.3：折扣数字就地编辑 span（会话级临时覆盖，参照邮费/吊绳就地修改模式）
   function renderDiscountEditSpan(detail) {
     const pid = detail.paperId || "";
@@ -1844,7 +1874,8 @@ function onCalculate() {
   // v10.2：标准模式下工艺费已并入纸张折后价计算（不再单独参与合计），此行仅作展示提示
   const craftDisplayTotal = (result.craftTotal || 0) + (result.batchDirectCraftTotal || 0);
   if (calcMode === "standard" && (result.craftTotal || 0) > 0) {
-    els.resCraftPrice.innerHTML = "¥ " + formatMoney(result.craftTotal) + ' <span class="craft-included-note">（已含于纸张折后价）</span>';
+    // v12.4：工艺费合计就地编辑（多纸时逐纸可编辑片段，单纸直接可编辑）
+    els.resCraftPrice.innerHTML = renderCraftTotalEditable(result.sheetDetails) + ' <span class="craft-included-note">（已含于纸张折后价）</span>';
   } else {
     els.resCraftPrice.innerHTML = craftDisplayTotal ? "¥ " + formatMoney(craftDisplayTotal) : '<span class="price-missing">无该批量定价</span>';
   }
@@ -1909,9 +1940,11 @@ function onCalculate() {
       : "¥ " + formatMoney(result.cost - (result.shippingPrice || 0));
   }
 
-  // v11.0：吊绳/邮费临时修改重置按钮——仅存在覆盖时显示
+  // v11.0：临时修改重置按钮——仅存在覆盖时显示；v12.4：纳入折扣/工艺费/批量直接开关
   if (els.resultResetRow) {
-    const hasOv = !!(result.ropePriceOverridden || result.shippingPriceOverridden);
+    const hasOv = !!(result.ropePriceOverridden || result.shippingPriceOverridden
+      || Object.keys(discountCache).length || Object.keys(craftPriceCache).length
+      || Object.keys(batchDirectOnCache).length);
     els.resultResetRow.style.display = hasOv ? "flex" : "none";
   }
 
@@ -2211,6 +2244,55 @@ function getShippingPriceCacheKey() {
 
 /** 点击邮费金额 → 原位展开 input 编辑 */
 /**
+ * v12.4：工艺费合计就地编辑（结果区「工艺总费用合计」的数字）。
+ * 会话级临时覆盖（craftPriceCache[`${paperId}_${tier}`]），提交后 onCalculate 全量联动；
+ * 留空提交 = 恢复默认计算值；输入需 ≥ 0 的有限数字。
+ */
+function startCraftEdit(span) {
+  if (span.dataset.editing === "1") return;
+  const pid = span.dataset.paperId;
+  if (!pid) return;
+  const paper = getPapersByPriceList(CURRENT_PRICE_LIST_ID).find(p => p.id === pid);
+  if (!paper) return;
+  // v12.4：本函数为全局作用域，档位需从 DOM 读取（tier 是 onCalculate 的局部变量）
+  const tier = parseInt(els.tier ? els.tier.value : "", 10);
+  if (!tier || tier <= 0) return;
+  span.dataset.editing = "1";
+  const key = pid + "_" + tier;
+  const current = craftPriceCache[key] != null ? craftPriceCache[key] : (span.dataset.raw || span.textContent).trim();
+  span.innerHTML = `<input type="number" class="rope-price-input craft-input" step="0.01" min="0" placeholder="留空恢复默认" value="${current}">`;
+  const input = span.querySelector("input");
+  input.focus();
+  input.select();
+  let done = false;
+  const finish = (commit) => {
+    if (done) return;
+    done = true;
+    if (!commit) { onCalculate(); return; }
+    const raw = input.value.trim();
+    if (raw === "") {
+      delete craftPriceCache[key];
+      showToast("工艺费已恢复默认计算值");
+      onCalculate();
+      return;
+    }
+    const v = parseFloat(raw);
+    if (!isNaN(v) && v >= 0 && Number.isFinite(v)) {
+      craftPriceCache[key] = Math.round(v * 100) / 100;
+      showToast(`「${paper.shortName || paper.name}」工艺费已临时修改为 ¥${formatMoney(craftPriceCache[key])}`);
+    } else {
+      showToast("工艺费无效（应为 ≥0 的数字），已忽略");
+    }
+    onCalculate();
+  };
+  input.addEventListener("keydown", e => {
+    if (e.key === "Enter") { e.preventDefault(); finish(true); }
+    else if (e.key === "Escape") { finish(false); }
+  });
+  input.addEventListener("blur", () => finish(true));
+}
+
+/**
  * v12.3：纸张折扣就地编辑（结果区「折后价合计」中的折扣数字，如 0.91）。
  * 会话级临时覆盖（discountCache[paperId]），提交后 onCalculate 全量联动（纸价/成本/报价/明细）；
  * 留空提交 = 恢复配置折扣；输入范围 0.01~10（折扣系数语义，1 = 无折扣）。参照邮费/吊绳就地修改模式。
@@ -2257,15 +2339,15 @@ function startDiscountEdit(span) {
   input.addEventListener("blur", () => finish(true));
 }
 
-/** v12.3：批量直接报价会话级开关（关闭 → 该纸按标准计算；重新启用 → 恢复批量直接价） */
+/** v12.4：批量直接报价会话级开关（默认关闭；启用 → 走批量直接价，关闭 → 按标准计算） */
 function toggleBatchDirectForPaper(paperId) {
   if (!paperId) return;
-  if (batchDirectOffCache[paperId]) {
-    delete batchDirectOffCache[paperId];
-    showToast("已重新启用批量直接报价");
+  if (batchDirectOnCache[paperId]) {
+    delete batchDirectOnCache[paperId];
+    showToast("已关闭该纸张的批量直接报价（按标准计算）");
   } else {
-    batchDirectOffCache[paperId] = true;
-    showToast("已关闭该纸张的批量直接报价（按标准计算，本次会话生效）");
+    batchDirectOnCache[paperId] = true;
+    showToast("已启用该纸张的批量直接报价");
   }
   renderSheets();
   onCalculate();
@@ -2312,12 +2394,18 @@ function startShippingPriceEdit(span) {
  * v11.0：吊绳/邮费临时修改一键重置（结果框末端按钮）
  */
 function resetRopeShipOverrides() {
-  const hadRope = Object.keys(ropePriceCache).length > 0;
-  const hadShip = Object.keys(shippingPriceCache).length > 0;
+  // v12.4：统一重置全部临时修改（吊绳/邮费/折扣/工艺费/批量直接报价启用态）
+  const had = Object.keys(ropePriceCache).length + Object.keys(shippingPriceCache).length
+    + Object.keys(discountCache).length + Object.keys(craftPriceCache).length
+    + Object.keys(batchDirectOnCache).length;
   ropePriceCache = {};
   shippingPriceCache = {};
+  discountCache = {};
+  craftPriceCache = {};
+  batchDirectOnCache = {};
+  renderSheets();
   onCalculate();
-  showToast(hadRope || hadShip ? "已恢复吊绳费用与邮费的默认计算值" : "当前没有临时修改");
+  showToast(had ? "已重置全部临时修改（吊绳/邮费/折扣/工艺费/批量直接报价）" : "当前没有临时修改");
 }
 
 /**
@@ -3905,7 +3993,7 @@ function exportSnapshotSet() {
     showToast("暂无快照可导出");
     return;
   }
-  downloadJson({ version: "12.3", count: list.length, snapshots: list }, "亲成快照_" + formatDateFile() + ".json");
+  downloadJson({ version: "12.4", count: list.length, snapshots: list }, "亲成快照_" + formatDateFile() + ".json");
   showToast("快照已导出");
 }
 
@@ -4646,7 +4734,7 @@ function setLocalBackupStatus(html, isError) {
 
 function exportLocalBackup() {
   const data = {
-    version: "12.3",
+    version: "12.4",
     kind: "local-backup",
     exportAt: new Date().toISOString(),
     priceLists: PRICE_LISTS,
@@ -4803,7 +4891,7 @@ function importLocalBackup(file) {
 // -------------------- 导入 / 导出完整配置 --------------------
 function exportFullData() {
   const data = {
-    version: "12.3",
+    version: "12.4",
     exportAt: new Date().toISOString(),
     priceLists: PRICE_LISTS,
     priceListGroups: PRICE_LIST_GROUPS, // v10.7.0：随配置导出报价表组结构
@@ -6087,6 +6175,8 @@ function bindEvents() {
 
   // v12.3：结果区折扣数字就地编辑 + 批量直接报价开关（document 委托，重渲染不丢绑定）
   document.addEventListener("click", e => {
+    const cSpan = e.target.closest("[data-craft-edit]");
+    if (cSpan) { startCraftEdit(cSpan); return; }
     const dSpan = e.target.closest("[data-discount-edit]");
     if (dSpan) { startDiscountEdit(dSpan); return; }
     const bdBtn = e.target.closest("[data-bd-toggle]");

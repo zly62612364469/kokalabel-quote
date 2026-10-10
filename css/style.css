@@ -1,4 +1,4 @@
-/* 亲成报价系统 v12.3 - 样式表 */
+/* 亲成报价系统 v12.4 - 样式表 */
 
 /* ===================== 全局变量与重置 ===================== */
     :root {
@@ -4369,4 +4369,13 @@ body.ui-vertical .personalize-panel { left: 12px; top: 120px; bottom: auto; }
       color: #fff;
       background: var(--brand);
       border-color: var(--brand);
+    }
+
+    /* v12.4：工艺费就地编辑输入框（与折扣编辑同风格） */
+    .craft-edit .craft-input {
+      width: 84px;
+      padding: 1px 4px;
+      font-size: 13px;
+      border: 1px solid var(--brand);
+      border-radius: 4px;
     }
