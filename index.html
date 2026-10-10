@@ -7,15 +7,15 @@
   <!-- P0 安全：CSP 策略（v7.9：SheetJS 已本地化，script-src 仅允许 'self'，离线双击打开亦可用） -->
   <!-- v10.6.0：default-src/connect-src 放行 blob:，修复网页端 XLSX.writeFile 导出 Excel 被拦 -->
   <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob:; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' blob:;">
-  <title>亲成报价系统 v12.4</title>
+  <title>亲成报价系统 v12.5</title>
   <!-- v10.7.1：品牌与图标换回「亲成」（沿用 v10.5 全套亲成图标），版本号 10.7.0 → 10.7.1 -->
-  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg?v=12.4">
-  <link rel="icon" type="image/x-icon" href="assets/favicon.ico?v=12.4">
-  <link rel="icon" type="image/png" href="assets/favicon.png?v=12.4">
-  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png?v=12.4">
-  <link rel="stylesheet" href="css/style.css?v=12.4">
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg?v=12.5">
+  <link rel="icon" type="image/x-icon" href="assets/favicon.ico?v=12.5">
+  <link rel="icon" type="image/png" href="assets/favicon.png?v=12.5">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png?v=12.5">
+  <link rel="stylesheet" href="css/style.css?v=12.5">
   <!-- v9.3 账号访问控制：http 部署时强制登录（file:// 本地离线不启用） -->
-  <script src="js/auth.js?v=12.4"></script>
+  <script src="js/auth.js?v=12.5"></script>
 </head>
 <body>
   <!-- v10.6.0：app-shell 包裹 = 左侧导航 + 主区（扁平化宽泛式架构） -->
@@ -516,7 +516,7 @@
 
         <!-- v11.4：查询页分页——报价表 / 吊绳价格 / 邮费价格 三个子视图，避免单页过长滚动 -->
         <div class="table-view-tabs" id="tableViewTabs" role="tablist">
-          <button type="button" class="table-view-tab active" data-tview-tab="quote">当前报价表</button>
+          <button type="button" class="table-view-tab active" data-tview-tab="quote">纸张报价表</button>
           <button type="button" class="table-view-tab" data-tview-tab="rope">吊绳价格</button>
           <button type="button" class="table-view-tab" data-tview-tab="shipping">邮费价格</button>
         </div>
@@ -524,9 +524,9 @@
         <div id="tview-quote" class="table-view-panel active" data-tview="quote">
         <!-- 报价表组切换器 -->
         <div class="price-list-switcher">
-          <label class="switcher-label">当前报价表：</label>
+          <label class="switcher-label">纸张报价表：</label>
           <select id="priceListSelector" class="price-list-selector"></select>
-          <button class="btn danger-outline sm" id="deletePriceListBtn" title="删除当前报价表（不允许删除最后一个）">删除当前报价表</button>
+          <button class="btn danger-outline sm" id="deletePriceListBtn" title="删除纸张报价表（不允许删除最后一个）">删除纸张报价表</button>
         </div>
 
         <!-- v10.8.0：报价表备注——独立成行的框体，位于切换器下方；无备注时整块隐藏 -->
@@ -633,8 +633,9 @@
         <!-- v11.4：吊绳价格表（全局共享，就地编辑；分页显示） -->
         <div class="table-wrap" id="ropePriceWrap" data-tview="rope" hidden style="margin-top:20px;">
           <h3 style="font-size:14px;color:var(--brand-dark);margin-bottom:6px;">
-            <button type="button" class="btn sm" data-tview-back="quote" title="返回当前报价表视图">← 返回报价表</button>
-            吊绳价格表 <span style="font-size:12px;color:var(--text-secondary);font-weight:400;">（全局共享，不随报价表切换；点击价格数字直接修改）</span>
+            <button type="button" class="btn sm" data-tview-back="quote" title="返回纸张报价表视图">← 返回纸张报价表</button>
+            吊绳价格表 <span style="font-size:12px;color:var(--text-secondary);font-weight:400;">（独立报价表，全局生效；可指定仅作用于某个纸张报价表；点击价格数字直接修改）</span>
+            <button type="button" class="btn secondary sm" id="ropeClearScopeBtn" style="margin-left:8px;" title="关闭全部条目的「指定报价表」，恢复全局生效（价格数值不变）">关闭指定</button>
           </h3>
           <table id="ropePriceTable">
             <thead>
@@ -652,8 +653,9 @@
         <!-- v7.9/v11.4：邮费价格表（全局共享，就地编辑；分页显示） -->
         <div class="table-wrap" id="shippingPriceWrap" data-tview="shipping" hidden style="margin-top:20px;">
           <h3 style="font-size:14px;color:var(--brand-dark);margin-bottom:6px;">
-            <button type="button" class="btn sm" data-tview-back="quote" title="返回当前报价表视图">← 返回报价表</button>
-            邮费价格表 <span style="font-size:12px;color:var(--text-secondary);font-weight:400;">（全局共享，不随报价表切换；点击数字直接修改）</span>
+            <button type="button" class="btn sm" data-tview-back="quote" title="返回纸张报价表视图">← 返回纸张报价表</button>
+            邮费价格表 <span style="font-size:12px;color:var(--text-secondary);font-weight:400;">（独立报价表，全局生效；可指定仅作用于某个纸张报价表；点击数字直接修改）</span>
+            <button type="button" class="btn secondary sm" id="shipClearScopeBtn" style="margin-left:8px;" title="关闭全部条目的「指定报价表」，恢复全局生效（价格数值不变）">关闭指定</button>
           </h3>
           <table id="shippingPriceTable">
             <thead>
@@ -711,7 +713,7 @@
           <div class="setting-row">
             <div class="setting-info">
               <div class="setting-label">当前版本</div>
-              <div class="setting-desc">亲成报价系统 v12.4</div>
+              <div class="setting-desc">亲成报价系统 v12.5</div>
             </div>
             <div class="setting-control">
               <span class="placeholder-badge">正式版</span>
@@ -785,10 +787,10 @@
           </div>
 
           <div style="margin-bottom:18px;">
-            <h4 style="font-size:13px;color:var(--brand-dark);margin-bottom:8px;">报价表 Excel（导入 = 新增报价表）</h4>
+            <h4 style="font-size:13px;color:var(--brand-dark);margin-bottom:8px;">纸张报价表 Excel（导入 = 新增报价表）</h4>
             <div class="btn-group">
-              <button class="btn" id="exportExcelBtn">导出当前报价表 Excel</button>
-              <button class="btn secondary" id="importExcelBtn">导入报价表 Excel</button>
+              <button class="btn" id="exportExcelBtn">导出纸张报价表 Excel</button>
+              <button class="btn secondary" id="importExcelBtn">导入纸张报价表 Excel</button>
               <button class="btn secondary" id="downloadTemplateBtn">下载 Excel 模板</button>
               <input type="file" id="importExcelFile" accept=".xlsx,.xls" style="display:none">
             </div>
@@ -868,8 +870,9 @@
             <!-- 区块一：报价表组与报价表管理 -->
             <div class="history-panel-heading">
               <div>
-                <h3>报价表组与报价表管理</h3>
-                <p>新增 / 重命名报价表组与报价表，调整报价表归属；删除报价表会同时删除其纸张与工艺数据。</p>
+                <h3>报价表组与纸张报价表管理</h3>
+                <p>新增 / 重命名报价表组与纸张报价表，调整归属；删除纸张报价表会同时删除其纸张与工艺数据。</p>
+                <p style="color:var(--text-secondary);">说明：吊绳 / 邮费为<b>独立报价表（全局生效）</b>，其「指定报价表」（指定仅作用于某个纸张报价表）请在「报价表组查询 → 吊绳价格 / 邮费价格」视图中查看与管理。</p>
               </div>
               <button class="btn sm" id="onlineAddGroupBtn">新增报价表组</button>
             </div>
@@ -1213,7 +1216,7 @@
   <div class="toast" id="toast"></div>
 
   <!-- v7.9: SheetJS 本地化（离线双击打开亦可导出/导入 Excel），先于业务脚本加载，XLSX 全局可用 -->
-  <script src="js/vendor/xlsx.full.min.js?v=12.4"></script>
-  <script src="js/data.js?v=12.4"></script>
-  <script src="js/app.js?v=12.4"></script>
+  <script src="js/vendor/xlsx.full.min.js?v=12.5"></script>
+  <script src="js/data.js?v=12.5"></script>
+  <script src="js/app.js?v=12.5"></script>
 </body></html>

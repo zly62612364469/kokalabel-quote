@@ -1,5 +1,5 @@
 // ============================================================
-// 亲成报价系统 v12.4 - 主程序（计算 + 渲染 + 交互 + 初始化）
+// 亲成报价系统 v12.5 - 主程序（计算 + 渲染 + 交互 + 初始化）
 // ============================================================
 "use strict";
 
@@ -1098,10 +1098,48 @@ function toggleDefaultQuoteVisibility() {
 
 // -------------------- 初始化下拉选项 --------------------
 // 根据 APP_PROFILE.defaultRope 生成吊绳单选项 HTML（顶层作用域，供 initOptions 和 rebuildRopeUI 共用）
+// -------------------- v12.5：吊绳/邮费「指定报价表」可用性与优先排序 --------------------
+/**
+ * 按报价表取可用的吊绳条目：
+ * - targetPriceListId 为空 → 全局可用；指定了 → 仅目标报价表可见；
+ * - 指定到当前报价表的条目「优先」排最前（不自动改选中值）；
+ * - 兜底：过滤后为空则回退全部（绝不出现空列表）。
+ */
+function getAvailableRopes(priceListId) {
+  const pid = priceListId || CURRENT_PRICE_LIST_ID;
+  const scoped = ROPE_CONFIG.filter(r => !r.targetPriceListId || r.targetPriceListId === pid);
+  const usable = scoped.length ? scoped : ROPE_CONFIG;
+  return usable.slice().sort((a, b) => {
+    const ao = a.targetPriceListId === pid ? 0 : 1;
+    const bo = b.targetPriceListId === pid ? 0 : 1;
+    return ao - bo;
+  });
+}
+/** v12.5：按报价表取可用的邮费地区（规则同 getAvailableRopes） */
+function getAvailableRegions(priceListId) {
+  const pid = priceListId || CURRENT_PRICE_LIST_ID;
+  const scoped = SHIPPING_CONFIG.filter(r => !r.targetPriceListId || r.targetPriceListId === pid);
+  const usable = scoped.length ? scoped : SHIPPING_CONFIG;
+  return usable.slice().sort((a, b) => {
+    const ao = a.targetPriceListId === pid ? 0 : 1;
+    const bo = b.targetPriceListId === pid ? 0 : 1;
+    return ao - bo;
+  });
+}
+/** v12.5：统一重建地区下拉（仅显示当前报价表可用地区；保留原选中值若仍可用） */
+function buildShippingOptions(keepValue) {
+  if (!els.region) return;
+  const regions = getAvailableRegions();
+  els.region.innerHTML = '<option value="">请选择地区</option>' +
+    regions.map(s => `<option value="${escapeHtml(s.id)}">${escapeHtml(s.name)}</option>`).join("");
+  const keep = keepValue != null ? String(keepValue) : "";
+  els.region.value = (keep && regions.some(r => r.id === keep)) ? keep : (regions[0] ? regions[0].id : "");
+}
+
 function renderRopeRadios() {
   const fallback = "rope1"; // 默认「普通吊绳」
   const desired = APP_PROFILE.defaultRope || fallback;
-  const ropes = ROPE_CONFIG;
+  const ropes = getAvailableRopes();
   const hasDesired = ropes.some(r => r.id === desired);
   const checkedId = hasDesired ? desired : (ropes.find(r => r.id === fallback) ? fallback : (ropes[0] && ropes[0].id));
   return ropes.map(r => {
@@ -1123,15 +1161,8 @@ function initOptions() {
   // 吊绳（三列单选）——v10.8.0：改走 rebuildRopeUI，确保重渲染后 change 事件仍被绑定
   rebuildRopeUI();
 
-  // 地区：默认选中第一项（广东省内），确保页面加载后即可计算
-  if (els.region) {
-    const shippingOptions = SHIPPING_CONFIG;
-    els.region.innerHTML = '<option value="">请选择地区</option>' +
-      shippingOptions.map(s => `<option value="${escapeHtml(s.id)}">${escapeHtml(s.name)}</option>`).join("");
-    if (shippingOptions.length > 0) {
-      els.region.value = shippingOptions[0].id;
-    }
-  }
+  // 地区：仅显示当前报价表可用地区（指定报价表过滤+优先），默认选中第一项
+  buildShippingOptions();
 }
 
 /**
@@ -2937,28 +2968,36 @@ function renderRopePriceTable() {
   if (!els.ropePriceTable) return;
   const tierKeys = ROPE_CONFIG.length ? Object.keys(ROPE_CONFIG[0].prices).map(Number).sort((a, b) => a - b) : [];
   const theadRow = els.ropePriceTable.querySelector("thead tr");
-  theadRow.innerHTML = '<th>吊绳名称</th>' + tierKeys.map(t => `<th>${t} 张</th>`).join("");
+  theadRow.innerHTML = '<th>吊绳名称</th>' + tierKeys.map(t => `<th>${t} 张</th>`).join("") + '<th>指定报价表</th>';
   const tbody = els.ropePriceTable.querySelector("tbody");
   tbody.innerHTML = ROPE_CONFIG.map(r => `
-    <tr>
+    <tr${r.targetPriceListId ? ' class="row-scoped"' : ''}>
       <td>${escapeHtml(r.name)}</td>
       ${tierKeys.map(t => {
         const v = r.prices[t];
         if (v == null) return `<td class="price-cell price-editable" data-type="rope" data-rope-id="${escapeHtml(r.id)}" data-tier="${t}" data-empty="1" title="点击填写价格"><span class="price-missing">无</span></td>`;
         return `<td class="price-cell price-editable" data-type="rope" data-rope-id="${escapeHtml(r.id)}" data-tier="${t}" title="点击编辑价格">¥ ${formatMoney(Number(v))}</td>`;
       }).join("")}
+      <td class="scope-cell">${renderScopeTag(r.targetPriceListId)}</td>
     </tr>
   `).join("");
+}
+
+/** v12.5：指定报价表状态标签（空 = 全局生效） */
+function renderScopeTag(targetPriceListId) {
+  if (!targetPriceListId) return '<span class="scope-tag global">全局</span>';
+  const pl = PRICE_LISTS.find(p => p.id === targetPriceListId);
+  return `<span class="scope-tag scoped">→ ${escapeHtml(pl ? pl.name : targetPriceListId)}</span>`;
 }
 
 function renderShippingPriceTable() {
   if (!els.shippingPriceTable) return;
   const tierKeys = SHIPPING_CONFIG.length ? Object.keys(SHIPPING_CONFIG[0].basePrices).map(Number).sort((a, b) => a - b) : [];
   const theadRow = els.shippingPriceTable.querySelector("thead tr");
-  theadRow.innerHTML = '<th>地区名称</th>' + tierKeys.map(t => `<th>${t} 张</th>`).join("") + '<th>超量系数</th>';
+  theadRow.innerHTML = '<th>地区名称</th>' + tierKeys.map(t => `<th>${t} 张</th>`).join("") + '<th>超量系数</th><th>指定报价表</th>';
   const tbody = els.shippingPriceTable.querySelector("tbody");
   tbody.innerHTML = SHIPPING_CONFIG.map(s => `
-    <tr>
+    <tr${s.targetPriceListId ? ' class="row-scoped"' : ''}>
       <td>${escapeHtml(s.name)}</td>
       ${tierKeys.map(t => {
         const v = s.basePrices[t];
@@ -2966,8 +3005,23 @@ function renderShippingPriceTable() {
         return `<td class="price-cell price-editable" data-type="shipping" data-region-id="${escapeHtml(s.id)}" data-tier="${t}" title="点击编辑价格">¥ ${formatMoney(Number(v))}</td>`;
       }).join("")}
       <td class="price-cell price-editable" data-type="shipping-coeff" data-region-id="${escapeHtml(s.id)}" title="点击编辑超量系数">${s.overTierCoeff}</td>
+      <td class="scope-cell">${renderScopeTag(s.targetPriceListId)}</td>
     </tr>
   `).join("");
+}
+
+/** v12.5：关闭全部指定（吊绳/邮费一键恢复全局） */
+function clearAllScopes(kind) {
+  const list = kind === "rope" ? ROPE_CONFIG : SHIPPING_CONFIG;
+  const count = list.filter(x => x.targetPriceListId).length;
+  if (!count) { showToast("当前没有指定报价表的条目"); return; }
+  if (!confirm(`确定关闭全部「指定报价表」吗？\n\n${count} 个条目将恢复为全局生效（吊绳与邮费的价格数值不变）。`)) return;
+  list.forEach(x => { x.targetPriceListId = ""; });
+  saveToStorage(kind === "rope" ? "ropeConfig" : "shippingConfig", list);
+  if (kind === "rope") { renderRopePriceTable(); rebuildRopeUI(); }
+  else { renderShippingPriceTable(); buildShippingOptions(); }
+  onCalculate();
+  showToast(`已关闭 ${count} 个条目的指定报价表（恢复全局生效）`);
 }
 
 // -------------------- v7.9 价格表就地编辑 --------------------
@@ -3265,6 +3319,20 @@ function onPriceListChange(event) {
     renderPriceTable();
     onCalculate();
     renderPriceListSelector(); // 同步两个下拉框选中态
+    // v12.5：切表后校验吊绳/地区可用性（指定报价表可能导致原选项不可用 → 自动切换并提示）
+    try {
+      const availRopes = getAvailableRopes(newId);
+      const curRope = els.rope ? els.rope.querySelector('input[name="rope"]:checked') : null;
+      if (els.rope && (!curRope || !availRopes.some(r => r.id === curRope.value))) {
+        rebuildRopeUI();
+      }
+      const availRegions = getAvailableRegions(newId);
+      const curRegion = els.region ? els.region.value : "";
+      buildShippingOptions(curRegion);
+      if (curRegion && !availRegions.some(r => r.id === curRegion)) {
+        showToast("原地区在当前纸张报价表不可用，已自动切换");
+      }
+    } catch (e) { console.error("[v12.5] 切表可用性校验失败:", e); }
     switchTableView("quote"); // v11.5（T-A1）：切表后自动回到「当前报价表」子视图，避免停留在吊绳/邮费视图看不到变化
     showToast(`已切换到「${getCurrentPriceList().name}」`);
   } else if (newId) {
@@ -3993,7 +4061,7 @@ function exportSnapshotSet() {
     showToast("暂无快照可导出");
     return;
   }
-  downloadJson({ version: "12.4", count: list.length, snapshots: list }, "亲成快照_" + formatDateFile() + ".json");
+  downloadJson({ version: "12.5", count: list.length, snapshots: list }, "亲成快照_" + formatDateFile() + ".json");
   showToast("快照已导出");
 }
 
@@ -4734,7 +4802,7 @@ function setLocalBackupStatus(html, isError) {
 
 function exportLocalBackup() {
   const data = {
-    version: "12.4",
+    version: "12.5",
     kind: "local-backup",
     exportAt: new Date().toISOString(),
     priceLists: PRICE_LISTS,
@@ -4857,11 +4925,7 @@ function importLocalBackup(file) {
         data.shippingConfig.forEach(s => SHIPPING_CONFIG.push(s));
         saveToStorage("shippingConfig", SHIPPING_CONFIG);
         clearRopeShipPriceCaches(); // v11.3：region id 可能变化，清理临时价缓存
-        if (els.region) {
-          els.region.innerHTML = '<option value="">请选择地区</option>' +
-            SHIPPING_CONFIG.map(s => `<option value="${escapeHtml(s.id)}">${escapeHtml(s.name)}</option>`).join("");
-          if (SHIPPING_CONFIG.length > 0) els.region.value = SHIPPING_CONFIG[0].id;
-        }
+        buildShippingOptions();
       }
       if (data.snapshots) saveSnapshots(data.snapshots);
       if (data.history) saveHistory(data.history);
@@ -4891,7 +4955,7 @@ function importLocalBackup(file) {
 // -------------------- 导入 / 导出完整配置 --------------------
 function exportFullData() {
   const data = {
-    version: "12.4",
+    version: "12.5",
     exportAt: new Date().toISOString(),
     priceLists: PRICE_LISTS,
     priceListGroups: PRICE_LIST_GROUPS, // v10.7.0：随配置导出报价表组结构
@@ -4957,11 +5021,7 @@ function importFullData(file) {
         data.shippingConfig.forEach(s => SHIPPING_CONFIG.push(s));
         saveToStorage("shippingConfig", SHIPPING_CONFIG);
         clearRopeShipPriceCaches(); // v11.3：region id 可能变化，清理临时价缓存
-        if (els.region) {
-          els.region.innerHTML = '<option value="">请选择地区</option>' +
-            SHIPPING_CONFIG.map(s => `<option value="${escapeHtml(s.id)}">${escapeHtml(s.name)}</option>`).join("");
-          if (SHIPPING_CONFIG.length > 0) els.region.value = SHIPPING_CONFIG[0].id;
-        }
+        buildShippingOptions();
       }
       if (data.snapshots) saveSnapshots(data.snapshots);
       if (data.history) saveHistory(data.history);
@@ -5660,10 +5720,11 @@ function downloadRopeTemplate() {
   const wb = XLSX.utils.book_new();
   const sample = DEFAULT_ROPE_CONFIG[0];
   const tierKeys = sample ? Object.keys(sample.prices) : ["500", "1000", "2000", "3000", "5000"];
+  // v12.5：表头末列新增「指定报价表」（填报价表名称如「3楼」，留空 = 全局生效）
   const rows = [
-    ["吊绳名称", ...tierKeys.map(String)],
-    ["不加吊绳", ...tierKeys.map(() => 0)],
-    ["普通吊绳", 5, 10, 20, 30, 50]
+    ["吊绳名称", ...tierKeys.map(String), "指定报价表"],
+    ["不加吊绳", ...tierKeys.map(() => 0), ""],
+    ["普通吊绳", 5, 10, 20, 30, 50, ""]
   ];
   const ws = XLSX.utils.aoa_to_sheet(rows);
   XLSX.utils.book_append_sheet(wb, ws, sanitizeSheetName("吊绳报价模板"));
@@ -5691,6 +5752,8 @@ function parseRopeExcel(arrayBuffer) {
     }
   }
   if (!tierKeys.length) throw new Error("未找到档位列，表头第 2 列起应为数字档位");
+  // v12.5：定位「指定报价表」列（旧模板无此列 → -1，全部按全局导入）
+  const targetColIdx = headerRow.findIndex(v => String(v || "").trim() === "指定报价表");
 
   const ropes = [];
   const seenNames = new Set();
@@ -5739,7 +5802,17 @@ function parseRopeExcel(arrayBuffer) {
     }
     if (allZero && hasAnyValue) hasZeroOption = true;
 
-    ropes.push({ id: "rope" + (ropes.length), name, prices });
+    // v12.5：解析「指定报价表」（按名称/id 匹配，未匹配则忽略并警告）
+    let targetPriceListId = "";
+    if (targetColIdx > -1) {
+      const tName = String(row[targetColIdx] || "").trim();
+      if (tName) {
+        const pl = PRICE_LISTS.find(p => p.name === tName || p.id === tName);
+        if (pl) targetPriceListId = pl.id;
+        else errors.push(`吊绳「${name}」指定报价表「${tName}」未找到，已按全局处理`);
+      }
+    }
+    ropes.push({ id: "rope" + (ropes.length), name, prices, targetPriceListId });
   }
 
   if (!ropes.length) throw new Error("没有可导入的吊绳");
@@ -5972,9 +6045,10 @@ function downloadShippingTemplate() {
     // v11.5 修复（模板检查 T4）：示例地区给非零占位价——原 0 元示例直接导入会被当成
     // 「合法 0 元邮费」（hasExactTier 判有价），导致该地区按包邮计算。
     // 示例价按档位索引取（档位数变化时自适应），导入前请改为实际运费。
-    ["广东省内（示例，请改为实际运费）", ...tierKeys.map(t => (sample && sample.basePrices[t] != null ? sample.basePrices[t] : 0)), sample ? sample.overTierCoeff : 1],
-    ["江浙沪（示例，请改为实际运费）", ...tierKeys.map((t, i) => [8, 12, 15, 20, 30, 50, 80, 100][i] ?? 10), 1.2],
-    ["其他省份（示例，请改为实际运费）", ...tierKeys.map((t, i) => [10, 15, 20, 28, 40, 60, 90, 120][i] ?? 12), 1.3]
+    // v12.5：末列新增「指定报价表」（填报价表名称如「3楼」，留空 = 全局生效）。
+    ["广东省内（示例，请改为实际运费）", ...tierKeys.map(t => (sample && sample.basePrices[t] != null ? sample.basePrices[t] : 0)), sample ? sample.overTierCoeff : 1, ""],
+    ["江浙沪（示例，请改为实际运费）", ...tierKeys.map((t, i) => [8, 12, 15, 20, 30, 50, 80, 100][i] ?? 10), 1.2, ""],
+    ["其他省份（示例，请改为实际运费）", ...tierKeys.map((t, i) => [10, 15, 20, 28, 40, 60, 90, 120][i] ?? 12), 1.3, ""]
   ];
   const ws = XLSX.utils.aoa_to_sheet(rows);
   const wb = XLSX.utils.book_new();
@@ -6004,6 +6078,8 @@ function parseShippingExcel(arrayBuffer) {
     }
   }
   if (!tierKeys.length) throw new Error("未找到档位列，表头第 2 列起应为数字档位");
+  // v12.5：定位「指定报价表」列（旧模板无此列 → -1，全部按全局导入）
+  const targetColIdx = headerRow.findIndex(v => String(v || "").trim() === "指定报价表");
 
   const regions = [];
   const errors = [];
@@ -6037,11 +6113,22 @@ function parseShippingExcel(arrayBuffer) {
       ? Number(row[coeffIdx]) : 1;
     if (isNaN(coeff)) errors.push(`「${name}」的"大于10000"系数无效，已按 1 处理`);
 
+    // v12.5：解析「指定报价表」（按名称/id 匹配，未匹配则忽略并警告）
+    let targetPriceListId = "";
+    if (targetColIdx > -1) {
+      const tName = String(row[targetColIdx] || "").trim();
+      if (tName) {
+        const pl = PRICE_LISTS.find(p => p.name === tName || p.id === tName);
+        if (pl) targetPriceListId = pl.id;
+        else errors.push(`地区「${name}」指定报价表「${tName}」未找到，已按全局处理`);
+      }
+    }
     regions.push({
       id: "region" + (regions.length + 1),
       name,
       basePrices,
-      overTierCoeff: isNaN(coeff) ? 1 : coeff
+      overTierCoeff: isNaN(coeff) ? 1 : coeff,
+      targetPriceListId
     });
   }
 
@@ -6065,12 +6152,8 @@ function importShippingExcel(file) {
       clearRopeShipPriceCaches(); // v11.3：region id 重排，临时价缓存作废
       // v8.2：导入后持久化到 localStorage，刷新不丢失
       saveToStorage("shippingConfig", SHIPPING_CONFIG);
-      // 重新渲染地区下拉
-      if (els.region) {
-        els.region.innerHTML = '<option value="">请选择地区</option>' +
-          SHIPPING_CONFIG.map(s => `<option value="${escapeHtml(s.id)}">${escapeHtml(s.name)}</option>`).join("");
-        if (SHIPPING_CONFIG.length > 0) els.region.value = SHIPPING_CONFIG[0].id;
-      }
+      // 重新渲染地区下拉（v12.5：走统一构建，含指定报价表过滤）
+      buildShippingOptions();
       onCalculate();
       // v10.8.1 安全修复：同 importPaperExcel，errors 含 Excel 外部内容，innerHTML 渲染前必须转义
       const successMsg = `成功导入 ${regions.length} 个地区的邮费：${regions.map(r => escapeHtml(r.name)).join("、")}`;
@@ -6347,6 +6430,11 @@ function bindEvents() {
   if (els.importDataBtn) els.importDataBtn.addEventListener("click", () => els.importFile.click());
   if (els.importFile) els.importFile.addEventListener("change", e => importFullData(e.target.files[0]));
   if (els.resetToDefaultsBtn) els.resetToDefaultsBtn.addEventListener("click", resetToDefaults);
+  // v12.5：吊绳/邮费「关闭指定」按钮
+  const ropeClearScopeBtn = document.getElementById("ropeClearScopeBtn");
+  if (ropeClearScopeBtn) ropeClearScopeBtn.addEventListener("click", () => clearAllScopes("rope"));
+  const shipClearScopeBtn = document.getElementById("shipClearScopeBtn");
+  if (shipClearScopeBtn) shipClearScopeBtn.addEventListener("click", () => clearAllScopes("shipping"));
   const resetAllBtn = document.getElementById("resetAllSettingsBtn");
   if (resetAllBtn) resetAllBtn.addEventListener("click", resetAllLocalSettings);
   // v12.1：彻底恢复出厂（含历史/快照/本机偏好/内存缓存），与上面的全局恢复并存
@@ -6523,6 +6611,11 @@ function initDefaultDataUpload() {
 // -------------------- 启动 --------------------
 // 兜底：任何 init 步骤失败不影响其他步骤，错误会显示在控制台
 (function safeInit() {
+  // v12.5：吊绳/邮费「指定报价表」字段容错（空 = 全局生效；旧数据零迁移成本）
+  try {
+    ROPE_CONFIG.forEach(r => { if (typeof r.targetPriceListId === "undefined") r.targetPriceListId = ""; });
+    SHIPPING_CONFIG.forEach(s => { if (typeof s.targetPriceListId === "undefined") s.targetPriceListId = ""; });
+  } catch (e) { /* 忽略 */ }
   // v11.1/v11.2：报价设置/数据管理独立菜单的显示控制——
   // file:// 本地版始终隐藏；web 端由 applyUiLayoutMode 按「设备架构 + 是否移动端」决定
   // （此处先做一次初始判定，applyUiLayoutMode 会按垂直/扁平模式再次同步）

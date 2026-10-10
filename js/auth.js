@@ -1,5 +1,5 @@
 // ============================================================
-// 亲成 报价系统 · 账号访问控制（v12.4，账号体系同步自 v10.5）
+// 亲成 报价系统 · 账号访问控制（v12.5，账号体系同步自 v10.5）
 // - http/https 部署强制登录；file:// 本地/exe 不启用
 // - 角色：superadmin 超级管理员 / admin 管理员 / sales 业务员 / visitor 访客
 // - 访客仅计算器；业务员全页只读；超级管理员可编辑并发布默认报价数据(云端共享)
@@ -163,6 +163,7 @@
         <span class="hero-account-ops">
           <button id="kokaMyNick">修改昵称</button>
           <button id="kokaMyPwd">修改密码</button>
+          <button id="kokaLogout" class="logout-btn">退出登录</button>
         </span>`;
       meta.appendChild(line);
     } else {
@@ -186,6 +187,11 @@
       const d = await r.json();
       if (d.ok) { u.nickname = v; document.getElementById('kokaAccName').textContent = v || u.username; KOKA.toast('昵称已更新'); }
       else KOKA.toast(d.message || '更新失败', true);
+    });
+    // v12.5：退出登录（个人主页）
+    const logoutBtn = document.getElementById('kokaLogout');
+    if (logoutBtn) logoutBtn.addEventListener('click', () => {
+      if (confirm('确定退出登录吗？')) KOKA.logout();
     });
     document.getElementById('kokaMyPwd').addEventListener('click', async () => {
       const v = prompt('设置新密码（≥6 位）：', '');

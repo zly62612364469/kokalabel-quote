@@ -1,4 +1,4 @@
-/* 亲成报价系统 v12.4 - 样式表 */
+/* 亲成报价系统 v12.5 - 样式表 */
 
 /* ===================== 全局变量与重置 ===================== */
     :root {
@@ -4379,3 +4379,12 @@ body.ui-vertical .personalize-panel { left: 12px; top: 120px; bottom: auto; }
       border: 1px solid var(--brand);
       border-radius: 4px;
     }
+
+    /* ===================== v12.5：指定报价表标签/关闭按钮/退出登录 ===================== */
+    .scope-tag { display: inline-block; padding: 1px 8px; font-size: 11px; font-weight: 600; border-radius: 999px; white-space: nowrap; }
+    .scope-tag.global { color: var(--text-secondary); background: #f1f5f9; }
+    .scope-tag.scoped { color: #fff; background: var(--brand); }
+    #ropePriceTable tr.row-scoped td, #shippingPriceTable tr.row-scoped td { background: var(--brand-light); }
+    .scope-cell { text-align: center; }
+    .hero-account-ops button.logout-btn { color: var(--danger); border-color: var(--danger); }
+    .hero-account-ops button.logout-btn:hover { background: var(--danger-light); }
