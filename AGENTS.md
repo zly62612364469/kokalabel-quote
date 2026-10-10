@@ -6,10 +6,13 @@
 
 ## 一、铁律
 
-1. **改代码只改 `KOKALabel报价系统-v7.8/`（即本仓库）**，它是唯一真相源。
+1. **改代码只改本仓库（目录名 `kokalabel-quote`）**，它是唯一真相源。
    部署前从本仓库生成干净部署目录，不要在部署目录里改代码。
+   > ⚠️ **版本真相源只有一个**：`E:\Wb\报价优化\kokalabel-quote\`（本仓库，远端 `zly62612364469/kokalabel-quote`）。
+   > 同级的 `KOKALabel-v11.0/` ~ `v12.8/` 等目录是**历史部署快照**，代码陈旧、不要读、不要改、不要作为版本依据。
+   > 判断当前版本请以本仓库 `index.html` 的 `<title>` / `js/data.js` 的 `version` 为准。
 2. **不引入框架、不引入构建步骤** —— 项目必须保持「双击 `index.html` 可离线运行」。
-3. **改完必须跑回归测试**：`node ../_verify/v1080.test.cjs`（21 项，全绿为准）。
+3. **改完必须跑回归测试**：仓库内 `tests/` 下的 jsdom 回归脚本（当前以综合回归为准，全绿为止）。
 4. **改 DOM 结构时，必须全局 grep 同步 `els.*` 引用** —— 否则会出现"点击无反应"类隐蔽 bug（见第五节）。
 5. **不要改动 `js/vendor/xlsx.full.min.js`**（第三方库）。
 
@@ -120,7 +123,7 @@ node ../_verify/v1080.test.cjs
 ```bash
 git add -A
 TREE=$(git write-tree)
-NEW=$(git commit-tree "$TREE" -p <parent_sha> -F "E:/报价系统7.9/_msg.txt")
+NEW=$(git commit-tree "$TREE" -p <parent_sha> -F "E:/Wb/报价优化/_msg.txt")
 printf '%s\n' "$NEW" > .git/refs/heads/main
 printf '%s\n' "$NEW" > .git/refs/tags/vX.Y.Z
 git pack-refs --all

@@ -22,8 +22,8 @@ node    = C:/Users/Mayn/.workbuddy/binaries/node/versions/22.22.2-6/node.exe
 jsdom   = C:/Users/Mayn/.workbuddy/binaries/node/workspace/node_modules/jsdom   （NODE_PATH 引用）
 wrangler = C:/Users/Mayn/.workbuddy/binaries/node/wrangler3/node_modules/wrangler（v3.112.0，含手动补的 @esbuild/win32-x64）
 git     = 系统Git（仓库级身份已配置 zly62612364469@users.noreply.github.com）
-⚠️ 回归测试 = 原 E:/报价系统7.9/_verify/v1080.test.cjs（21 项）未进仓库、本机不存在——
-   重建列入 TODO；当前验证方式 = 自建 jsdom 综合回归（覆盖计价/就地编辑/页面/浮窗/折叠）+ 静态检查
+⚠️ 回归测试 = 仓库内 `tests/` 下的 jsdom 综合回归脚本（覆盖计价/就地编辑/页面/浮窗/折叠）+ 静态检查
+   （旧路径 `E:/报价系统7.9/_verify/v1080.test.cjs` 已废弃，勿再引用）
 ```
 
 ---

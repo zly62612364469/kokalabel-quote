@@ -27,7 +27,8 @@ css/  js/  functions/  assets/
 | `CHANGELOG.md` `TODO.md` | 内部记录（缺陷跟踪见 `docs/ISSUES.md`） |
 | `_backup_*` | 备份目录 |
 
-当前部署源：`E:\报价系统7.9\KOKALabel-v10.8.0\`（24 个文件）
+当前部署源：`E:\Wb\报价优化\KOKALabel-v12.8\`（24 个文件）
+> 历史部署快照（v11.0 ~ v12.7）已归档至 `E:\Wb\报价优化\_archive\`，**仅作留存，勿作版本依据**。
 
 ---
 
@@ -57,7 +58,7 @@ env -u http_proxy -u https_proxy -u HTTP_PROXY -u HTTPS_PROXY -u ALL_PROXY -u al
 ### 旧参考（原机器环境）
 
 ```bash
-cd "E:\报价系统7.9\KOKALabel-v10.8.0"
+cd "E:\Wb\报价优化\KOKALabel-v12.8"
 
 CLOUDFLARE_API_TOKEN=<CF API Token> \
   npx wrangler@3.114.0 pages deploy "." \
@@ -165,7 +166,7 @@ env -u http_proxy -u https_proxy -u HTTP_PROXY -u HTTPS_PROXY \
 ```bash
 git add -A
 TREE=$(git write-tree)
-NEW=$(git commit-tree "$TREE" -p <parent_sha> -F "E:/报价系统7.9/_msg.txt")
+NEW=$(git commit-tree "$TREE" -p <parent_sha> -F "E:/Wb/报价优化/_msg.txt")
 printf '%s\n' "$NEW" > .git/refs/heads/main
 printf '%s\n' "$NEW" > .git/refs/tags/vX.Y.Z
 git pack-refs --all

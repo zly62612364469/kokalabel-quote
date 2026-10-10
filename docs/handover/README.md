@@ -1,11 +1,15 @@
 > ℹ️ **归档说明（2026-10-10）**：本目录已从仓库根 `转手文档/` 下沉至 `docs/handover/`；
 > 文中目录树为 **v10.8.0 时期快照**。**当前仓库结构与最新文档索引见根目录 [README.md](../../README.md)。**
 > 最新的核心逻辑与计划文档见 [`docs/CORE-LOGIC.md`](../CORE-LOGIC.md) 与 [`docs/plans/`](../plans/)。
+>
+> ⚠️ **路径已变更（2026-10-10）**：旧文中的 `KOKALabel报价系统-v7.8\`（Git 工作副本）现位于
+> `E:\Wb\报价优化\kokalabel-quote\`；旧文中的 `E:\报价系统7.9\` 根路径现为 `E:\Wb\报价优化\`。
+> 旧路径 `E:\报价系统7.9\` 及其下的 `_verify\` 已不再存在，回归测试见本仓库 `tests/`。
 
 # v10.8.0 归档说明 · 文档索引
 
 > 归档时间：2026-10-07 ｜ 版本：**v10.8.0**（已上线）｜ 线上：https://kokalabel-quote.pages.dev
-> 本目录 = 项目转手文档全集。代码本体在 Git 仓库 `KOKALabel报价系统-v7.8`，部署源在 `KOKALabel-v10.8.0`。
+> 本目录 = 项目转手文档全集。代码本体在 Git 仓库 `zly62612364469/kokalabel-quote`（本地目录 `kokalabel-quote\`）。
 
 ## 目录结构
 

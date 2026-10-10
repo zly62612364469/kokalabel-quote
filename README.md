@@ -3,8 +3,16 @@
 吊牌 / 织唛 / 唛头类印刷品的**多纸张、多工艺、多批量档位**快速报价工具。支持本地免登录使用，也支持网页版多人协作（账号分级 + 云端共享默认报价数据）。
 
 - 线上：https://kokalabel-quote.pages.dev
-- 当前版本：**v11.2**（版本号规则：两段式 `vx.y` + 逢十进一，换算记录见 CHANGELOG v11.0 段）
+- **当前版本：v12.8**（版本号的**唯一真相源** = 本仓库 `index.html` 的 `<title>` 与 `js/data.js` 的 `version` 字段）
+- 仓库：`https://github.com/zly62612364469/kokalabel-quote`（私有）｜ 本地工作副本：`E:\Wb\报价优化\kokalabel-quote\`
 - 详细交接资料：见 [`docs/handover/`](./docs/handover/README.md)
+
+> ⚠️ **版本判断须知（给 AI Agent）**
+> 1. 同级目录 `E:\Wb\报价优化\KOKALabel-v11.0\` ~ `KOKALabel-v12.8\` 是**历史部署快照**，代码陈旧。
+>    它们**不是**当前版本，不要读取、不要修改、不要据此判断版本号。
+> 2. 旧文档中的 `KOKALabel报价系统-v7.8\` 与 `E:\报价系统7.9\` 路径**已废弃**，现为 `kokalabel-quote\` 与 `E:\Wb\报价优化\`。
+> 3. 判断当前版本请只读本仓库：`grep -o '亲成报价系统 v[0-9.]*' index.html`。
+> 4. 版本号规则：两段式 `vx.y` + 逢十进一（换算记录见 CHANGELOG v11.0 段）。
 
 ## 技术栈
 
