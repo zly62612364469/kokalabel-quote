@@ -76,7 +76,7 @@
 ### 3.1 仓库 / 版本 / 日志（✅ 全部正常）
 - 远端 main = tag v11.7 = commit `c23879b`，与本地完全一致（ls-remote 校验）。
 - 提交链 10 条（v11.1 → v11.7 + 白皮书 docs + TODO chore），提交信息规范、每版一段 CHANGELOG。
-- **Issues：0 个**（仓库未使用 issue/PR 流程，问题跟踪走 TODO.md + 问题日志.md——现状可用）。
+- **Issues：0 个**（仓库未使用 issue/PR 流程，问题跟踪走 `TODO.md` + `docs/ISSUES.md`——现状可用）。
 - 工作区干净；LF=0；无凭据残留。
 
 ### 3.2 本次代码排查发现的潜在问题（**未实施，仅记录**）

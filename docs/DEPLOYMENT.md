@@ -22,9 +22,9 @@ css/  js/  functions/  assets/
 
 | 排除项 | 原因 |
 |---|---|
-| `docs/` `转手文档/` | 内部文档，会被公开访问 |
+| `docs/` | 内部文档（含 handover/、plans/），会被公开访问 |
 | `tests/` | 测试脚本 |
-| `问题日志.md` `CHANGELOG.md` | 内部记录 |
+| `CHANGELOG.md` `TODO.md` | 内部记录（缺陷跟踪见 `docs/ISSUES.md`） |
 | `_backup_*` | 备份目录 |
 
 当前部署源：`E:\报价系统7.9\KOKALabel-v10.8.0\`（24 个文件）

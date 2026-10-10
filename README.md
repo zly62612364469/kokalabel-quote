@@ -4,7 +4,7 @@
 
 - 线上：https://kokalabel-quote.pages.dev
 - 当前版本：**v11.2**（版本号规则：两段式 `vx.y` + 逢十进一，换算记录见 CHANGELOG v11.0 段）
-- 详细转手资料：见 [`转手文档/`](./转手文档/README.md)
+- 详细交接资料：见 [`docs/handover/`](./docs/handover/README.md)
 
 ## 技术栈
 
@@ -52,28 +52,40 @@
 ├─ css/style.css       样式
 ├─ functions/          Cloudflare Pages Functions（登录 / 账号 / 报价云端共享）
 ├─ assets/             亲成图标全套 + logo
-├─ docs/               项目文档（架构 / 页面 / 开发 / 部署 / 样式）
+├─ docs/               项目文档（架构 / 页面 / 开发 / 部署 / 样式 / 缺陷跟踪）
+│   ├─ handover/       交接文档全集（新接手者从这里开始）
+│   └─ plans/          计划文档（含 archive/ 历史归档）
 ├─ tests/              历史测试脚本
-├─ 转手文档/           转手交接文档全集
 ├─ CHANGELOG.md        版本变更日志
-└─ 问题日志.md         缺陷跟踪
+└─ TODO.md             开发计划与进度
 ```
 
 ## 文档索引
 
+**入口（根目录）**
+
 | 文档 | 内容 |
 |---|---|
-| [转手文档/](./转手文档/README.md) | ★ 转手交接文档全集（新接手者从这里开始） |
+| [docs/handover/README.md](./docs/handover/README.md) | ★ **交接文档全集**（新接手者从这里开始） |
+| [README.md](./README.md) | 项目说明（本文件） |
 | [AGENTS.md](./AGENTS.md) | 项目协作与代码开发规范 |
+| [CHANGELOG.md](./CHANGELOG.md) | 版本变更日志（最新在下 / 最新在上） |
 | [TODO.md](./TODO.md) | 开发计划与当前进度 |
-| [docs/PROJECT-SPEC.md](./docs/PROJECT-SPEC.md) | 项目定位、产品目标与功能范围 |
-| [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) | 项目架构、目录结构与数据组织 |
-| [docs/PAGE-STRUCTURE.md](./docs/PAGE-STRUCTURE.md) | 页面结构与关键 DOM 锚点 |
-| [docs/DEVELOPMENT.md](./docs/DEVELOPMENT.md) | 开发与验证流程 |
-| [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md) | 构建与部署说明（含本机 wrangler SOP） |
-| [docs/UI-STYLE.md](./docs/UI-STYLE.md) | UI 样式与设计规范 |
-| [CHANGELOG.md](./CHANGELOG.md) | 版本变更记录 |
-| [问题日志.md](./问题日志.md) | 缺陷跟踪与已修项 |
+
+**项目文档（docs/）**
+
+| 文档 | 内容 |
+|---|---|
+| [PROJECT-SPEC.md](./docs/PROJECT-SPEC.md) | 项目定位、产品目标与功能范围 |
+| [ARCHITECTURE.md](./docs/ARCHITECTURE.md) | 项目架构、目录结构与数据组织 |
+| [PAGE-STRUCTURE.md](./docs/PAGE-STRUCTURE.md) | 页面结构与关键 DOM 锚点 |
+| [CORE-LOGIC.md](./docs/CORE-LOGIC.md) | **核心计算逻辑与前端不可见机制白皮书**（计价引擎 / 后端 API / 存储 / 优化建议） |
+| [DEVELOPMENT.md](./docs/DEVELOPMENT.md) | 开发与验证流程（含本机路径与 jsdom 回归） |
+| [DEPLOYMENT.md](./docs/DEPLOYMENT.md) | 构建与部署说明（含本机 wrangler SOP） |
+| [UI-STYLE.md](./docs/UI-STYLE.md) | UI 样式与设计规范 |
+| [UI-OPTIMIZATION-PLAN.md](./docs/UI-OPTIMIZATION-PLAN.md) | UI 优化方案（书面） |
+| [ISSUES.md](./docs/ISSUES.md) | 缺陷跟踪与已修项 |
+| [plans/](./docs/plans/) | 计划文档（`archive/` 为历史归档） |
 
 ## 关键纪律（改代码前必读）
 

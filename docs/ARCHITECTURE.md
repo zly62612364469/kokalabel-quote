@@ -51,8 +51,8 @@
 ├─ assets/               图标 + logo
 ├─ docs/                 本文档目录
 ├─ tests/                历史测试脚本
-├─ 转手文档/             转手交接文档
-├─ CHANGELOG.md / 问题日志.md
+├─ docs/handover/        交接文档全集（含历史工作日志）
+├─ CHANGELOG.md / docs/ISSUES.md（缺陷跟踪）
 └─ wrangler.toml         部署配置（含 KV id，**不入库**，见 .gitignore）
 ```
 
