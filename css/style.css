@@ -1,4 +1,4 @@
-/* 亲成报价系统 v12.5 - 样式表 */
+/* 亲成报价系统 v12.6 - 样式表 */
 
 /* ===================== 全局变量与重置 ===================== */
     :root {
@@ -2421,9 +2421,11 @@
       align-items: start;
     }
 
+    /* v12.6：取消统计区限高——原 520px 会把「利润分布」等卡片内容裁切（用户反馈显示不全） */
     .stats-snapshot-layout .stats-content {
-      max-height: 520px;
-      overflow-y: auto;
+      max-height: none;
+      overflow-y: visible;
+      min-width: 0;
     }
 
     .stats-box-header {
@@ -2434,10 +2436,12 @@
       margin-bottom: 12px;
     }
 
-    @media (max-width: 920px) {
+    /* v12.6：断点由 920 提升到 1200——中窄屏下两栏会挤压统计卡（「热销尺寸」标题竖排） */
+    @media (max-width: 1200px) {
       .stats-snapshot-layout {
         grid-template-columns: 1fr;
       }
+      .snapshot-box { min-width: 0; }
     }
 
     .stat-panel {
@@ -2453,17 +2457,23 @@
       justify-content: space-between;
       gap: 12px;
       margin-bottom: 12px;
+      flex-wrap: wrap; /* v12.6：空间不足时副标题换行，而非把标题压成竖排 */
+      min-width: 0;
     }
 
     .stat-panel-title {
       font-size: 15px;
       font-weight: 700;
       color: var(--brand-dark);
+      white-space: nowrap; /* v12.6：标题（如「热销尺寸」）永不折行/竖排 */
+      flex-shrink: 0;
     }
 
     .stat-panel-sub {
       font-size: 12px;
       color: var(--text-secondary);
+      min-width: 0;
+      overflow-wrap: anywhere;
     }
 
     .stat-summary {
@@ -4388,3 +4398,14 @@ body.ui-vertical .personalize-panel { left: 12px; top: 120px; bottom: auto; }
     .scope-cell { text-align: center; }
     .hero-account-ops button.logout-btn { color: var(--danger); border-color: var(--danger); }
     .hero-account-ops button.logout-btn:hover { background: var(--danger-light); }
+
+    /* v12.6：快速切档——该档位邮费为手动输入值时红框高亮 */
+    .tier-quick-btn.manual-shipping {
+      border-color: var(--danger) !important;
+      color: var(--danger);
+      box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.18);
+    }
+    .tier-quick-btn.manual-shipping.active {
+      background: var(--danger);
+      color: #fff;
+    }

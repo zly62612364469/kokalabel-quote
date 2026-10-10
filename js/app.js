@@ -1,5 +1,5 @@
 // ============================================================
-// 亲成报价系统 v12.5 - 主程序（计算 + 渲染 + 交互 + 初始化）
+// 亲成报价系统 v12.6 - 主程序（计算 + 渲染 + 交互 + 初始化）
 // ============================================================
 "use strict";
 
@@ -1964,11 +1964,12 @@ function onCalculate() {
   els.resCost.innerHTML = result.costIncomplete
     ? '<span class="price-missing">部分缺价</span>'
     : "¥ " + formatMoney(result.cost);
-  // v8.9：吊牌成本合计 = 成本合计 - 邮费（标准模式），即吊牌本身成本（不含邮费运输）
+  // v8.9：吊牌成本合计 = 吊牌本身成本；v12.6：改为扣除邮费与吊绳 ——
+  // 标准模式下工艺费已并入纸张折后价（paperTotal），故本值恒等于「纸张折后价合计（已含工艺费）」。
   if (els.resTagCost) {
     els.resTagCost.innerHTML = result.costIncomplete
       ? '<span class="price-missing">部分缺价</span>'
-      : "¥ " + formatMoney(result.cost - (result.shippingPrice || 0));
+      : "¥ " + formatMoney(result.cost - (result.shippingPrice || 0) - (result.ropePrice || 0));
   }
 
   // v11.0：临时修改重置按钮——仅存在覆盖时显示；v12.4：纳入折扣/工艺费/批量直接开关
@@ -2074,9 +2075,12 @@ function onCalculate() {
       }
     }
     const allTiers = Array.from(tierSet).sort((a, b) => a - b);
-    els.tierQuickBtns.innerHTML = allTiers.map(t =>
-      `<button class="tier-quick-btn${t === result.tier ? " active" : ""}" data-tier="${t}">${t}</button>`
-    ).join("");
+    // v12.6：当前地区在该档位存在「手动输入的邮费」时，按钮红框高亮（提示该档邮费为手填值）
+    const curRegionId = els.region ? els.region.value : "";
+    els.tierQuickBtns.innerHTML = allTiers.map(t => {
+      const isManual = curRegionId && manualShippingCache[curRegionId + "_" + t] != null;
+      return `<button class="tier-quick-btn${t === result.tier ? " active" : ""}${isManual ? " manual-shipping" : ""}" data-tier="${t}"${isManual ? ' title="该地区在此档位的邮费为手动输入值"' : ""}>${t}</button>`;
+    }).join("");
     els.tierQuickBtns.querySelectorAll(".tier-quick-btn").forEach(btn => {
       btn.addEventListener("click", function() {
         els.tier.value = this.dataset.tier;
@@ -4061,7 +4065,7 @@ function exportSnapshotSet() {
     showToast("暂无快照可导出");
     return;
   }
-  downloadJson({ version: "12.5", count: list.length, snapshots: list }, "亲成快照_" + formatDateFile() + ".json");
+  downloadJson({ version: "12.6", count: list.length, snapshots: list }, "亲成快照_" + formatDateFile() + ".json");
   showToast("快照已导出");
 }
 
@@ -4099,9 +4103,33 @@ function collectCurrentQuoteInputs() {
  * 直接系数模式：每纸临时直接系数）的当前生效值并计算修改后价格。
  * 无任何生效修改时返回 null（不写入记录）。
  */
+/** v12.6：就地编辑的会话级覆盖明细（折扣 / 工艺费 / 批量直接启用态） */
+function collectInlineOverrideDetails() {
+  const out = {};
+  if (Object.keys(discountCache).length) out.discounts = Object.assign({}, discountCache);
+  if (Object.keys(craftPriceCache).length) out.crafts = Object.assign({}, craftPriceCache);
+  if (Object.keys(batchDirectOnCache).length) out.batchDirectEnabled = Object.keys(batchDirectOnCache);
+  return Object.keys(out).length ? out : null;
+}
+
 function collectQuoteOverride() {
   if (!_lastResult) return null;
-  return calcMode === "direct" ? collectDirectTempOverride() : collectStandardOverride();
+  const base = calcMode === "direct" ? collectDirectTempOverride() : collectStandardOverride();
+  // v12.6：保存时必须并入就地编辑的临时修改（折扣/工艺费/批量直接），否则记录显示的是默认值
+  const inline = collectInlineOverrideDetails();
+  if (!base && !inline) return null;
+  const merged = Object.assign(
+    base || { kind: calcMode === "direct" ? "direct" : "standard", incomplete: !!_lastResult.costIncomplete },
+    inline || {}
+  );
+  // 就地覆盖存在但 base 缺少成本/报价摘要时，补充当前生效值（保证详情可回显）
+  if (inline && merged.newCost == null && _lastResult.cost != null) {
+    merged.newCost = _lastResult.cost;
+    if (Array.isArray(_lastResult.pricesByLevel)) {
+      merged.pricesByLevel = _lastResult.pricesByLevel.map(l => ({ levelName: l.levelName, price: l.price }));
+    }
+  }
+  return merged;
 }
 
 // 标准模式：临时毛利系数 + 邮费快速修改（v9.7 起与渲染卡片共用 computeStandardOverridePrice）
@@ -4184,6 +4212,10 @@ function saveCurrentQuote() {
     if (override.coeff != null) changes.push("毛利系数 ×" + override.coeff);
     if (override.ropePrice != null) changes.push("吊绳费用 ¥" + formatMoney(override.ropePrice));
     if (override.shippingPrice != null) changes.push("邮费 ¥" + formatMoney(override.shippingPrice));
+    // v12.6：就地编辑的折扣 / 工艺费 / 批量直接启用
+    if (override.discounts) changes.push(`折扣 ×${Object.values(override.discounts).length} 处`);
+    if (override.crafts) changes.push(`工艺费 ${Object.values(override.crafts).length} 处`);
+    if (override.batchDirectEnabled) changes.push(`批量直接报价 ${override.batchDirectEnabled.length} 张`);
   }
   showToast(changes.length
     ? `报价已保存（含临时修改：${changes.join("、")}）`
@@ -4548,6 +4580,30 @@ function buildOverrideDetailHtml(o) {
     }).join("") + '</div>';
     rows += `<div class="history-override-price total"><span>修改后总价</span><strong>${o.incomplete ? "部分缺价" : "¥ " + formatMoney(o.total)}</strong></div>`;
   }
+  // v12.6：就地编辑覆盖明细（折扣 / 工艺费 / 批量直接启用态）——对所有 kind 追加显示
+  if (o.discounts || o.crafts || o.batchDirectEnabled) {
+    const items = [];
+    if (o.discounts) {
+      Object.keys(o.discounts).forEach(pid => {
+        const paper = PAPER_CONFIG.find(x => x.id === pid);
+        items.push(`<div class="history-override-item"><span>折扣 · ${escapeHtml(paper ? (paper.shortName || paper.name) : pid)}</span><strong>×${escapeHtml(String(o.discounts[pid]))}</strong></div>`);
+      });
+    }
+    if (o.crafts) {
+      Object.keys(o.crafts).forEach(k => {
+        const pid = String(k).split("_")[0];
+        const paper = PAPER_CONFIG.find(x => x.id === pid);
+        items.push(`<div class="history-override-item"><span>工艺费 · ${escapeHtml(paper ? (paper.shortName || paper.name) : pid)}</span><strong>¥ ${formatMoney(Number(o.crafts[k]))}</strong></div>`);
+      });
+    }
+    if (Array.isArray(o.batchDirectEnabled)) {
+      o.batchDirectEnabled.forEach(pid => {
+        const paper = PAPER_CONFIG.find(x => x.id === pid);
+        items.push(`<div class="history-override-item"><span>批量直接报价已启用 · ${escapeHtml(paper ? (paper.shortName || paper.name) : pid)}</span><strong>—</strong></div>`);
+      });
+    }
+    rows += '<div class="history-override-summary">就地编辑（保存时生效）</div><div class="history-override-items">' + items.join("") + '</div>';
+  }
   return `
     <section class="history-detail-section history-override-section">
       <h3>临时修改（保存时生效）</h3>
@@ -4734,6 +4790,18 @@ function loadHistoryParameters(recordId) {
       shippingPriceCache[inputs.regionId + "_" + Number(inputs.tier)] = ovShipping;
     }
   }
+  // v12.6：还原就地编辑覆盖（吊绳临时价 / 折扣 / 工艺费 / 批量直接启用态）——保证载入后与保存时一致
+  try {
+    const ov = (record && record.snapshot && record.snapshot.override) || {};
+    discountCache = {}; craftPriceCache = {}; batchDirectOnCache = {}; ropePriceCache = {};
+    if (ov.discounts && typeof ov.discounts === "object") Object.assign(discountCache, ov.discounts);
+    if (ov.crafts && typeof ov.crafts === "object") Object.assign(craftPriceCache, ov.crafts);
+    if (Array.isArray(ov.batchDirectEnabled)) ov.batchDirectEnabled.forEach(pid => { if (pid) batchDirectOnCache[pid] = true; });
+    const ovRope = Number(ov.ropePrice);
+    if (Number.isFinite(ovRope) && ovRope >= 0 && inputs.ropeId && inputs.tier) {
+      ropePriceCache[inputs.ropeId + "_" + Number(inputs.tier)] = ovRope;
+    }
+  } catch (e) { console.error("[v12.6] 载入覆盖还原失败:", e); }
 
   onCalculate();
 
@@ -4802,7 +4870,7 @@ function setLocalBackupStatus(html, isError) {
 
 function exportLocalBackup() {
   const data = {
-    version: "12.5",
+    version: "12.6",
     kind: "local-backup",
     exportAt: new Date().toISOString(),
     priceLists: PRICE_LISTS,
@@ -4955,7 +5023,7 @@ function importLocalBackup(file) {
 // -------------------- 导入 / 导出完整配置 --------------------
 function exportFullData() {
   const data = {
-    version: "12.5",
+    version: "12.6",
     exportAt: new Date().toISOString(),
     priceLists: PRICE_LISTS,
     priceListGroups: PRICE_LIST_GROUPS, // v10.7.0：随配置导出报价表组结构
