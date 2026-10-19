@@ -28,7 +28,7 @@ css/  js/  functions/  assets/
 | `CHANGELOG.md` `TODO.md` | 内部记录（缺陷跟踪见 `docs/ISSUES.md`） |
 | `_backup_*` | 备份目录 |
 
-当前部署源：`E:\Wb\报价优化\KOKALabel-v12.8\`（24 个文件）
+当前部署源：`E:\Wb\报价优化\KOKALabel-v12.9\`（24 个文件）
 > 历史部署快照（v11.0 ~ v12.7）已归档至 `E:\Wb\报价优化\_archive\`，**仅作留存，勿作版本依据**。
 
 ---
@@ -59,7 +59,7 @@ env -u http_proxy -u https_proxy -u HTTP_PROXY -u HTTPS_PROXY -u ALL_PROXY -u al
 ### 旧参考（原机器环境）
 
 ```bash
-cd "E:\Wb\报价优化\KOKALabel-v12.8"
+cd "E:\Wb\报价优化\KOKALabel-v12.9"
 
 CLOUDFLARE_API_TOKEN=<CF API Token> \
   npx wrangler@3.114.0 pages deploy "." \
@@ -115,7 +115,7 @@ curl -s https://kokalabel-quote.pages.dev/api/auth/status
 
 # 3) 首页标题与版本
 curl -s https://kokalabel-quote.pages.dev/ | grep -o "<title>[^<]*</title>"
-#    期望 <title>亲成报价系统 v10.8.0</title>
+#    期望 <title>亲成报价系统 v12.9</title>
 
 # 4) 静态资源版本参数
 curl -s https://kokalabel-quote.pages.dev/ | grep -o 'js/[a-z.]*?v=[0-9.]*'

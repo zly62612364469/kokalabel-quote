@@ -78,6 +78,7 @@ tabs 顺序（**报价历史第一、默认激活**）：
 | **报价历史** | `#historyTable` `#historyEmpty` `#clearHistoryBtn` | 与浮窗共用渲染（`buildHistoryRowsHtml`） |
 | 价格配置 | `#exportExcelBtn` `#importExcelBtn` `#exportRopeExcelBtn` `#exportShippingExcelBtn` `#exportDataBtn` `#exportLocalBackupBtn` `#resetToDefaultsBtn` 等 | 各类导入导出 |
 | 在线修改 | `#onlineLockNotice` `#onlineManagerRoot` `#onlineAddGroupBtn` `#onlineTplPriceList` | 仅超管可编辑 |
+| **匹配规则**（v12.9） | `#ruleSetSelect` `#rulesTbody` `#rulesAddBtn` `#rulesResetBtn` `#rulesStatus` | 规格匹配规则表（全局 / 织唛专用两套），仅决定代码，价格仍取表格 |
 | 云同步 | — | 占位 |
 
 另有：**快照与统计报表卡**（`#snapshotTable` `#createSnapshotBtn` `#statsContent` `#exportStatsBtn`）、
@@ -92,7 +93,7 @@ tabs 顺序（**报价历史第一、默认激活**）：
 | 客户毛利系数 | `#levelSettings` `#addLevelBtn` `#resetLevelBtn` | |
 | 金额显示 | `#decimalPlaces` | |
 | 公司信息 | `#companyName` `#companyPhone` | |
-| 默认选项 | `#defaultTier` `#defaultSizeType` `#defaultRope` `#defaultPaper` `#uiLayoutMode` `#hidePaperIndex` `#paperSelectMode` | |
+| 默认选项 | `#defaultTier` `#defaultSizeType` `#defaultRope` `#defaultPaper` `#uiLayoutMode` `#hidePaperIndex` `#paperSelectMode` `#specMatchMode`（v12.9 规格匹配方式） | |
 | 保存/导出 | `#saveProfileBtn` `#exportProfileBtn` | |
 | 计算规则说明 | — | 静态说明 |
 

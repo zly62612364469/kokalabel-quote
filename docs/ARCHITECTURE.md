@@ -99,7 +99,8 @@
 | `priceListGroups` | 报价表组 |
 | `currentPriceListId` | 当前报价表 id |
 | `dataVersion` | **迁移基线**（当前 `10.8.0`） |
-| `appProfile` | 个人偏好（默认纸张/吊绳/字号等） |
+| `appProfile` | 个人偏好（默认纸张/吊绳/字号/`specMatchMode` 规格匹配方式） |
+| `specMatchRules` | **v12.9**：规格匹配规则集 `{global:[…], <织唛报价表id>:[…]}`（仅本地，未云同步） |
 | `uiFontScale` | 界面字号缩放（px 换算） |
 
 读取统一走 `loadFromStorage(key, default)`：读不到就用内置默认值。

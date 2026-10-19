@@ -11002,6 +11002,8 @@ if (typeof APP_PROFILE.hidePaperIndex === "undefined") APP_PROFILE.hidePaperInde
 // 一次性迁移：存量用户（无论存的是 grid 还是无值）统一改为 dropdown；
 // 迁移标记设置后，用户此后手动选择的模式（含改回 grid）永久保留，不再被迁移覆盖。
 if (typeof APP_PROFILE.paperSelectMode === "undefined") APP_PROFILE.paperSelectMode = "dropdown";
+// v12.9：规格匹配方式（table=表格匹配 / rule=规则匹配）——导入旧备份缺失该字段时回退表格匹配
+if (typeof APP_PROFILE.specMatchMode === "undefined") APP_PROFILE.specMatchMode = "table";
 if (!APP_PROFILE.paperSelectModeMigrated) {
   if (APP_PROFILE.paperSelectMode !== "dropdown") APP_PROFILE.paperSelectMode = "dropdown";
   APP_PROFILE.paperSelectModeMigrated = true;

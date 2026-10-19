@@ -3816,9 +3816,10 @@ function handleRulesClick(e) {
 
 function handleRulesAdd() {
   const key = currentRuleSetKey();
-  const rows = readRuleRowsFromDom();
+  // 先规范化（清洗 + 按面积升序），避免 DOM 顺序与存储顺序不一致导致规则乱序
+  setSpecRules(key, readRuleRowsFromDom());
+  const rows = (SPEC_MATCH_RULES[key] || []).slice();
   const last = rows.reduce((m, r) => Math.max(m, Number(r.maxArea) || 0), 0);
-  if (!SPEC_MATCH_RULES[key]) SPEC_MATCH_RULES[key] = [];
   SPEC_MATCH_RULES[key] = rows.concat([{ code: "", maxArea: last + 1000 }]);
   renderSpecRules();
   const inputs = els.rulesTbody ? els.rulesTbody.querySelectorAll(".rule-code") : [];
