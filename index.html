@@ -7,15 +7,15 @@
   <!-- P0 安全：CSP 策略（v7.9：SheetJS 已本地化，script-src 仅允许 'self'，离线双击打开亦可用） -->
   <!-- v10.6.0：default-src/connect-src 放行 blob:，修复网页端 XLSX.writeFile 导出 Excel 被拦 -->
   <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob:; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' blob:;">
-  <title>亲成报价系统 v12.8</title>
+  <title>亲成报价系统 v12.9</title>
   <!-- v10.7.1：品牌与图标换回「亲成」（沿用 v10.5 全套亲成图标），版本号 10.7.0 → 10.7.1 -->
-  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg?v=12.8">
-  <link rel="icon" type="image/x-icon" href="assets/favicon.ico?v=12.8">
-  <link rel="icon" type="image/png" href="assets/favicon.png?v=12.8">
-  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png?v=12.8">
-  <link rel="stylesheet" href="css/style.css?v=12.8">
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg?v=12.9">
+  <link rel="icon" type="image/x-icon" href="assets/favicon.ico?v=12.9">
+  <link rel="icon" type="image/png" href="assets/favicon.png?v=12.9">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png?v=12.9">
+  <link rel="stylesheet" href="css/style.css?v=12.9">
   <!-- v9.3 账号访问控制：http 部署时强制登录（file:// 本地离线不启用） -->
-  <script src="js/auth.js?v=12.8"></script>
+  <script src="js/auth.js?v=12.9"></script>
 </head>
 <body>
   <!-- v10.6.0：app-shell 包裹 = 左侧导航 + 主区（扁平化宽泛式架构） -->
@@ -713,7 +713,7 @@
           <div class="setting-row">
             <div class="setting-info">
               <div class="setting-label">当前版本</div>
-              <div class="setting-desc">亲成报价系统 v12.8</div>
+              <div class="setting-desc">亲成报价系统 v12.9</div>
             </div>
             <div class="setting-control">
               <span class="placeholder-badge">正式版</span>
@@ -774,6 +774,7 @@
           <button class="tab active" data-tab="history">报价历史</button>
           <button class="tab" data-tab="config">价格配置</button>
           <button class="tab" data-tab="online">在线修改</button>
+          <button class="tab" data-tab="rules">匹配规则</button>
           <button class="tab" data-tab="cloud">云同步 <span class="placeholder-badge">占位</span></button>
         </div>
 
@@ -946,6 +947,39 @@
             </div>
           </div>
         </div>
+
+        <!-- v12.9：匹配规则（数据管理 → 匹配规则） -->
+        <div class="tab-panel" id="panel-rules">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px;">
+            <div style="max-width:760px;">
+              <h3 style="font-size:14px;color:var(--brand-dark);margin:0;">规格匹配规则</h3>
+              <p style="font-size:12px;color:var(--text-secondary);margin:4px 0 0;line-height:1.7;">
+                规则只决定「用哪个规格代码」，<b>价格仍取纸张报价表中该代码的价格</b>；启用规则匹配时，「最大含出血面积 (mm²)」列不参与匹配。<br>
+                匹配方式：面积 ≤ 某条规则的「面积上限」即命中该代码；未命中（超出规则上限，或该纸张没有该代码）则自动回退到表格匹配。
+              </p>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <label style="font-size:12px;color:var(--text-secondary);white-space:nowrap;">规则集</label>
+              <select id="ruleSetSelect">
+                <option value="global">全局规则（除织唛外）</option>
+                <option value="maitou">织唛专用规则</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="overflow:auto;max-height:46vh;">
+            <table class="data-table">
+              <thead><tr><th style="width:36%;">规格代码</th><th style="width:36%;">含出血面积上限 (mm²)</th><th style="width:28%;">操作</th></tr></thead>
+              <tbody id="rulesTbody"></tbody>
+            </table>
+          </div>
+
+          <div class="btn-group" style="margin-top:12px;">
+            <button class="btn sm" id="rulesAddBtn">＋ 新增规则</button>
+            <button class="btn secondary sm" id="rulesResetBtn">恢复默认规则</button>
+          </div>
+          <div id="rulesStatus" style="margin-top:10px;font-size:12px;color:var(--text-secondary);line-height:1.7;"></div>
+        </div>
       </div>
 
       <div class="card">
@@ -1066,6 +1100,18 @@
             </div>
             <div class="setting-control">
               <select id="defaultSizeType"><option value="single">单张尺寸</option><option value="spread">展开尺寸</option></select>
+            </div>
+          </div>
+          <div class="setting-row">
+            <div class="setting-info">
+              <div class="setting-label">规格匹配方式</div>
+              <div class="setting-desc">表格匹配：按纸张报价表的「最大含出血面积」列选代码（默认）；规则匹配：按「数据管理 → 匹配规则」选代码（价格仍取表格）</div>
+            </div>
+            <div class="setting-control">
+              <select id="specMatchMode">
+                <option value="table">表格匹配（默认）</option>
+                <option value="rule">规则匹配</option>
+              </select>
             </div>
           </div>
           <div class="setting-row">
@@ -1239,7 +1285,7 @@
   <div class="toast" id="toast"></div>
 
   <!-- v7.9: SheetJS 本地化（离线双击打开亦可导出/导入 Excel），先于业务脚本加载，XLSX 全局可用 -->
-  <script src="js/vendor/xlsx.full.min.js?v=12.8"></script>
-  <script src="js/data.js?v=12.8"></script>
-  <script src="js/app.js?v=12.8"></script>
+  <script src="js/vendor/xlsx.full.min.js?v=12.9"></script>
+  <script src="js/data.js?v=12.9"></script>
+  <script src="js/app.js?v=12.9"></script>
 </body></html>

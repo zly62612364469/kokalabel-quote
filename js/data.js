@@ -1,5 +1,5 @@
 // ============================================================
-// 亲成报价系统 v12.8 - 数据配置层
+// 亲成报价系统 v12.9 - 数据配置层
 // ============================================================
 "use strict";
 
@@ -10987,7 +10987,9 @@ let APP_PROFILE = loadFromStorage("appProfile", {
   defaultSizeType: "single",
   hidePaperIndex: true,
   paperSelectMode: "dropdown",
-  decimalPlaces: 2
+  decimalPlaces: 2,
+  // v12.9：规格匹配方式（table=表格匹配，默认｜rule=规则匹配）
+  specMatchMode: "table"
 });
 // 旧版配置容错
 if (typeof APP_PROFILE.defaultRope === "undefined") APP_PROFILE.defaultRope = "rope1";
@@ -11005,6 +11007,107 @@ if (!APP_PROFILE.paperSelectModeMigrated) {
   APP_PROFILE.paperSelectModeMigrated = true;
   saveToStorage("appProfile", APP_PROFILE);
   console.info("[v12.2] 纸张材质选择模式默认已修正为「下拉框」（可在报价设置中改回芯片平铺）");
+}
+
+// ============================================================
+// ============== v12.9：规格匹配规则（「规则匹配」数据源） ==============
+// ------------------------------------------------------------
+// 两种匹配方式（报价设置 → 默认选项 → 规格匹配方式）：
+//   表格匹配（table，默认）—— 用纸张规格表的「最大含出血面积」列匹配，
+//                              并保留 v7.3 的 005/055/006 强制映射（行为与 v12.8 完全一致）
+//   规则匹配（rule）       —— 用本规则表按「面积上限」匹配；
+//                              **价格仍取表格中该代码的价格**，「最大含出血面积」列不参与
+// 规则集：global = 全局（除织唛外的所有报价表）｜ <织唛报价表 id> = 织唛专用
+// ============================================================
+const DEFAULT_SPEC_MATCH_RULES_GLOBAL = [
+  { code: "002", maxArea: 1999 },
+  { code: "003", maxArea: 2999 },
+  { code: "004", maxArea: 3999 },
+  { code: "005", maxArea: 4999 },
+  { code: "055", maxArea: 5499 },
+  { code: "006", maxArea: 5999 },
+  { code: "007", maxArea: 6999 },
+  { code: "008", maxArea: 7999 },
+  { code: "009", maxArea: 8999 },
+  { code: "100", maxArea: 10000 }
+];
+// 织唛：代码本身即「宽(cm)×长(cm)」，长固定 8cm → 面积上限 = 宽(cm) × 800
+const DEFAULT_SPEC_MATCH_RULES_MAITOU = [
+  { code: "1.3*8", maxArea: 1040 },
+  { code: "1.6*8", maxArea: 1280 },
+  { code: "2*8", maxArea: 1600 },
+  { code: "2.5*8", maxArea: 2000 },
+  { code: "3*8", maxArea: 2400 },
+  { code: "3.5*8", maxArea: 2800 },
+  { code: "4*8", maxArea: 3200 },
+  { code: "4.5*8", maxArea: 3600 },
+  { code: "5*8", maxArea: 4000 }
+];
+
+function cloneSpecRules(rows) {
+  return (rows || []).map(r => ({ code: r.code, maxArea: r.maxArea }));
+}
+/** 织唛报价表 id —— 用于区分「织唛专用规则集」（按组判定，报价表改名/重建仍可识别） */
+function getMaitouPriceListId() {
+  const pl = (PRICE_LISTS || []).find(p => p.groupId === "group3");
+  return pl ? pl.id : "priceList3";
+}
+function defaultSpecMatchRules() {
+  const out = { global: cloneSpecRules(DEFAULT_SPEC_MATCH_RULES_GLOBAL) };
+  out[getMaitouPriceListId()] = cloneSpecRules(DEFAULT_SPEC_MATCH_RULES_MAITOU);
+  return out;
+}
+let SPEC_MATCH_RULES = loadFromStorage("specMatchRules", defaultSpecMatchRules());
+// 结构容错（老版本升级 / 手工改坏 localStorage）
+if (!SPEC_MATCH_RULES || typeof SPEC_MATCH_RULES !== "object" || Array.isArray(SPEC_MATCH_RULES)) {
+  SPEC_MATCH_RULES = defaultSpecMatchRules();
+}
+if (!Array.isArray(SPEC_MATCH_RULES.global) || !SPEC_MATCH_RULES.global.length) {
+  SPEC_MATCH_RULES.global = cloneSpecRules(DEFAULT_SPEC_MATCH_RULES_GLOBAL);
+}
+(function ensureMaitouRules() {
+  const k = getMaitouPriceListId();
+  if (!Array.isArray(SPEC_MATCH_RULES[k]) || !SPEC_MATCH_RULES[k].length) {
+    SPEC_MATCH_RULES[k] = cloneSpecRules(DEFAULT_SPEC_MATCH_RULES_MAITOU);
+  }
+})();
+
+/** 当前规格匹配方式：table（默认）/ rule */
+function getSpecMatchMode() {
+  return (APP_PROFILE && APP_PROFILE.specMatchMode === "rule") ? "rule" : "table";
+}
+/** 取某报价表适用的规则集（织唛 → 专用；其余 → 全局） */
+function getSpecRulesFor(priceListId) {
+  const key = (priceListId === getMaitouPriceListId()) ? priceListId : "global";
+  const set = SPEC_MATCH_RULES && SPEC_MATCH_RULES[key];
+  if (Array.isArray(set) && set.length) return set;
+  return (SPEC_MATCH_RULES && SPEC_MATCH_RULES.global) || [];
+}
+/** 保存规则集（key：global / 织唛报价表 id）；自动清洗并按面积升序 */
+function setSpecRules(key, rows) {
+  if (!SPEC_MATCH_RULES) SPEC_MATCH_RULES = defaultSpecMatchRules();
+  SPEC_MATCH_RULES[key] = (rows || [])
+    .map(r => ({ code: String(r.code == null ? "" : r.code).trim(), maxArea: Number(r.maxArea) }))
+    .filter(r => r.code && isFinite(r.maxArea) && r.maxArea > 0)
+    .sort((a, b) => a.maxArea - b.maxArea);
+  saveToStorage("specMatchRules", SPEC_MATCH_RULES);
+}
+/**
+ * 按规则匹配规格代码（v12.9）。
+ * 命中条件：面积 ≤ 规则的「面积上限」，取第一条满足的规则；价格沿用该代码在表格中的价格。
+ * 返回 null 的情况（由调用方回退表格匹配）：
+ *   ① 面积超过规则表最大上限；② 命中的代码在该纸张规格表中不存在。
+ */
+function matchSpecByRules(paper, area) {
+  if (!paper || !Array.isArray(paper.specs)) return null;
+  const rules = getSpecRulesFor(paper.priceListId);
+  for (let i = 0; i < rules.length; i++) {
+    if (area <= Number(rules[i].maxArea)) {
+      const spec = paper.specs.find(s => s.code === rules[i].code);
+      return spec ? { ...spec } : null;
+    }
+  }
+  return null;
 }
 
 // ============================================================

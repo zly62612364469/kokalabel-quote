@@ -1,5 +1,5 @@
 // ============================================================
-// 亲成报价系统 v12.8 - 主程序（计算 + 渲染 + 交互 + 初始化）
+// 亲成报价系统 v12.9 - 主程序（计算 + 渲染 + 交互 + 初始化）
 // ============================================================
 "use strict";
 
@@ -431,9 +431,15 @@ function forceSpecByArea(paper, area) {
  * v7.3：面积 4000-6000 时强制映射 005/055/006，不读取表格数据。
  */
 function matchSpec(paper, area, skipForce) {
-  // v7.3：强制面积规格映射（不读取表格数据）
-  // v10.8.0：不出血的报价表跳过该硬编码规则（005/055/006 是吊牌专用）
-  if (!skipForce) {
+  // v12.9：规则匹配——按「匹配规则」表选定代码（价格仍取表格中该代码的价格），
+  //        「最大含出血面积」列不参与；未命中（超出规则上限 / 该纸无此代码）时回退表格逻辑
+  if (getSpecMatchMode() === "rule") {
+    const byRule = matchSpecByRules(paper, area);
+    if (byRule) return byRule;
+  } else if (!skipForce) {
+    // v7.3：强制面积规格映射（不读取表格数据）
+    // v10.8.0：不出血的报价表跳过该硬编码规则（005/055/006 是吊牌专用）
+    // v12.9：该硬编码仅属于「表格匹配」，规则匹配不调用
     const forced = forceSpecByArea(paper, area);
     if (forced) return forced;
   }
@@ -924,6 +930,13 @@ const els = {
   uiLayoutMode: document.getElementById("uiLayoutMode"),
   hidePaperIndex: document.getElementById("hidePaperIndex"),
   paperSelectMode: document.getElementById("paperSelectMode"),
+  // v12.9：规格匹配方式 + 匹配规则编辑器
+  specMatchMode: document.getElementById("specMatchMode"),
+  ruleSetSelect: document.getElementById("ruleSetSelect"),
+  rulesTbody: document.getElementById("rulesTbody"),
+  rulesAddBtn: document.getElementById("rulesAddBtn"),
+  rulesResetBtn: document.getElementById("rulesResetBtn"),
+  rulesStatus: document.getElementById("rulesStatus"),
   ropeFold: document.getElementById("ropeFold"),
   ropeFoldHead: document.getElementById("ropeFoldHead"),
   ropeFoldSummary: document.getElementById("ropeFoldSummary"),
@@ -3617,6 +3630,8 @@ function loadProfileToUI() {
   if (els.hidePaperIndex) els.hidePaperIndex.value = APP_PROFILE.hidePaperIndex ? "hide" : "show";
   // v10.1：纸张材质选择模式回填
   if (els.paperSelectMode) els.paperSelectMode.value = APP_PROFILE.paperSelectMode === "dropdown" ? "dropdown" : "grid";
+  // v12.9：规格匹配方式回填（默认表格匹配）
+  if (els.specMatchMode) els.specMatchMode.value = getSpecMatchMode();
   updateDefaultPaperOptions();
   if (els.defaultPaper) els.defaultPaper.value = APP_PROFILE.defaultPaperId || "";
 }
@@ -3665,6 +3680,9 @@ function saveProfile() {
     hidePaperIndex: els.hidePaperIndex ? (els.hidePaperIndex.value !== "show") : APP_PROFILE.hidePaperIndex,
     // v10.1：纸张材质选择模式（grid/dropdown）
     paperSelectMode: els.paperSelectMode ? (els.paperSelectMode.value === "dropdown" ? "dropdown" : "grid") : prevPaperSelectMode,
+    // v12.9：规格匹配方式（table=表格匹配 默认 / rule=规则匹配）
+    specMatchMode: els.specMatchMode ? (els.specMatchMode.value === "rule" ? "rule" : "table")
+                                     : (APP_PROFILE.specMatchMode === "rule" ? "rule" : "table"),
     decimalPlaces: els.decimalPlaces ? parseDecimalPlaces(els.decimalPlaces.value) : parseDecimalPlaces(APP_PROFILE.decimalPlaces)
   };
   saveToStorage("appProfile", APP_PROFILE);
@@ -3729,6 +3747,92 @@ function switchTab(tabName) {
   els.tabPanels.forEach(p => p.classList.toggle("active", p.id === "panel-" + tabName));
   if (tabName === "history") renderHistory();
   if (tabName === "online") renderOnlineManager(); // v10.7.0：切到在线修改时刷新（权限+数据均可能已变化）
+  if (tabName === "rules") renderSpecRules();      // v12.9：切到匹配规则时刷新
+}
+
+// -------------------- v12.9：规格匹配规则编辑器（数据管理 → 匹配规则） --------------------
+// 数据模型：SPEC_MATCH_RULES = { global: [{code,maxArea}], <织唛报价表id>: [...] }
+// 规则只决定「用哪个代码」，价格仍取表格中该代码的价格。
+const RULE_INPUT_STYLE = "width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;";
+
+function currentRuleSetKey() {
+  return (els.ruleSetSelect && els.ruleSetSelect.value === "maitou") ? getMaitouPriceListId() : "global";
+}
+
+/** 从 DOM 读取当前编辑中的规则行 */
+function readRuleRowsFromDom() {
+  const out = [];
+  if (!els.rulesTbody) return out;
+  els.rulesTbody.querySelectorAll("tr").forEach(tr => {
+    const c = tr.querySelector(".rule-code");
+    const m = tr.querySelector(".rule-maxarea");
+    if (c && m) out.push({ code: c.value, maxArea: Number(m.value) });
+  });
+  return out;
+}
+
+function updateRulesStatus() {
+  if (!els.rulesStatus) return;
+  const key = currentRuleSetKey();
+  const rows = (SPEC_MATCH_RULES && SPEC_MATCH_RULES[key]) || [];
+  const isRule = getSpecMatchMode() === "rule";
+  els.rulesStatus.textContent =
+    `共 ${rows.length} 条规则（按面积上限升序生效）｜规则集：${key === "global" ? "全局" : "织唛专用"}｜` +
+    `当前匹配方式：${isRule ? "规则匹配" : "表格匹配（本规则暂不生效）"}` +
+    (isRule ? "" : " —— 如需生效，请到「报价设置 → 默认选项 → 规格匹配方式」切换为「规则匹配」。");
+}
+
+function renderSpecRules() {
+  if (!els.rulesTbody) { updateRulesStatus(); return; }
+  const key = currentRuleSetKey();
+  const rows = (SPEC_MATCH_RULES && SPEC_MATCH_RULES[key]) || [];
+  els.rulesTbody.innerHTML = rows.length
+    ? rows.map((r, i) => `<tr>
+        <td><input type="text" class="rule-code" data-idx="${i}" value="${escapeHtml(r.code)}" placeholder="如 011" style="${RULE_INPUT_STYLE}"></td>
+        <td><input type="number" min="1" step="1" class="rule-maxarea" data-idx="${i}" value="${Number(r.maxArea)}" style="${RULE_INPUT_STYLE}"></td>
+        <td><button class="btn secondary sm rule-del" data-idx="${i}">删除</button></td>
+      </tr>`).join("")
+    : `<tr><td colspan="3" style="text-align:center;color:var(--text-secondary);padding:18px;">暂无规则，点下方「新增规则」</td></tr>`;
+  updateRulesStatus();
+}
+
+/** 保存当前规则集（空代码行不落盘）并重算 */
+function persistRulesFromDom() {
+  const key = currentRuleSetKey();
+  setSpecRules(key, readRuleRowsFromDom());
+  onCalculate();
+  updateRulesStatus();
+}
+
+function handleRulesClick(e) {
+  const btn = e.target && e.target.closest ? e.target.closest(".rule-del") : null;
+  if (!btn) return;
+  const rows = readRuleRowsFromDom();
+  rows.splice(Number(btn.dataset.idx), 1);
+  setSpecRules(currentRuleSetKey(), rows);
+  renderSpecRules();
+  onCalculate();
+}
+
+function handleRulesAdd() {
+  const key = currentRuleSetKey();
+  const rows = readRuleRowsFromDom();
+  const last = rows.reduce((m, r) => Math.max(m, Number(r.maxArea) || 0), 0);
+  if (!SPEC_MATCH_RULES[key]) SPEC_MATCH_RULES[key] = [];
+  SPEC_MATCH_RULES[key] = rows.concat([{ code: "", maxArea: last + 1000 }]);
+  renderSpecRules();
+  const inputs = els.rulesTbody ? els.rulesTbody.querySelectorAll(".rule-code") : [];
+  if (inputs.length) inputs[inputs.length - 1].focus();
+}
+
+function handleRulesReset() {
+  const key = currentRuleSetKey();
+  const label = key === "global" ? "全局" : "织唛专用";
+  if (!confirm(`确定把「${label}」规则恢复为默认吗？`)) return;
+  setSpecRules(key, key === "global" ? DEFAULT_SPEC_MATCH_RULES_GLOBAL : DEFAULT_SPEC_MATCH_RULES_MAITOU);
+  renderSpecRules();
+  onCalculate();
+  showToast(`「${label}」规则已恢复默认`);
 }
 
 // -------------------- v10.7.0 在线修改（数据管理 · 报价历史与云同步之间） --------------------
@@ -6646,6 +6750,15 @@ function bindEvents() {
   if (els.tabs) els.tabs.forEach(tab => {
     tab.addEventListener("click", () => switchTab(tab.dataset.tab));
   });
+
+  // v12.9：匹配规则编辑器（事件委托，行随渲染重建也无需重绑）
+  if (els.ruleSetSelect) els.ruleSetSelect.addEventListener("change", renderSpecRules);
+  if (els.rulesTbody) {
+    els.rulesTbody.addEventListener("change", persistRulesFromDom);
+    els.rulesTbody.addEventListener("click", handleRulesClick);
+  }
+  if (els.rulesAddBtn) els.rulesAddBtn.addEventListener("click", handleRulesAdd);
+  if (els.rulesResetBtn) els.rulesResetBtn.addEventListener("click", handleRulesReset);
 
   // v10.7.0 在线修改：组卡片事件委托（容器不随 innerHTML 重建，只需绑一次）
   if (els.onlineGroupsWrap) {

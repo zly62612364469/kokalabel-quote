@@ -3,7 +3,7 @@
 吊牌 / 织唛 / 唛头类印刷品的**多纸张、多工艺、多批量档位**快速报价工具。支持本地免登录使用，也支持网页版多人协作（账号分级 + 云端共享默认报价数据）。
 
 - 线上：https://kokalabel-quote.pages.dev
-- **当前版本：v12.8**（版本号的**唯一真相源** = 本仓库 `index.html` 的 `<title>` 与 `js/data.js` 的 `version` 字段）
+- **当前版本：v12.9**（版本号的**唯一真相源** = 本仓库 `index.html` 的 `<title>` 与 `js/data.js` 的 `version` 字段）
 - 仓库：`https://github.com/zly62612364469/kokalabel-quote`（私有）｜ 本地工作副本：`E:\Wb\报价优化\kokalabel-quote\`
 - 详细交接资料：见 [`docs/handover/`](./docs/handover/README.md)
 
