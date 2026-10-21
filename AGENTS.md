@@ -9,7 +9,7 @@
 1. **改代码只改本仓库（目录名 `kokalabel-quote`）**，它是唯一真相源。
    部署前从本仓库生成干净部署目录，不要在部署目录里改代码。
    > ⚠️ **版本真相源只有一个**：`E:\Wb\报价优化\kokalabel-quote\`（本仓库，远端 `zly62612364469/kokalabel-quote`）。
-   > 同级的 `KOKALabel-v11.0/` ~ `v12.8/` 等目录是**历史部署快照**，代码陈旧、不要读、不要改、不要作为版本依据。
+   > 同级的 `KOKALabel-v11.0/` ~ `KOKALabel-v12.9/` 等目录是**部署快照**（v12.9 为当前部署源），均不是版本依据。
    > 判断当前版本请以本仓库 `index.html` 的 `<title>` / `js/data.js` 的 `version` 为准。
 2. **不引入框架、不引入构建步骤** —— 项目必须保持「双击 `index.html` 可离线运行」。
 3. **改完必须跑回归测试**：仓库内 `tests/` 下的 jsdom 回归脚本（当前以综合回归为准，全绿为止）。
@@ -41,7 +41,9 @@ p.write_bytes(s.encode('utf-8'))
 - **禁用 `sed` 全局替换** —— 曾多次静默失败。用 python 精确替换。
 - 注意**无空格变体**：`"version": "10.7.0"` 与 `version: "10.7.0",` 都要覆盖。
 - 需要替换的位置：`index.html`（title / `?v=` 缓存参数 / setting-desc）、`login.html`（`?v=`）、
-  `js/app.js`（头注释 + `version:` 字段）、`js/data.js` / `css/style.css` / `js/auth.js`（头注释）、`CHANGELOG.md`（新增段落）。
+  `js/app.js`（头注释 + `version:` 字段）、`js/data.js` / `css/style.css` / `js/auth.js`（头注释）、`CHANGELOG.md`（新增段落）、
+  `README.md`（顶部「当前版本」）、`TODO.md`（顶部「当前版本」）、
+  `docs/*.md` 头部「当前版本」标记（**注意 ISSUES.md 是全角冒号格式 `当前版本：**vX.Y**`，与其它文档不同**）。
 - **历史修复注释里的旧版本号要保留**（如 `// v10.7.1 修复：...`），只改"当前版本"标记。
 
 ### ⚠️ `dataVersion` ≠ 界面版本号

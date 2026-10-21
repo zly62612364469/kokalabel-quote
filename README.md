@@ -8,7 +8,7 @@
 - 详细交接资料：见 [`docs/handover/`](./docs/handover/README.md)
 
 > ⚠️ **版本判断须知（给 AI Agent）**
-> 1. 同级目录 `E:\Wb\报价优化\KOKALabel-v11.0\` ~ `KOKALabel-v12.8\` 是**历史部署快照**，代码陈旧。
+> 1. 同级目录 `E:\Wb\报价优化\KOKALabel-v11.0\` ~ `KOKALabel-v12.9\` 是**部署快照**（v12.9 为当前部署源）；版本判断以本仓库为准。
 >    它们**不是**当前版本，不要读取、不要修改、不要据此判断版本号。
 > 2. 旧文档中的 `KOKALabel报价系统-v7.8\` 与 `E:\报价系统7.9\` 路径**已废弃**，现为 `kokalabel-quote\` 与 `E:\Wb\报价优化\`。
 > 3. 判断当前版本请只读本仓库：`grep -o '亲成报价系统 v[0-9.]*' index.html`。
